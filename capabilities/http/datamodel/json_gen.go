@@ -30,11 +30,11 @@ func (t *PutArgumentsModel) MarshalDagJSON(w io.Writer) error {
 	written := 0
 
 	// t.Body (datamodel.BlobModel) (struct)
-	if len("Body") > 8192 {
-		return fmt.Errorf("String in field \"Body\" was too long")
+	if len("body") > 8192 {
+		return fmt.Errorf("String in field \"body\" was too long")
 	}
-	if err := jw.WriteString(string("Body")); err != nil {
-		return fmt.Errorf("\"Body\": %w", err)
+	if err := jw.WriteString(string("body")); err != nil {
+		return fmt.Errorf("\"body\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
@@ -50,11 +50,11 @@ func (t *PutArgumentsModel) MarshalDagJSON(w io.Writer) error {
 	}
 
 	// t.Destination (promise.AwaitOK) (struct)
-	if len("Destination") > 8192 {
-		return fmt.Errorf("String in field \"Destination\" was too long")
+	if len("destination") > 8192 {
+		return fmt.Errorf("String in field \"destination\" was too long")
 	}
-	if err := jw.WriteString(string("Destination")); err != nil {
-		return fmt.Errorf("\"Destination\": %w", err)
+	if err := jw.WriteString(string("destination")); err != nil {
+		return fmt.Errorf("\"destination\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
@@ -103,14 +103,14 @@ func (t *PutArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			switch name {
 
 			// t.Body (datamodel.BlobModel) (struct)
-			case "Body":
+			case "body":
 
 				if err := t.Body.UnmarshalDagJSON(jr); err != nil {
 					return fmt.Errorf("unmarshaling t.Body: %w", err)
 				}
 
 				// t.Destination (promise.AwaitOK) (struct)
-			case "Destination":
+			case "destination":
 
 				if err := t.Destination.UnmarshalDagJSON(jr); err != nil {
 					return fmt.Errorf("unmarshaling t.Destination: %w", err)
