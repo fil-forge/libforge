@@ -6,8 +6,7 @@ import (
 )
 
 type ConfirmArgumentsModel struct {
-	// Link to the `access/authorize` request that this delegation was created
-	// for.
+	// Link to the `/access/request` this invocation is confirming.
 	Cause        cid.Cid                  `cborgen:"cause" dagjsongen:"cause"`
 	Issuer       did.DID                  `cborgen:"iss" dagjsongen:"iss"`
 	Audience     did.DID                  `cborgen:"aud" dagjsongen:"aud"`
