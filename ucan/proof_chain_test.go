@@ -14,12 +14,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// memFinder is an in-memory [ucanlib.DelegationFinder] for tests.
-type memFinder struct {
+// memLister is an in-memory [ucanlib.DelegationLister] for tests.
+type memLister struct {
 	delegations []ucan.Delegation
 }
 
-func (f *memFinder) FindByAudienceCommandSubject(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Subject) iter.Seq2[ucan.Delegation, error] {
+func (f *memLister) List(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Subject) iter.Seq2[ucan.Delegation, error] {
 	return func(yield func(ucan.Delegation, error) bool) {
 		for _, d := range f.delegations {
 			if d.Audience().DID() != aud.DID() {
@@ -44,10 +44,10 @@ func (f *memFinder) FindByAudienceCommandSubject(ctx context.Context, aud ucan.P
 	}
 }
 
-// erroringFinder yields a single error from the iterator.
-type erroringFinder struct{ err error }
+// erroringLister yields a single error from the iterator.
+type erroringLister struct{ err error }
 
-func (f *erroringFinder) FindByAudienceCommandSubject(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Subject) iter.Seq2[ucan.Delegation, error] {
+func (f *erroringLister) List(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Subject) iter.Seq2[ucan.Delegation, error] {
 	return func(yield func(ucan.Delegation, error) bool) {
 		yield(nil, f.err)
 	}
@@ -71,8 +71,8 @@ func TestProofChain_SelfIssued(t *testing.T) {
 	// space delegates to alice (root of chain, subject is the space).
 	root := testutil.Must(delegation.Delegate(space, alice, space, cmd))(t)
 
-	finder := &memFinder{delegations: []ucan.Delegation{root}}
-	matcher := ucanlib.NewDelegationMatcher(finder)
+	finder := &memLister{delegations: []ucan.Delegation{root}}
+	matcher := ucanlib.NewDelegationMatcher(finder.List)
 
 	proofs, links, err := ucanlib.ProofChain(t.Context(), matcher, alice, cmd, space)
 	require.NoError(t, err)
@@ -93,8 +93,8 @@ func TestProofChain_MultiHop(t *testing.T) {
 	// bob → carol (re-delegates the space's authority)
 	bc := testutil.Must(delegation.Delegate(bob, carol, space, cmd))(t)
 
-	finder := &memFinder{delegations: []ucan.Delegation{sa, ab, bc}}
-	matcher := ucanlib.NewDelegationMatcher(finder)
+	finder := &memLister{delegations: []ucan.Delegation{sa, ab, bc}}
+	matcher := ucanlib.NewDelegationMatcher(finder.List)
 
 	proofs, links, err := ucanlib.ProofChain(t.Context(), matcher, carol, cmd, space)
 	require.NoError(t, err)
@@ -107,7 +107,7 @@ func TestProofChain_NoDelegations(t *testing.T) {
 	alice := testutil.Alice
 	cmd := testutil.Must(command.Parse("/test/do"))(t)
 
-	matcher := ucanlib.NewDelegationMatcher(&memFinder{})
+	matcher := ucanlib.NewDelegationMatcher((&memLister{}).List)
 	proofs, links, err := ucanlib.ProofChain(t.Context(), matcher, alice, cmd, space)
 	require.NoError(t, err)
 	require.Empty(t, proofs)
@@ -123,8 +123,8 @@ func TestProofChain_BrokenChain(t *testing.T) {
 	// alice → bob exists, but no space → alice root.
 	ab := testutil.Must(delegation.Delegate(alice, bob, space, cmd))(t)
 
-	finder := &memFinder{delegations: []ucan.Delegation{ab}}
-	matcher := ucanlib.NewDelegationMatcher(finder)
+	finder := &memLister{delegations: []ucan.Delegation{ab}}
+	matcher := ucanlib.NewDelegationMatcher(finder.List)
 
 	proofs, links, err := ucanlib.ProofChain(t.Context(), matcher, bob, cmd, space)
 	require.NoError(t, err)
@@ -141,8 +141,8 @@ func TestProofChain_ParentCommand(t *testing.T) {
 	// space delegates to alice for the parent command.
 	root := testutil.Must(delegation.Delegate(space, alice, space, parent))(t)
 
-	finder := &memFinder{delegations: []ucan.Delegation{root}}
-	matcher := ucanlib.NewDelegationMatcher(finder)
+	finder := &memLister{delegations: []ucan.Delegation{root}}
+	matcher := ucanlib.NewDelegationMatcher(finder.List)
 
 	// Invocation for the child command should still resolve via the parent.
 	proofs, links, err := ucanlib.ProofChain(t.Context(), matcher, alice, child, space)
@@ -161,8 +161,8 @@ func TestProofChain_Powerline(t *testing.T) {
 	// powerline: alice → bob with nil subject.
 	powerline := testutil.Must(delegation.Delegate(alice, bob, nil, cmd))(t)
 
-	finder := &memFinder{delegations: []ucan.Delegation{root, powerline}}
-	matcher := ucanlib.NewDelegationMatcher(finder)
+	finder := &memLister{delegations: []ucan.Delegation{root, powerline}}
+	matcher := ucanlib.NewDelegationMatcher(finder.List)
 
 	proofs, links, err := ucanlib.ProofChain(t.Context(), matcher, bob, cmd, space)
 	require.NoError(t, err)
@@ -178,8 +178,8 @@ func TestProofChain_UnrelatedCommandIgnored(t *testing.T) {
 	// delegation exists but for an unrelated command path.
 	dlg := testutil.Must(delegation.Delegate(space, alice, space, other))(t)
 
-	finder := &memFinder{delegations: []ucan.Delegation{dlg}}
-	matcher := ucanlib.NewDelegationMatcher(finder)
+	finder := &memLister{delegations: []ucan.Delegation{dlg}}
+	matcher := ucanlib.NewDelegationMatcher(finder.List)
 
 	proofs, links, err := ucanlib.ProofChain(t.Context(), matcher, alice, cmd, space)
 	require.NoError(t, err)
@@ -193,7 +193,13 @@ func TestProofChain_FinderError(t *testing.T) {
 	cmd := testutil.Must(command.Parse("/test/do"))(t)
 
 	wantErr := errors.New("boom")
-	matcher := ucanlib.NewDelegationMatcher(&erroringFinder{err: wantErr})
+	matcher := ucanlib.NewDelegationMatcher(
+		func(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Subject) iter.Seq2[ucan.Delegation, error] {
+			return func(yield func(ucan.Delegation, error) bool) {
+				yield(nil, wantErr)
+			}
+		},
+	)
 
 	_, _, err := ucanlib.ProofChain(t.Context(), matcher, alice, cmd, space)
 	require.ErrorIs(t, err, wantErr)
