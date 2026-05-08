@@ -1,4 +1,4 @@
-package index
+package provider
 
 import (
 	dm "github.com/fil-forge/libforge/capabilities/provider/datamodel"
