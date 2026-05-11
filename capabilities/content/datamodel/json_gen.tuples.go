@@ -25,27 +25,27 @@ func (t *RangeModel) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 	if err := jw.WriteArrayOpen(); err != nil {
-		return fmt.Errorf("RangeModel: %w", err)
+		return fmt.Errorf("writing array open for field RangeModel: %w", err)
 	}
 
 	// t.Start (uint64) (uint64)
 
 	if err := jw.WriteUint64(uint64(t.Start)); err != nil {
-		return fmt.Errorf("t.Start: %w", err)
+		return fmt.Errorf("writing uint64 for field t.Start: %w", err)
 	}
 
 	if err := jw.WriteComma(); err != nil {
-		return fmt.Errorf("End: %w", err)
+		return fmt.Errorf("writing comma for field End: %w", err)
 	}
 
 	// t.End (uint64) (uint64)
 
 	if err := jw.WriteUint64(uint64(t.End)); err != nil {
-		return fmt.Errorf("t.End: %w", err)
+		return fmt.Errorf("writing uint64 for field t.End: %w", err)
 	}
 
 	if err := jw.WriteArrayClose(); err != nil {
-		return fmt.Errorf("RangeModel: %w", err)
+		return fmt.Errorf("writing array close for field RangeModel: %w", err)
 	}
 	return nil
 }
@@ -60,15 +60,15 @@ func (t *RangeModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		}
 	}()
 	if err := jr.ReadArrayOpen(); err != nil {
-		return fmt.Errorf("RangeModel: %w", err)
+		return fmt.Errorf("reading array open for field RangeModel: %w", err)
 	}
 	close, err := jr.PeekArrayClose()
 	if err != nil {
-		return fmt.Errorf("RangeModel: %w", err)
+		return fmt.Errorf("peeking array close for field RangeModel: %w", err)
 	}
 	if close {
 		if err := jr.ReadArrayClose(); err != nil {
-			return fmt.Errorf("RangeModel: %w", err)
+			return fmt.Errorf("reading array close for field RangeModel: %w", err)
 		}
 	} else {
 
@@ -78,7 +78,7 @@ func (t *RangeModel) UnmarshalDagJSON(r io.Reader) (err error) {
 
 			nval, err := jr.ReadNumberAsUint64()
 			if err != nil {
-				return fmt.Errorf("t.Start: %w", err)
+				return fmt.Errorf("reading uint64 for field t.Start: %w", err)
 			}
 			t.Start = uint64(nval)
 
@@ -86,7 +86,7 @@ func (t *RangeModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		{
 			close, err := jr.ReadArrayCloseOrComma()
 			if err != nil {
-				return fmt.Errorf("RangeModel: %w", err)
+				return fmt.Errorf("reading array close or comma for field RangeModel: %w", err)
 			}
 			if close {
 				return fmt.Errorf("json input has too few fields 1 < 2")
@@ -99,13 +99,13 @@ func (t *RangeModel) UnmarshalDagJSON(r io.Reader) (err error) {
 
 			nval, err := jr.ReadNumberAsUint64()
 			if err != nil {
-				return fmt.Errorf("t.End: %w", err)
+				return fmt.Errorf("reading uint64 for field t.End: %w", err)
 			}
 			t.End = uint64(nval)
 
 		}
 		if err := jr.ReadArrayClose(); err != nil {
-			return fmt.Errorf("RangeModel: %w", err)
+			return fmt.Errorf("reading array close for field RangeModel: %w", err)
 		}
 	}
 	return nil

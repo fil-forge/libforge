@@ -21,6 +21,9 @@ func main() {
 		bdm.RemoveArgumentsModel{},
 		bdm.ReplicateArgumentsModel{},
 		bdm.ReplicateOKModel{},
+		bdm.ListArgumentsModel{},
+		bdm.ListOKModel{},
+		bdm.ListBlobItem{},
 	}
 	if err := cbg.WriteMapEncodersToFile("../cbor_gen.go", "datamodel", models...); err != nil {
 		panic(err)

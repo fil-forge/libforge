@@ -7,5 +7,5 @@ import (
 type AddArgumentsModel struct {
 	Root   cid.Cid   `cborgen:"root" dagjsongen:"root"`
 	Shards []cid.Cid `cborgen:"shards" dagjsongen:"shards"`
-	Index  cid.Cid   `cborgen:"index" dagjsongen:"index"`
+	Index  *cid.Cid  `cborgen:"index,omitempty" dagjsongen:"index,omitempty"`
 }

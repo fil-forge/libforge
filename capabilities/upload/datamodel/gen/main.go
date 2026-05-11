@@ -12,6 +12,9 @@ func main() {
 	models := []any{
 		dm.AddArgumentsModel{},
 		dm.RemoveArgumentsModel{},
+		dm.ListArgumentsModel{},
+		dm.ListOKModel{},
+		dm.ListUploadItem{},
 	}
 	if err := cbg.WriteMapEncodersToFile("../cbor_gen.go", "datamodel", models...); err != nil {
 		panic(err)

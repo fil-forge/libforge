@@ -30,19 +30,19 @@ func (t *EchoArgumentsModel) MarshalDagJSON(w io.Writer) error {
 
 	// t.Message (string) (string)
 	if len("message") > 8192 {
-		return fmt.Errorf("String in field \"message\" was too long")
+		return fmt.Errorf("string in field \"message\" was too long")
 	}
 	if err := jw.WriteString(string("message")); err != nil {
-		return fmt.Errorf("\"message\": %w", err)
+		return fmt.Errorf("writing string for field \"message\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
 	if len(t.Message) > 8192 {
-		return fmt.Errorf("String in field t.Message was too long")
+		return fmt.Errorf("string in field t.Message was too long")
 	}
 	if err := jw.WriteString(string(t.Message)); err != nil {
-		return fmt.Errorf("t.Message: %w", err)
+		return fmt.Errorf("writing string for field t.Message: %w", err)
 	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
@@ -59,27 +59,27 @@ func (t *EchoArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		}
 	}()
 	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("EchoArgumentsModel: %w", err)
+		return fmt.Errorf("reading object open for EchoArgumentsModel: %w", err)
 	}
 	close, err := jr.PeekObjectClose()
 	if err != nil {
-		return fmt.Errorf("EchoArgumentsModel: %w", err)
+		return fmt.Errorf("peeking object close for EchoArgumentsModel: %w", err)
 	}
 	if close {
 		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("EchoArgumentsModel: %w", err)
+			return fmt.Errorf("reading object close for EchoArgumentsModel: %w", err)
 		}
 	} else {
 		for i := uint64(0); i < 8192; i++ {
 			name, err := jr.ReadString(8192)
 			if err != nil {
 				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("EchoArgumentsModel: string too large")
+					return fmt.Errorf("reading string for field EchoArgumentsModel: string too large")
 				}
-				return fmt.Errorf("EchoArgumentsModel: %w", err)
+				return fmt.Errorf("reading string for field EchoArgumentsModel: %w", err)
 			}
 			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("EchoArgumentsModel: %w", err)
+				return fmt.Errorf("reading object colon for field EchoArgumentsModel: %w", err)
 			}
 			switch name {
 
@@ -89,28 +89,28 @@ func (t *EchoArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 					sval, err := jr.ReadString(8192)
 					if err != nil {
 						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("t.Message: string too long")
+							return fmt.Errorf("reading string for field t.Message: string too long")
 						}
-						return fmt.Errorf("t.Message: %w", err)
+						return fmt.Errorf("reading string for field t.Message: %w", err)
 					}
 					t.Message = string(sval)
 				}
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("EchoArgumentsModel: ignoring field %s: %w", name, err)
+					return fmt.Errorf("ignoring field %s for EchoArgumentsModel: %w", name, err)
 				}
 			}
 
 			close, err := jr.ReadObjectCloseOrComma()
 			if err != nil {
-				return fmt.Errorf("EchoArgumentsModel: %w", err)
+				return fmt.Errorf("reading object close or comma for field EchoArgumentsModel: %w", err)
 			}
 			if close {
 				break
 			}
 			if i == 8192-1 {
-				return fmt.Errorf("EchoArgumentsModel: map too large")
+				return fmt.Errorf("map too large for EchoArgumentsModel")
 			}
 		}
 	}
