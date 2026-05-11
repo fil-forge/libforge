@@ -21,3 +21,8 @@ const RequestCommand = "/access/request"
 // Request can be invoked by an agent to request set of capabilities from the
 // account.
 var Request, _ = bindcap.New[*RequestArguments](RequestCommand)
+
+const (
+	InvalidAuthorizationAccountErrorName  = "InvalidAuthorizationAccount"
+	InvalidAuthorizationAudienceErrorName = "InvalidAuthorizationAudience"
+)

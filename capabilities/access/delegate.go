@@ -16,3 +16,8 @@ const DelegateCommand = "/access/delegate"
 // Delegate can be invoked by an agent to delegate a set of capabilities that
 // may be subsequently claimed by another agent.
 var Delegate, _ = bindcap.New[*DelegateArguments](DelegateCommand)
+
+const (
+	DelegationNotFoundErrorName  = "DelegationNotFound"
+	InsufficientStorageErrorName = "InsufficientStorage"
+)

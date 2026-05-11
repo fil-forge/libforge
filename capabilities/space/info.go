@@ -14,3 +14,5 @@ type (
 )
 
 var Info, _ = bindcap.New[*InfoArguments](InfoCommand)
+
+const UnknownSpaceErrorName = "UnknownSpace"
