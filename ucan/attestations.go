@@ -6,9 +6,9 @@ import (
 	"iter"
 
 	"github.com/fil-forge/libforge/capabilities/ucan/attest"
-	"github.com/fil-forge/ucantone/ipld/datamodel"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/varsig/algorithm/nonstandard"
+	"github.com/ipfs/go-cid"
 )
 
 // InvocationListerFunc lists invocations that match EXACTLY the given audience,
@@ -38,12 +38,8 @@ func ProofAttestations(ctx context.Context, listInvocations InvocationListerFunc
 				continue
 			}
 			// ensure this attestation corresponds to the proof
-			proofArgs := attest.ProofArguments{}
-			err := datamodel.Rebind(datamodel.NewAny(inv.Arguments()), &proofArgs)
-			if err != nil {
-				continue
-			}
-			if proofArgs.Proof != proof.Link() {
+			attestedProof, ok := inv.Arguments()["proof"].(cid.Cid)
+			if !ok || attestedProof != proof.Link() {
 				continue
 			}
 			attestation = inv
