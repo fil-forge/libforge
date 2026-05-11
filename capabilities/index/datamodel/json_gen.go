@@ -30,17 +30,17 @@ func (t *AddArgumentsModel) MarshalDagJSON(w io.Writer) error {
 
 	// t.Index (cid.Cid) (struct)
 	if len("index") > 8192 {
-		return fmt.Errorf("String in field \"index\" was too long")
+		return fmt.Errorf("string in field \"index\" was too long")
 	}
 	if err := jw.WriteString(string("index")); err != nil {
-		return fmt.Errorf("\"index\": %w", err)
+		return fmt.Errorf("writing string for field \"index\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
 
 	if err := jw.WriteCid(t.Index); err != nil {
-		return fmt.Errorf("t.Index: %w", err)
+		return fmt.Errorf("writing CID for field t.Index: %w", err)
 	}
 
 	if err := jw.WriteObjectClose(); err != nil {
@@ -58,27 +58,27 @@ func (t *AddArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		}
 	}()
 	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("AddArgumentsModel: %w", err)
+		return fmt.Errorf("reading object open for AddArgumentsModel: %w", err)
 	}
 	close, err := jr.PeekObjectClose()
 	if err != nil {
-		return fmt.Errorf("AddArgumentsModel: %w", err)
+		return fmt.Errorf("peeking object close for AddArgumentsModel: %w", err)
 	}
 	if close {
 		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("AddArgumentsModel: %w", err)
+			return fmt.Errorf("reading object close for AddArgumentsModel: %w", err)
 		}
 	} else {
 		for i := uint64(0); i < 8192; i++ {
 			name, err := jr.ReadString(8192)
 			if err != nil {
 				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("AddArgumentsModel: string too large")
+					return fmt.Errorf("reading string for field AddArgumentsModel: string too large")
 				}
-				return fmt.Errorf("AddArgumentsModel: %w", err)
+				return fmt.Errorf("reading string for field AddArgumentsModel: %w", err)
 			}
 			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("AddArgumentsModel: %w", err)
+				return fmt.Errorf("reading object colon for field AddArgumentsModel: %w", err)
 			}
 			switch name {
 
@@ -88,7 +88,7 @@ func (t *AddArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 
 					c, err := jr.ReadCid()
 					if err != nil {
-						return fmt.Errorf("t.Index: %w", err)
+						return fmt.Errorf("reading CID for field t.Index: %w", err)
 					}
 					t.Index = c
 
@@ -96,19 +96,19 @@ func (t *AddArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("AddArgumentsModel: ignoring field %s: %w", name, err)
+					return fmt.Errorf("ignoring field %s for AddArgumentsModel: %w", name, err)
 				}
 			}
 
 			close, err := jr.ReadObjectCloseOrComma()
 			if err != nil {
-				return fmt.Errorf("AddArgumentsModel: %w", err)
+				return fmt.Errorf("reading object close or comma for field AddArgumentsModel: %w", err)
 			}
 			if close {
 				break
 			}
 			if i == 8192-1 {
-				return fmt.Errorf("AddArgumentsModel: map too large")
+				return fmt.Errorf("map too large for AddArgumentsModel")
 			}
 		}
 	}

@@ -3,7 +3,7 @@ module github.com/fil-forge/libforge
 go 1.25.3
 
 require (
-	github.com/alanshaw/dag-json-gen v0.0.4
+	github.com/alanshaw/dag-json-gen v0.0.5
 	github.com/fil-forge/ucantone v0.0.0-20260505091407-736de689fa66
 	github.com/ipfs/go-cid v0.6.1
 	github.com/ipfs/go-log/v2 v2.9.1

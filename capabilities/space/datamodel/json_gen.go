@@ -31,33 +31,33 @@ func (t *InfoOKModel) MarshalDagJSON(w io.Writer) error {
 
 	// t.Providers ([]did.DID) (slice)
 	if len("providers") > 8192 {
-		return fmt.Errorf("String in field \"providers\" was too long")
+		return fmt.Errorf("string in field \"providers\" was too long")
 	}
 	if err := jw.WriteString(string("providers")); err != nil {
-		return fmt.Errorf("\"providers\": %w", err)
+		return fmt.Errorf("writing string for field \"providers\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
 	if len(t.Providers) > 8192 {
-		return fmt.Errorf("Slice value in field t.Providers was too long")
+		return fmt.Errorf("slice value in field t.Providers was too long")
 	}
 
 	if err := jw.WriteArrayOpen(); err != nil {
-		return fmt.Errorf("t.Providers: %w", err)
+		return fmt.Errorf("writing array open for field t.Providers: %w", err)
 	}
 	for i, v := range t.Providers {
 		if i > 0 {
 			if err := jw.WriteComma(); err != nil {
-				return fmt.Errorf("t.Providers: %w", err)
+				return fmt.Errorf("writing comma for field t.Providers: %w", err)
 			}
 		}
 		if err := v.MarshalDagJSON(jw); err != nil {
-			return fmt.Errorf("v: %w", err)
+			return fmt.Errorf("marshaling field v: %w", err)
 		}
 	}
 	if err := jw.WriteArrayClose(); err != nil {
-		return fmt.Errorf("t.Providers: %w", err)
+		return fmt.Errorf("writing array close for field t.Providers: %w", err)
 	}
 
 	if err := jw.WriteObjectClose(); err != nil {
@@ -75,27 +75,27 @@ func (t *InfoOKModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		}
 	}()
 	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("InfoOKModel: %w", err)
+		return fmt.Errorf("reading object open for InfoOKModel: %w", err)
 	}
 	close, err := jr.PeekObjectClose()
 	if err != nil {
-		return fmt.Errorf("InfoOKModel: %w", err)
+		return fmt.Errorf("peeking object close for InfoOKModel: %w", err)
 	}
 	if close {
 		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("InfoOKModel: %w", err)
+			return fmt.Errorf("reading object close for InfoOKModel: %w", err)
 		}
 	} else {
 		for i := uint64(0); i < 8192; i++ {
 			name, err := jr.ReadString(8192)
 			if err != nil {
 				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("InfoOKModel: string too large")
+					return fmt.Errorf("reading string for field InfoOKModel: string too large")
 				}
-				return fmt.Errorf("InfoOKModel: %w", err)
+				return fmt.Errorf("reading string for field InfoOKModel: %w", err)
 			}
 			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("InfoOKModel: %w", err)
+				return fmt.Errorf("reading object colon for field InfoOKModel: %w", err)
 			}
 			switch name {
 
@@ -104,16 +104,16 @@ func (t *InfoOKModel) UnmarshalDagJSON(r io.Reader) (err error) {
 				{
 
 					if err := jr.ReadArrayOpen(); err != nil {
-						return fmt.Errorf("t.Providers: %w", err)
+						return fmt.Errorf("reading array open for field t.Providers: %w", err)
 					}
 
 					close, err := jr.PeekArrayClose()
 					if err != nil {
-						return fmt.Errorf("t.Providers: %w", err)
+						return fmt.Errorf("peeking array close for field t.Providers: %w", err)
 					}
 					if close {
 						if err := jr.ReadArrayClose(); err != nil {
-							return fmt.Errorf("t.Providers: %w", err)
+							return fmt.Errorf("reading array close for field t.Providers: %w", err)
 						}
 
 					} else {
@@ -128,13 +128,13 @@ func (t *InfoOKModel) UnmarshalDagJSON(r io.Reader) (err error) {
 
 							close, err := jr.ReadArrayCloseOrComma()
 							if err != nil {
-								return fmt.Errorf("t.Providers: %w", err)
+								return fmt.Errorf("reading array close or comma for field t.Providers: %w", err)
 							}
 							if close {
 								break
 							}
 							if i == 8192-1 {
-								return fmt.Errorf("t.Providers: slice too large")
+								return fmt.Errorf("reading array for field t.Providers: slice too large")
 							}
 						}
 					}
@@ -143,19 +143,19 @@ func (t *InfoOKModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("InfoOKModel: ignoring field %s: %w", name, err)
+					return fmt.Errorf("ignoring field %s for InfoOKModel: %w", name, err)
 				}
 			}
 
 			close, err := jr.ReadObjectCloseOrComma()
 			if err != nil {
-				return fmt.Errorf("InfoOKModel: %w", err)
+				return fmt.Errorf("reading object close or comma for field InfoOKModel: %w", err)
 			}
 			if close {
 				break
 			}
 			if i == 8192-1 {
-				return fmt.Errorf("InfoOKModel: map too large")
+				return fmt.Errorf("map too large for InfoOKModel")
 			}
 		}
 	}
