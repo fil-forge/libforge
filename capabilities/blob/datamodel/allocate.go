@@ -16,7 +16,7 @@ type AllocateOKModel struct {
 }
 
 type BlobAddressModel struct {
-	URL     capabilities.CborURL  `cborgen:"url" dagjsongen:"url"`
-	Headers map[string]string     `cborgen:"headers" dagjsongen:"headers"`
-	Expires capabilities.CborTime `cborgen:"expires" dagjsongen:"expires"`
+	URL     capabilities.CborURL `cborgen:"url" dagjsongen:"url"`
+	Headers map[string]string    `cborgen:"headers" dagjsongen:"headers"`
+	Expires int64                `cborgen:"expires" dagjsongen:"expires"`
 }

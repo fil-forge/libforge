@@ -30,17 +30,17 @@ func (t *ConcludeArgumentsModel) MarshalDagJSON(w io.Writer) error {
 
 	// t.Receipt (cid.Cid) (struct)
 	if len("receipt") > 8192 {
-		return fmt.Errorf("String in field \"receipt\" was too long")
+		return fmt.Errorf("string in field \"receipt\" was too long")
 	}
 	if err := jw.WriteString(string("receipt")); err != nil {
-		return fmt.Errorf("\"receipt\": %w", err)
+		return fmt.Errorf("writing string for field \"receipt\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
 
 	if err := jw.WriteCid(t.Receipt); err != nil {
-		return fmt.Errorf("t.Receipt: %w", err)
+		return fmt.Errorf("writing CID for field t.Receipt: %w", err)
 	}
 
 	if err := jw.WriteObjectClose(); err != nil {
@@ -58,27 +58,27 @@ func (t *ConcludeArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		}
 	}()
 	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("ConcludeArgumentsModel: %w", err)
+		return fmt.Errorf("reading object open for ConcludeArgumentsModel: %w", err)
 	}
 	close, err := jr.PeekObjectClose()
 	if err != nil {
-		return fmt.Errorf("ConcludeArgumentsModel: %w", err)
+		return fmt.Errorf("peeking object close for ConcludeArgumentsModel: %w", err)
 	}
 	if close {
 		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("ConcludeArgumentsModel: %w", err)
+			return fmt.Errorf("reading object close for ConcludeArgumentsModel: %w", err)
 		}
 	} else {
 		for i := uint64(0); i < 8192; i++ {
 			name, err := jr.ReadString(8192)
 			if err != nil {
 				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("ConcludeArgumentsModel: string too large")
+					return fmt.Errorf("reading string for field ConcludeArgumentsModel: string too large")
 				}
-				return fmt.Errorf("ConcludeArgumentsModel: %w", err)
+				return fmt.Errorf("reading string for field ConcludeArgumentsModel: %w", err)
 			}
 			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("ConcludeArgumentsModel: %w", err)
+				return fmt.Errorf("reading object colon for field ConcludeArgumentsModel: %w", err)
 			}
 			switch name {
 
@@ -88,7 +88,7 @@ func (t *ConcludeArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 
 					c, err := jr.ReadCid()
 					if err != nil {
-						return fmt.Errorf("t.Receipt: %w", err)
+						return fmt.Errorf("reading CID for field t.Receipt: %w", err)
 					}
 					t.Receipt = c
 
@@ -96,19 +96,19 @@ func (t *ConcludeArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("ConcludeArgumentsModel: ignoring field %s: %w", name, err)
+					return fmt.Errorf("ignoring field %s for ConcludeArgumentsModel: %w", name, err)
 				}
 			}
 
 			close, err := jr.ReadObjectCloseOrComma()
 			if err != nil {
-				return fmt.Errorf("ConcludeArgumentsModel: %w", err)
+				return fmt.Errorf("reading object close or comma for field ConcludeArgumentsModel: %w", err)
 			}
 			if close {
 				break
 			}
 			if i == 8192-1 {
-				return fmt.Errorf("ConcludeArgumentsModel: map too large")
+				return fmt.Errorf("map too large for ConcludeArgumentsModel")
 			}
 		}
 	}

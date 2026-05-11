@@ -25,8 +25,13 @@ func (t *AddArgumentsModel) MarshalCBOR(w io.Writer) error {
 	}
 
 	cw := cbg.NewCborWriter(w)
+	fieldCount := 3
 
-	if _, err := cw.Write([]byte{163}); err != nil {
+	if t.Index == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
 		return err
 	}
 
@@ -47,19 +52,29 @@ func (t *AddArgumentsModel) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.Index (cid.Cid) (struct)
-	if len("index") > 8192 {
-		return xerrors.Errorf("Value in field \"index\" was too long")
-	}
+	if t.Index != nil {
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("index"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("index")); err != nil {
-		return err
-	}
+		if len("index") > 8192 {
+			return xerrors.Errorf("Value in field \"index\" was too long")
+		}
 
-	if err := cbg.WriteCid(cw, t.Index); err != nil {
-		return xerrors.Errorf("failed to write cid field t.Index: %w", err)
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("index"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("index")); err != nil {
+			return err
+		}
+
+		if t.Index == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if err := cbg.WriteCid(cw, *t.Index); err != nil {
+				return xerrors.Errorf("failed to write cid field t.Index: %w", err)
+			}
+		}
+
 	}
 
 	// t.Shards ([]cid.Cid) (slice)
@@ -150,12 +165,22 @@ func (t *AddArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 			{
 
-				c, err := cbg.ReadCid(cr)
+				b, err := cr.ReadByte()
 				if err != nil {
-					return xerrors.Errorf("failed to read cid field t.Index: %w", err)
+					return err
 				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
 
-				t.Index = c
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Index: %w", err)
+					}
+
+					t.Index = &c
+				}
 
 			}
 			// t.Shards ([]cid.Cid) (slice)
@@ -294,6 +319,588 @@ func (t *RemoveArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 				t.Root = c
+
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+func (t *ListArgumentsModel) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+	fieldCount := 2
+
+	if t.Cursor == nil {
+		fieldCount--
+	}
+
+	if t.Size == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
+		return err
+	}
+
+	// t.Size (int64) (int64)
+	if t.Size != nil {
+
+		if len("size") > 8192 {
+			return xerrors.Errorf("Value in field \"size\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("size"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("size")); err != nil {
+			return err
+		}
+
+		if t.Size == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if *t.Size >= 0 {
+				if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(*t.Size)); err != nil {
+					return err
+				}
+			} else {
+				if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-*t.Size-1)); err != nil {
+					return err
+				}
+			}
+		}
+
+	}
+
+	// t.Cursor (string) (string)
+	if t.Cursor != nil {
+
+		if len("cursor") > 8192 {
+			return xerrors.Errorf("Value in field \"cursor\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("cursor"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("cursor")); err != nil {
+			return err
+		}
+
+		if t.Cursor == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if len(*t.Cursor) > 8192 {
+				return xerrors.Errorf("Value in field t.Cursor was too long")
+			}
+
+			if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(*t.Cursor))); err != nil {
+				return err
+			}
+			if _, err := cw.WriteString(string(*t.Cursor)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (t *ListArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = ListArgumentsModel{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("ListArgumentsModel: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 6)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Size (int64) (int64)
+		case "size":
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					maj, extra, err := cr.ReadHeader()
+					if err != nil {
+						return err
+					}
+					var extraI int64
+					switch maj {
+					case cbg.MajUnsignedInt:
+						extraI = int64(extra)
+						if extraI < 0 {
+							return fmt.Errorf("int64 positive overflow")
+						}
+					case cbg.MajNegativeInt:
+						extraI = int64(extra)
+						if extraI < 0 {
+							return fmt.Errorf("int64 negative overflow")
+						}
+						extraI = -1 - extraI
+					default:
+						return fmt.Errorf("wrong type for int64 field: %d", maj)
+					}
+
+					t.Size = (*int64)(&extraI)
+				}
+			}
+			// t.Cursor (string) (string)
+		case "cursor":
+
+			{
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					sval, err := cbg.ReadStringWithMax(cr, 8192)
+					if err != nil {
+						return err
+					}
+
+					t.Cursor = (*string)(&sval)
+				}
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+func (t *ListOKModel) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+	fieldCount := 3
+
+	if t.Cursor == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
+		return err
+	}
+
+	// t.Size (int64) (int64)
+	if len("size") > 8192 {
+		return xerrors.Errorf("Value in field \"size\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("size"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("size")); err != nil {
+		return err
+	}
+
+	if t.Size >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Size)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Size-1)); err != nil {
+			return err
+		}
+	}
+
+	// t.Cursor (string) (string)
+	if t.Cursor != nil {
+
+		if len("cursor") > 8192 {
+			return xerrors.Errorf("Value in field \"cursor\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("cursor"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("cursor")); err != nil {
+			return err
+		}
+
+		if t.Cursor == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if len(*t.Cursor) > 8192 {
+				return xerrors.Errorf("Value in field t.Cursor was too long")
+			}
+
+			if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(*t.Cursor))); err != nil {
+				return err
+			}
+			if _, err := cw.WriteString(string(*t.Cursor)); err != nil {
+				return err
+			}
+		}
+	}
+
+	// t.Results ([]datamodel.ListUploadItem) (slice)
+	if len("results") > 8192 {
+		return xerrors.Errorf("Value in field \"results\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("results"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("results")); err != nil {
+		return err
+	}
+
+	if len(t.Results) > 8192 {
+		return xerrors.Errorf("Slice value in field t.Results was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Results))); err != nil {
+		return err
+	}
+	for _, v := range t.Results {
+		if err := v.MarshalCBOR(cw); err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
+func (t *ListOKModel) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = ListOKModel{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("ListOKModel: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 7)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Size (int64) (int64)
+		case "size":
+			{
+				maj, extra, err := cr.ReadHeader()
+				if err != nil {
+					return err
+				}
+				var extraI int64
+				switch maj {
+				case cbg.MajUnsignedInt:
+					extraI = int64(extra)
+					if extraI < 0 {
+						return fmt.Errorf("int64 positive overflow")
+					}
+				case cbg.MajNegativeInt:
+					extraI = int64(extra)
+					if extraI < 0 {
+						return fmt.Errorf("int64 negative overflow")
+					}
+					extraI = -1 - extraI
+				default:
+					return fmt.Errorf("wrong type for int64 field: %d", maj)
+				}
+
+				t.Size = int64(extraI)
+			}
+			// t.Cursor (string) (string)
+		case "cursor":
+
+			{
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					sval, err := cbg.ReadStringWithMax(cr, 8192)
+					if err != nil {
+						return err
+					}
+
+					t.Cursor = (*string)(&sval)
+				}
+			}
+			// t.Results ([]datamodel.ListUploadItem) (slice)
+		case "results":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 8192 {
+				return fmt.Errorf("t.Results: array too large (%d)", extra)
+			}
+
+			if maj != cbg.MajArray {
+				return fmt.Errorf("expected cbor array")
+			}
+
+			if extra > 0 {
+				t.Results = make([]ListUploadItem, extra)
+			}
+
+			for i := 0; i < int(extra); i++ {
+				{
+					var maj byte
+					var extra uint64
+					var err error
+					_ = maj
+					_ = extra
+					_ = err
+
+					{
+
+						if err := t.Results[i].UnmarshalCBOR(cr); err != nil {
+							return xerrors.Errorf("unmarshaling t.Results[i]: %w", err)
+						}
+
+					}
+
+				}
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+func (t *ListUploadItem) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+	fieldCount := 2
+
+	if t.Index == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
+		return err
+	}
+
+	// t.Root (cid.Cid) (struct)
+	if len("root") > 8192 {
+		return xerrors.Errorf("Value in field \"root\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("root"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("root")); err != nil {
+		return err
+	}
+
+	if err := cbg.WriteCid(cw, t.Root); err != nil {
+		return xerrors.Errorf("failed to write cid field t.Root: %w", err)
+	}
+
+	// t.Index (cid.Cid) (struct)
+	if t.Index != nil {
+
+		if len("index") > 8192 {
+			return xerrors.Errorf("Value in field \"index\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("index"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("index")); err != nil {
+			return err
+		}
+
+		if t.Index == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if err := cbg.WriteCid(cw, *t.Index); err != nil {
+				return xerrors.Errorf("failed to write cid field t.Index: %w", err)
+			}
+		}
+
+	}
+	return nil
+}
+
+func (t *ListUploadItem) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = ListUploadItem{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("ListUploadItem: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 5)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Root (cid.Cid) (struct)
+		case "root":
+
+			{
+
+				c, err := cbg.ReadCid(cr)
+				if err != nil {
+					return xerrors.Errorf("failed to read cid field t.Root: %w", err)
+				}
+
+				t.Root = c
+
+			}
+			// t.Index (cid.Cid) (struct)
+		case "index":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Index: %w", err)
+					}
+
+					t.Index = &c
+				}
 
 			}
 

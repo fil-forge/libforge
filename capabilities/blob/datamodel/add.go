@@ -15,5 +15,7 @@ type AddArgumentsModel struct {
 }
 
 type AddOKModel struct {
+	// Site is a promise of the `/blob/accept` task result, which contains a
+	// location claim for the blob, describing where it can be retrieved from.
 	Site promise.AwaitOK `cborgen:"site" dagjsongen:"site"`
 }

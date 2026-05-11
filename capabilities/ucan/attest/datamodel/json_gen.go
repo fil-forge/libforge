@@ -30,17 +30,17 @@ func (t *ProofArgumentsModel) MarshalDagJSON(w io.Writer) error {
 
 	// t.Proof (cid.Cid) (struct)
 	if len("proof") > 8192 {
-		return fmt.Errorf("String in field \"proof\" was too long")
+		return fmt.Errorf("string in field \"proof\" was too long")
 	}
 	if err := jw.WriteString(string("proof")); err != nil {
-		return fmt.Errorf("\"proof\": %w", err)
+		return fmt.Errorf("writing string for field \"proof\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
 
 	if err := jw.WriteCid(t.Proof); err != nil {
-		return fmt.Errorf("t.Proof: %w", err)
+		return fmt.Errorf("writing CID for field t.Proof: %w", err)
 	}
 
 	if err := jw.WriteObjectClose(); err != nil {
@@ -58,27 +58,27 @@ func (t *ProofArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		}
 	}()
 	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("ProofArgumentsModel: %w", err)
+		return fmt.Errorf("reading object open for ProofArgumentsModel: %w", err)
 	}
 	close, err := jr.PeekObjectClose()
 	if err != nil {
-		return fmt.Errorf("ProofArgumentsModel: %w", err)
+		return fmt.Errorf("peeking object close for ProofArgumentsModel: %w", err)
 	}
 	if close {
 		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("ProofArgumentsModel: %w", err)
+			return fmt.Errorf("reading object close for ProofArgumentsModel: %w", err)
 		}
 	} else {
 		for i := uint64(0); i < 8192; i++ {
 			name, err := jr.ReadString(8192)
 			if err != nil {
 				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("ProofArgumentsModel: string too large")
+					return fmt.Errorf("reading string for field ProofArgumentsModel: string too large")
 				}
-				return fmt.Errorf("ProofArgumentsModel: %w", err)
+				return fmt.Errorf("reading string for field ProofArgumentsModel: %w", err)
 			}
 			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("ProofArgumentsModel: %w", err)
+				return fmt.Errorf("reading object colon for field ProofArgumentsModel: %w", err)
 			}
 			switch name {
 
@@ -88,7 +88,7 @@ func (t *ProofArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 
 					c, err := jr.ReadCid()
 					if err != nil {
-						return fmt.Errorf("t.Proof: %w", err)
+						return fmt.Errorf("reading CID for field t.Proof: %w", err)
 					}
 					t.Proof = c
 
@@ -96,19 +96,19 @@ func (t *ProofArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("ProofArgumentsModel: ignoring field %s: %w", name, err)
+					return fmt.Errorf("ignoring field %s for ProofArgumentsModel: %w", name, err)
 				}
 			}
 
 			close, err := jr.ReadObjectCloseOrComma()
 			if err != nil {
-				return fmt.Errorf("ProofArgumentsModel: %w", err)
+				return fmt.Errorf("reading object close or comma for field ProofArgumentsModel: %w", err)
 			}
 			if close {
 				break
 			}
 			if i == 8192-1 {
-				return fmt.Errorf("ProofArgumentsModel: map too large")
+				return fmt.Errorf("map too large for ProofArgumentsModel")
 			}
 		}
 	}

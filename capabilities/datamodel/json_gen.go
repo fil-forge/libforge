@@ -42,45 +42,45 @@ func (t *UnitModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		}
 	}()
 	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("UnitModel: %w", err)
+		return fmt.Errorf("reading object open for UnitModel: %w", err)
 	}
 	close, err := jr.PeekObjectClose()
 	if err != nil {
-		return fmt.Errorf("UnitModel: %w", err)
+		return fmt.Errorf("peeking object close for UnitModel: %w", err)
 	}
 	if close {
 		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("UnitModel: %w", err)
+			return fmt.Errorf("reading object close for UnitModel: %w", err)
 		}
 	} else {
 		for i := uint64(0); i < 8192; i++ {
 			name, err := jr.ReadString(8192)
 			if err != nil {
 				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("UnitModel: string too large")
+					return fmt.Errorf("reading string for field UnitModel: string too large")
 				}
-				return fmt.Errorf("UnitModel: %w", err)
+				return fmt.Errorf("reading string for field UnitModel: %w", err)
 			}
 			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("UnitModel: %w", err)
+				return fmt.Errorf("reading object colon for field UnitModel: %w", err)
 			}
 			switch name {
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("UnitModel: ignoring field %s: %w", name, err)
+					return fmt.Errorf("ignoring field %s for UnitModel: %w", name, err)
 				}
 			}
 
 			close, err := jr.ReadObjectCloseOrComma()
 			if err != nil {
-				return fmt.Errorf("UnitModel: %w", err)
+				return fmt.Errorf("reading object close or comma for field UnitModel: %w", err)
 			}
 			if close {
 				break
 			}
 			if i == 8192-1 {
-				return fmt.Errorf("UnitModel: map too large")
+				return fmt.Errorf("map too large for UnitModel")
 			}
 		}
 	}

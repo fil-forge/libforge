@@ -27,7 +27,7 @@ func (t *IndexArgumentsModel) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{162}); err != nil {
+	if _, err := cw.Write([]byte{161}); err != nil {
 		return err
 	}
 
@@ -45,22 +45,6 @@ func (t *IndexArgumentsModel) MarshalCBOR(w io.Writer) error {
 
 	if err := cbg.WriteCid(cw, t.Index); err != nil {
 		return xerrors.Errorf("failed to write cid field t.Index: %w", err)
-	}
-
-	// t.Content (cid.Cid) (struct)
-	if len("content") > 8192 {
-		return xerrors.Errorf("Value in field \"content\" was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("content"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("content")); err != nil {
-		return err
-	}
-
-	if err := cbg.WriteCid(cw, t.Content); err != nil {
-		return xerrors.Errorf("failed to write cid field t.Content: %w", err)
 	}
 
 	return nil
@@ -91,7 +75,7 @@ func (t *IndexArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 	n := extra
 
-	nameBuf := make([]byte, 7)
+	nameBuf := make([]byte, 5)
 	for i := uint64(0); i < n; i++ {
 		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
 		if err != nil {
@@ -118,19 +102,6 @@ func (t *IndexArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 				t.Index = c
-
-			}
-			// t.Content (cid.Cid) (struct)
-		case "content":
-
-			{
-
-				c, err := cbg.ReadCid(cr)
-				if err != nil {
-					return xerrors.Errorf("failed to read cid field t.Content: %w", err)
-				}
-
-				t.Content = c
 
 			}
 
