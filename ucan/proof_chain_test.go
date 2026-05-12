@@ -44,15 +44,6 @@ func (f *memLister) List(ctx context.Context, aud ucan.Principal, cmd ucan.Comma
 	}
 }
 
-// erroringLister yields a single error from the iterator.
-type erroringLister struct{ err error }
-
-func (f *erroringLister) List(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Subject) iter.Seq2[ucan.Delegation, error] {
-	return func(yield func(ucan.Delegation, error) bool) {
-		yield(nil, f.err)
-	}
-}
-
 func assertChain(t *testing.T, proofs []ucan.Delegation, links []ucan.Link, want []ucan.Delegation) {
 	t.Helper()
 	require.Len(t, proofs, len(want), "proof chain length")
