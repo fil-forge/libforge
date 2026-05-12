@@ -1,6 +1,7 @@
 package ucanlib
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"iter"
@@ -8,7 +9,6 @@ import (
 	"github.com/fil-forge/libforge/capabilities/ucan/attest"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/varsig/algorithm/nonstandard"
-	"github.com/ipfs/go-cid"
 )
 
 // InvocationListerFunc lists invocations that match EXACTLY the given audience,
@@ -38,8 +38,11 @@ func ProofAttestations(ctx context.Context, listInvocations InvocationListerFunc
 				continue
 			}
 			// ensure this attestation corresponds to the proof
-			attestedProof, ok := inv.Arguments()["proof"].(cid.Cid)
-			if !ok || attestedProof != proof.Link() {
+			var proofArgs attest.ProofArguments
+			if err := proofArgs.UnmarshalCBOR(bytes.NewReader(inv.ArgumentsBytes())); err != nil {
+				continue
+			}
+			if proofArgs.Proof != proof.Link() {
 				continue
 			}
 			attestation = inv
