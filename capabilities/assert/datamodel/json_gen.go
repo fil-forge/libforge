@@ -518,3 +518,143 @@ func (t *RangeModel) UnmarshalDagJSON(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *EqualsArgumentsModel) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+	written := 0
+
+	// t.Content (multihash.Multihash) (slice)
+	if len("content") > 8192 {
+		return fmt.Errorf("string in field \"content\" was too long")
+	}
+	if err := jw.WriteString(string("content")); err != nil {
+		return fmt.Errorf("writing string for field \"content\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Content) > 2097152 {
+		return fmt.Errorf("byte array in field t.Content was too long")
+	}
+
+	if err := jw.WriteBytes(t.Content); err != nil {
+		return fmt.Errorf("writing bytes for field t.Content: %w", err)
+	}
+
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Equals (cid.Cid) (struct)
+	if len("equals") > 8192 {
+		return fmt.Errorf("string in field \"equals\" was too long")
+	}
+	if err := jw.WriteString(string("equals")); err != nil {
+		return fmt.Errorf("writing string for field \"equals\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+
+	if err := jw.WriteCid(t.Equals); err != nil {
+		return fmt.Errorf("writing CID for field t.Equals: %w", err)
+	}
+
+	written++
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *EqualsArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = EqualsArgumentsModel{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("reading object open for EqualsArgumentsModel: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("peeking object close for EqualsArgumentsModel: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("reading object close for EqualsArgumentsModel: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("reading string for field EqualsArgumentsModel: string too large")
+				}
+				return fmt.Errorf("reading string for field EqualsArgumentsModel: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("reading object colon for field EqualsArgumentsModel: %w", err)
+			}
+			switch name {
+
+			// t.Content (multihash.Multihash) (slice)
+			case "content":
+
+				{
+					bval, err := jr.ReadBytes(2097152)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading bytes for field t.Content: byte array too large")
+						}
+						return fmt.Errorf("reading bytes for field t.Content: %w", err)
+					}
+					if len(bval) > 0 {
+						t.Content = []uint8(bval)
+					}
+				}
+
+				// t.Equals (cid.Cid) (struct)
+			case "equals":
+				{
+
+					c, err := jr.ReadCid()
+					if err != nil {
+						return fmt.Errorf("reading CID for field t.Equals: %w", err)
+					}
+					t.Equals = c
+
+				}
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("ignoring field %s for EqualsArgumentsModel: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading object close or comma for field EqualsArgumentsModel: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("map too large for EqualsArgumentsModel")
+			}
+		}
+	}
+
+	return nil
+}

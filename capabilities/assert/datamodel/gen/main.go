@@ -13,6 +13,7 @@ func main() {
 		datamodel.IndexArgumentsModel{},
 		datamodel.LocationArgumentsModel{},
 		datamodel.RangeModel{},
+		datamodel.EqualsArgumentsModel{},
 	}
 
 	if err := cbg.WriteMapEncodersToFile("../cbor_gen.go", "datamodel", models...); err != nil {
