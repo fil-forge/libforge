@@ -178,6 +178,9 @@ func Archive(index ShardedDagIndex) (io.Reader, error) {
 		}
 		b := buf.Bytes()
 		l, err := cid.V1Builder{Codec: cid.DagCBOR, MhType: mh.SHA2_256}.Sum(b)
+		if err != nil {
+			return nil, err
+		}
 		blk, err := blocks.NewBlockWithCid(b, l)
 		if err != nil {
 			return nil, err
