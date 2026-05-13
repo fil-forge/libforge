@@ -124,12 +124,14 @@ func (sdi *MapShardedDagIndex) Archive() (io.Reader, error) {
 
 // NewUnknownFormatError returns an error for an unknown format.
 func NewUnknownFormatError(reason string, args ...any) error {
-	return fmt.Errorf(fmt.Sprintf("unknown format: %s", reason), args...)
+	msg := fmt.Sprintf(reason, args...)
+	return fmt.Errorf("unknown format: %s", msg)
 }
 
 // NewDecodeFailureError returns an error for a decode failure.
 func NewDecodeFailureError(reason string, args ...any) error {
-	return fmt.Errorf(fmt.Sprintf("decode failure: %s", reason), args...)
+	msg := fmt.Sprintf(reason, args...)
+	return fmt.Errorf("decode failure: %s", msg)
 }
 
 // Archive writes a ShardedDagIndex to a CAR file
