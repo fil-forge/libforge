@@ -517,3 +517,145 @@ func (t *RangeModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *EqualsArgumentsModel) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{162}); err != nil {
+		return err
+	}
+
+	// t.Equals (cid.Cid) (struct)
+	if len("equals") > 8192 {
+		return xerrors.Errorf("Value in field \"equals\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("equals"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("equals")); err != nil {
+		return err
+	}
+
+	if err := cbg.WriteCid(cw, t.Equals); err != nil {
+		return xerrors.Errorf("failed to write cid field t.Equals: %w", err)
+	}
+
+	// t.Content (multihash.Multihash) (slice)
+	if len("content") > 8192 {
+		return xerrors.Errorf("Value in field \"content\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("content"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("content")); err != nil {
+		return err
+	}
+
+	if len(t.Content) > 2097152 {
+		return xerrors.Errorf("Byte array in field t.Content was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Content))); err != nil {
+		return err
+	}
+
+	if _, err := cw.Write(t.Content); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *EqualsArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = EqualsArgumentsModel{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("EqualsArgumentsModel: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 7)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Equals (cid.Cid) (struct)
+		case "equals":
+
+			{
+
+				c, err := cbg.ReadCid(cr)
+				if err != nil {
+					return xerrors.Errorf("failed to read cid field t.Equals: %w", err)
+				}
+
+				t.Equals = c
+
+			}
+			// t.Content (multihash.Multihash) (slice)
+		case "content":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 2097152 {
+				return fmt.Errorf("t.Content: byte array too large (%d)", extra)
+			}
+			if maj != cbg.MajByteString {
+				return fmt.Errorf("expected byte array")
+			}
+
+			if extra > 0 {
+				t.Content = make([]uint8, extra)
+			}
+
+			if _, err := io.ReadFull(cr, t.Content); err != nil {
+				return err
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
