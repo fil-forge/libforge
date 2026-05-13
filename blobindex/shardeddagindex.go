@@ -18,7 +18,7 @@ import (
 func Extract(r io.Reader) (*MapShardedDagIndex, error) {
 	dc, err := decodeIndexCar(r)
 	if err != nil {
-		return nil, NewDecodeFailureError(err.Error())
+		return nil, NewDecodeFailureError(err)
 	}
 	return View(dc.root, dc.blocks)
 }
@@ -61,27 +61,27 @@ func decodeIndexCar(r io.Reader) (indexCar, error) {
 func View(root cid.Cid, blocks map[cid.Cid][]byte) (*MapShardedDagIndex, error) {
 	rootBlock, ok := blocks[root]
 	if !ok {
-		return nil, NewDecodeFailureError(fmt.Sprintf("missing root block: %s", root))
+		return nil, NewDecodeFailureError(fmt.Errorf("missing root block: %s", root))
 	}
 
 	var shardedDagIndexData dm.ShardedDagIndexModel
 	if err := shardedDagIndexData.UnmarshalCBOR(bytes.NewReader(rootBlock)); err != nil {
-		return nil, NewDecodeFailureError(fmt.Sprintf("decoding root block: %s: %v", root, err))
+		return nil, NewDecodeFailureError(fmt.Errorf("decoding root block: %s: %v", root, err))
 	}
 	if shardedDagIndexData.DagO_1 == nil {
-		return nil, NewUnknownFormatError("unknown index version")
+		return nil, NewUnknownFormatError(fmt.Errorf("unknown index version"))
 	}
 
 	dagIndex := NewShardedDagIndex(len(shardedDagIndexData.DagO_1.Shards))
 	for _, shardLink := range shardedDagIndexData.DagO_1.Shards {
 		shard, ok := blocks[shardLink]
 		if !ok {
-			return nil, NewDecodeFailureError("missing shard block: %s", shardLink)
+			return nil, NewDecodeFailureError(fmt.Errorf("missing shard block: %s", shardLink))
 		}
 		var blobIndexData dm.BlobIndexModel
 		err := blobIndexData.UnmarshalCBOR(bytes.NewReader(shard))
 		if err != nil {
-			return nil, NewDecodeFailureError(err.Error())
+			return nil, NewDecodeFailureError(err)
 		}
 		blobIndex := NewMultihashMap[Range](len(blobIndexData.Slices))
 		for _, blobSlice := range blobIndexData.Slices {
@@ -123,15 +123,13 @@ func (sdi *MapShardedDagIndex) Archive() (io.Reader, error) {
 }
 
 // NewUnknownFormatError returns an error for an unknown format.
-func NewUnknownFormatError(reason string, args ...any) error {
-	msg := fmt.Sprintf(reason, args...)
-	return fmt.Errorf("unknown format: %s", msg)
+func NewUnknownFormatError(reason error) error {
+	return fmt.Errorf("unknown format: %w", reason)
 }
 
 // NewDecodeFailureError returns an error for a decode failure.
-func NewDecodeFailureError(reason string, args ...any) error {
-	msg := fmt.Sprintf(reason, args...)
-	return fmt.Errorf("decode failure: %s", msg)
+func NewDecodeFailureError(reason error) error {
+	return fmt.Errorf("decode failure: %w", reason)
 }
 
 // Archive writes a ShardedDagIndex to a CAR file
