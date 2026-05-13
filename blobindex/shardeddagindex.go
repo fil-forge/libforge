@@ -232,10 +232,10 @@ func toList[E, T any](mhm MultihashMap[T], newElem func(mh.Multihash, T) (E, err
 	return asList, nil
 }
 
-func sortByDigest[E any](list []E, getMultihash func(E) mh.Multihash) error {
+func sortByDigest[E any](list []E, getDigest func(E) mh.Multihash) error {
 	decodeds := NewMultihashMap[*mh.DecodedMultihash](len(list))
 	for _, e := range list {
-		hash := getMultihash(e)
+		hash := getDigest(e)
 		decoded, err := mh.Decode(hash)
 		if err != nil {
 			return err
@@ -243,8 +243,8 @@ func sortByDigest[E any](list []E, getMultihash func(E) mh.Multihash) error {
 		decodeds.Set(hash, decoded)
 	}
 	slices.SortFunc(list, func(a, b E) int {
-		decodedA := decodeds.Get(getMultihash(a))
-		decodedB := decodeds.Get(getMultihash(b))
+		decodedA := decodeds.Get(getDigest(a))
+		decodedB := decodeds.Get(getDigest(b))
 		return bytes.Compare(decodedA.Digest, decodedB.Digest)
 	})
 	return nil

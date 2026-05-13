@@ -16,6 +16,6 @@ type Range = dm.RangeModel
 
 // ShardedDagIndex is a blob index for a DAG stored over one or more shards.
 type ShardedDagIndex interface {
-	/** Index information for shards the DAG is split across. */
+	// Index information for shards the DAG is split across.
 	Shards() MultihashMap[MultihashMap[Range]]
 }
