@@ -1,13 +1,14 @@
 package datamodel
 
 import (
+	"github.com/ipfs/go-cid"
+
 	"github.com/fil-forge/libforge/capabilities"
-	"github.com/fil-forge/ucantone/ucan"
 )
 
 type AllocateArgumentsModel struct {
 	Blob  BlobModel `cborgen:"blob" dagjsongen:"blob"`
-	Cause ucan.Link `cborgen:"cause" dagjsongen:"cause"`
+	Cause cid.Cid   `cborgen:"cause" dagjsongen:"cause"`
 }
 
 type AllocateOKModel struct {

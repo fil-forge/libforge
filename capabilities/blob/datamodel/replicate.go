@@ -1,8 +1,8 @@
 package datamodel
 
 import (
-	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/promise"
+	"github.com/ipfs/go-cid"
 )
 
 type ReplicateArgumentsModel struct {
@@ -13,7 +13,7 @@ type ReplicateArgumentsModel struct {
 	Replicas uint64 `cborgen:"replicas" dagjsongen:"replicas"`
 	// Site is a link to a location commitment indicating where the Blob must be
 	// fetched from.
-	Site ucan.Link `cborgen:"site" dagjsongen:"site"`
+	Site cid.Cid `cborgen:"site" dagjsongen:"site"`
 }
 
 type ReplicateOKModel struct {

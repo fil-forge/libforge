@@ -1,7 +1,6 @@
 package datamodel
 
 import (
-	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/promise"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multihash"
@@ -17,7 +16,7 @@ type AllocateArgumentsModel struct {
 	Blob BlobModel `cborgen:"blob"`
 	// Site is a link to a location commitment indicating where the Blob must be
 	// fetched from.
-	Site ucan.Link `cborgen:"site"`
+	Site cid.Cid `cborgen:"site"`
 	// Cause is a link to the `/blob/replicate` task that caused this allocation.
 	Cause cid.Cid `cborgen:"cause"`
 }

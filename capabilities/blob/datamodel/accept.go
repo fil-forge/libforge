@@ -1,8 +1,8 @@
 package datamodel
 
 import (
-	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/promise"
+	"github.com/ipfs/go-cid"
 )
 
 type AcceptArgumentsModel struct {
@@ -11,5 +11,5 @@ type AcceptArgumentsModel struct {
 }
 
 type AcceptOKModel struct {
-	Site ucan.Link `cborgen:"site" dagjsongen:"site"`
+	Site cid.Cid `cborgen:"site" dagjsongen:"site"`
 }
