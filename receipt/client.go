@@ -10,6 +10,7 @@ import (
 
 	"github.com/fil-forge/ucantone/transport"
 	"github.com/fil-forge/ucantone/ucan"
+	"github.com/ipfs/go-cid"
 )
 
 type ResponseDecoder[Res any] interface {
@@ -59,7 +60,7 @@ func NewClient(endpoint *url.URL, options ...Option) *Client {
 
 // Fetch a receipt from the receipt API. Returns [ErrNotFound] if the API
 // responds with [http.StatusNotFound].
-func (c *Client) Fetch(ctx context.Context, task ucan.Link) (ucan.Receipt, ucan.Container, error) {
+func (c *Client) Fetch(ctx context.Context, task cid.Cid) (ucan.Receipt, ucan.Container, error) {
 	receiptURL := c.endpoint.JoinPath(task.String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, receiptURL.String(), nil)
 	if err != nil {
@@ -119,7 +120,7 @@ func WithRetries(n int) PollOption {
 
 // Poll attempts to fetch a receipt from the endpoint until a non-404 response
 // is encountered or until the configured maximum retries are made.
-func (c *Client) Poll(ctx context.Context, task ucan.Link, options ...PollOption) (ucan.Receipt, ucan.Container, error) {
+func (c *Client) Poll(ctx context.Context, task cid.Cid, options ...PollOption) (ucan.Receipt, ucan.Container, error) {
 	conf := pollConfig{}
 	for _, o := range options {
 		o(&conf)

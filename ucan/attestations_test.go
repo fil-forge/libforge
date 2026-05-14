@@ -10,26 +10,28 @@ import (
 	"github.com/fil-forge/libforge/didmailto"
 	"github.com/fil-forge/libforge/testutil"
 	ucanlib "github.com/fil-forge/libforge/ucan"
+	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/principal/absentee"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/command"
 	"github.com/fil-forge/ucantone/ucan/delegation"
 	"github.com/fil-forge/ucantone/ucan/invocation"
+	"github.com/ipfs/go-cid"
 	"github.com/stretchr/testify/require"
 )
 
 // recordedCall captures arguments passed to a stub AttestationGetterFunc.
 type recordedCall struct {
-	aud ucan.Principal
+	aud did.DID
 	cmd ucan.Command
-	sub ucan.Subject
+	sub did.DID
 }
 
 // stubAttestationLister returns an AttestationGetterFunc that produces a fresh
 // attestation invocation per call (signed by authority) and records each call.
-func stubAttestationLister(authority ucan.Signer, proofs []ucan.Link, calls *[]recordedCall) ucanlib.InvocationListerFunc {
+func stubAttestationLister(authority ucan.Signer, proofs []cid.Cid, calls *[]recordedCall) ucanlib.InvocationListerFunc {
 	i := 0
-	return func(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Subject) iter.Seq2[ucan.Invocation, error] {
+	return func(ctx context.Context, aud did.DID, cmd ucan.Command, sub did.DID) iter.Seq2[ucan.Invocation, error] {
 		*calls = append(*calls, recordedCall{aud: aud, cmd: cmd, sub: sub})
 		return func(yield func(ucan.Invocation, error) bool) {
 			if i >= len(proofs) {
@@ -57,7 +59,7 @@ func TestProofAttestations(t *testing.T) {
 		var calls []recordedCall
 		lister := stubAttestationLister(service, nil, &calls)
 
-		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, nil, service)
+		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, nil, service.DID())
 		require.NoError(t, err)
 		require.Empty(t, attestations)
 		require.Empty(t, calls)
@@ -70,12 +72,12 @@ func TestProofAttestations(t *testing.T) {
 		cmd := testutil.Must(command.Parse("/test/do"))(t)
 
 		// ed25519-signed proof — should be filtered out (no attestation needed).
-		dlg := testutil.Must(delegation.Delegate(space, alice, space, cmd))(t)
+		dlg := testutil.Must(delegation.Delegate(space, alice.DID(), space.DID(), cmd))(t)
 
 		var calls []recordedCall
 		lister := stubAttestationLister(service, nil, &calls)
 
-		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, []ucan.Delegation{dlg}, service)
+		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, []ucan.Delegation{dlg}, service.DID())
 		require.NoError(t, err)
 		require.Empty(t, attestations)
 		require.Empty(t, calls, "lister should not be called for standard signatures")
@@ -90,21 +92,21 @@ func TestProofAttestations(t *testing.T) {
 		cmd := testutil.Must(command.Parse("/test/do"))(t)
 
 		// account (absentee, did:mailto) → agent — this proof needs an attestation.
-		dlg := testutil.Must(delegation.Delegate(account, agent, space, cmd))(t)
+		dlg := testutil.Must(delegation.Delegate(account, agent.DID(), space.DID(), cmd))(t)
 
 		var calls []recordedCall
-		lister := stubAttestationLister(service, []ucan.Link{dlg.Link()}, &calls)
+		lister := stubAttestationLister(service, []cid.Cid{dlg.Link()}, &calls)
 
-		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, []ucan.Delegation{dlg}, service)
+		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, []ucan.Delegation{dlg}, service.DID())
 		require.NoError(t, err)
 		require.Len(t, attestations, 1)
 		require.Len(t, calls, 1)
 
 		// Lister should be called with the proof's audience, the /ucan/attest/proof
 		// command, and the authority as subject.
-		require.Equal(t, agent.DID(), calls[0].aud.DID())
+		require.Equal(t, agent.DID(), calls[0].aud)
 		require.Equal(t, ucan.Command(attest.ProofCommand), calls[0].cmd)
-		require.Equal(t, service.DID(), calls[0].sub.DID())
+		require.Equal(t, service.DID(), calls[0].sub)
 	})
 
 	t.Run("mixed standard and absentee proofs", func(t *testing.T) {
@@ -117,18 +119,18 @@ func TestProofAttestations(t *testing.T) {
 		cmd := testutil.Must(command.Parse("/test/do"))(t)
 
 		// standard signature — no attestation needed
-		standardDlg := testutil.Must(delegation.Delegate(space, bob, space, cmd))(t)
+		standardDlg := testutil.Must(delegation.Delegate(space, bob.DID(), space.DID(), cmd))(t)
 		// absentee signature — needs attestation
-		absenteeDlg := testutil.Must(delegation.Delegate(account, agent, space, cmd))(t)
+		absenteeDlg := testutil.Must(delegation.Delegate(account, agent.DID(), space.DID(), cmd))(t)
 
 		var calls []recordedCall
-		lister := stubAttestationLister(service, []ucan.Link{absenteeDlg.Link()}, &calls)
+		lister := stubAttestationLister(service, []cid.Cid{absenteeDlg.Link()}, &calls)
 
-		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, []ucan.Delegation{standardDlg, absenteeDlg}, service)
+		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, []ucan.Delegation{standardDlg, absenteeDlg}, service.DID())
 		require.NoError(t, err)
 		require.Len(t, attestations, 1, "only the absentee-signed proof needs an attestation")
 		require.Len(t, calls, 1)
-		require.Equal(t, agent.DID(), calls[0].aud.DID())
+		require.Equal(t, agent.DID(), calls[0].aud)
 	})
 
 	t.Run("multiple absentee-signed proofs", func(t *testing.T) {
@@ -143,18 +145,18 @@ func TestProofAttestations(t *testing.T) {
 		space := testutil.RandomSigner(t)
 		cmd := testutil.Must(command.Parse("/test/do"))(t)
 
-		dlgA := testutil.Must(delegation.Delegate(aliceAccount, agentA, space, cmd))(t)
-		dlgB := testutil.Must(delegation.Delegate(bobAccount, agentB, space, cmd))(t)
+		dlgA := testutil.Must(delegation.Delegate(aliceAccount, agentA.DID(), space.DID(), cmd))(t)
+		dlgB := testutil.Must(delegation.Delegate(bobAccount, agentB.DID(), space.DID(), cmd))(t)
 
 		var calls []recordedCall
-		lister := stubAttestationLister(service, []ucan.Link{dlgA.Link(), dlgB.Link()}, &calls)
+		lister := stubAttestationLister(service, []cid.Cid{dlgA.Link(), dlgB.Link()}, &calls)
 
-		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, []ucan.Delegation{dlgA, dlgB}, service)
+		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, []ucan.Delegation{dlgA, dlgB}, service.DID())
 		require.NoError(t, err)
 		require.Len(t, attestations, 2)
 		require.Len(t, calls, 2)
-		require.Equal(t, agentA.DID(), calls[0].aud.DID())
-		require.Equal(t, agentB.DID(), calls[1].aud.DID())
+		require.Equal(t, agentA.DID(), calls[0].aud)
+		require.Equal(t, agentB.DID(), calls[1].aud)
 	})
 
 	t.Run("lister error is propagated", func(t *testing.T) {
@@ -165,16 +167,16 @@ func TestProofAttestations(t *testing.T) {
 		space := testutil.RandomSigner(t)
 		cmd := testutil.Must(command.Parse("/test/do"))(t)
 
-		dlg := testutil.Must(delegation.Delegate(account, agent, space, cmd))(t)
+		dlg := testutil.Must(delegation.Delegate(account, agent.DID(), space.DID(), cmd))(t)
 
 		wantErr := errors.New("boom")
-		lister := func(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Subject) iter.Seq2[ucan.Invocation, error] {
+		lister := func(ctx context.Context, aud did.DID, cmd ucan.Command, sub did.DID) iter.Seq2[ucan.Invocation, error] {
 			return func(yield func(ucan.Invocation, error) bool) {
 				yield(nil, wantErr)
 			}
 		}
 
-		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, []ucan.Delegation{dlg}, service)
+		attestations, err := ucanlib.ProofAttestations(t.Context(), lister, []ucan.Delegation{dlg}, service.DID())
 		require.ErrorIs(t, err, wantErr)
 		require.Nil(t, attestations)
 	})

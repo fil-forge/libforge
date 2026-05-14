@@ -5,8 +5,10 @@ import (
 	"iter"
 	"slices"
 
+	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/command"
+	"github.com/ipfs/go-cid"
 )
 
 // DelegationMatcherFunc finds all delegations matching the given audience,
@@ -16,20 +18,20 @@ import (
 // powerline delegations (with nil subject) and delegations where command is a
 // matching parent of the passed command e.g. if passed command is "/read/file",
 // delegations with command "/read", and "/" may be returned.
-type DelegationMatcherFunc func(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Subject) iter.Seq2[ucan.Delegation, error]
+type DelegationMatcherFunc func(ctx context.Context, aud did.DID, cmd ucan.Command, sub did.DID) iter.Seq2[ucan.Delegation, error]
 
 // DelegationListerFunc lists delegations for the given audience, command, and
 // subject. It differs from [DelegationMatcherFunc] in that it only retrieves
 // delegations for the EXACT audience, command and subject.
 //
 // Note: the subject parameter MAY be nil to indicate powerline.
-type DelegationListerFunc func(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Subject) iter.Seq2[ucan.Delegation, error]
+type DelegationListerFunc func(ctx context.Context, aud did.DID, cmd ucan.Command, sub did.DID) iter.Seq2[ucan.Delegation, error]
 
 // NewDelegationMatcher creates a simple delegation matcher that queries the
 // passed finder to retrieve delegations matching the given audience, command,
 // and subject.
 func NewDelegationMatcher(listDelegations DelegationListerFunc) DelegationMatcherFunc {
-	return func(ctx context.Context, aud ucan.Principal, cmd ucan.Command, sub ucan.Principal) iter.Seq2[ucan.Delegation, error] {
+	return func(ctx context.Context, aud did.DID, cmd ucan.Command, sub did.DID) iter.Seq2[ucan.Delegation, error] {
 		return func(yield func(ucan.Delegation, error) bool) {
 			cmdVariations := []ucan.Command{}
 			segs := cmd.Segments()
@@ -51,7 +53,7 @@ func NewDelegationMatcher(listDelegations DelegationListerFunc) DelegationMatche
 				}
 				// try powerline
 				// TODO: stop early if we already found delegations?
-				for dlg, err := range listDelegations(ctx, aud, cmd, nil) {
+				for dlg, err := range listDelegations(ctx, aud, cmd, did.Undef) {
 					if err != nil {
 						yield(nil, err)
 						return
@@ -71,7 +73,7 @@ func NewDelegationMatcher(listDelegations DelegationListerFunc) DelegationMatche
 // invocation. i.e. starting from the root Delegation (issued by the Subject),
 // in strict sequence where the aud of the previous Delegation matches the iss
 // of the next Delegation.
-func ProofChain(ctx context.Context, matchDelegations DelegationMatcherFunc, aud ucan.Principal, cmd ucan.Command, sub ucan.Principal) ([]ucan.Delegation, []ucan.Link, error) {
+func ProofChain(ctx context.Context, matchDelegations DelegationMatcherFunc, aud did.DID, cmd ucan.Command, sub did.DID) ([]ucan.Delegation, []cid.Cid, error) {
 	proofs, links, err := proofChain(ctx, matchDelegations, aud, cmd, sub)
 	if err != nil {
 		return nil, nil, err
@@ -84,15 +86,15 @@ func ProofChain(ctx context.Context, matchDelegations DelegationMatcherFunc, aud
 // proofChain returns the delegations and links from the audience toward the
 // subject, i.e. in reverse of the invocation order. [ProofChain] reverses the
 // result before returning it to the caller.
-func proofChain(ctx context.Context, matchDelegations DelegationMatcherFunc, aud ucan.Principal, cmd ucan.Command, sub ucan.Principal) ([]ucan.Delegation, []ucan.Link, error) {
+func proofChain(ctx context.Context, matchDelegations DelegationMatcherFunc, aud did.DID, cmd ucan.Command, sub did.DID) ([]ucan.Delegation, []cid.Cid, error) {
 	var proofs []ucan.Delegation
-	var links []ucan.Link
+	var links []cid.Cid
 
 	for d, err := range matchDelegations(ctx, aud, cmd, sub) {
 		if err != nil {
 			return nil, nil, err
 		}
-		if d.Subject() != nil && d.Subject().DID() == d.Issuer().DID() {
+		if d.Subject() == d.Issuer() {
 			proofs = append(proofs, d)
 			links = append(links, d.Link())
 			break
