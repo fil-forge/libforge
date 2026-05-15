@@ -11,7 +11,7 @@ type AllocateArgumentsModel struct {
 }
 
 type AllocateOKModel struct {
-	Size    uint64            `cborgen:"size" dagjsongen:"size"`
+	Size    int64             `cborgen:"size" dagjsongen:"size"`
 	Address *BlobAddressModel `cborgen:"address,omitempty" dagjsongen:"address,omitempty"`
 }
 

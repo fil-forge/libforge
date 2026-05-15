@@ -181,7 +181,7 @@ func (t *BlobModel) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Size (uint64) (uint64)
+	// t.Size (int64) (int64)
 	if len("size") > 8192 {
 		return fmt.Errorf("string in field \"size\" was too long")
 	}
@@ -192,8 +192,8 @@ func (t *BlobModel) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 
-	if err := jw.WriteUint64(uint64(t.Size)); err != nil {
-		return fmt.Errorf("writing uint64 for field t.Size: %w", err)
+	if err := jw.WriteInt64(int64(t.Size)); err != nil {
+		return fmt.Errorf("writing int64 for field t.Size: %w", err)
 	}
 
 	written++
@@ -252,15 +252,15 @@ func (t *BlobModel) UnmarshalDagJSON(r io.Reader) (err error) {
 					}
 				}
 
-				// t.Size (uint64) (uint64)
+				// t.Size (int64) (int64)
 			case "size":
 				{
 
-					nval, err := jr.ReadNumberAsUint64()
+					nval, err := jr.ReadNumberAsInt64()
 					if err != nil {
-						return fmt.Errorf("reading uint64 for field t.Size: %w", err)
+						return fmt.Errorf("reading int64 for field t.Size: %w", err)
 					}
-					t.Size = uint64(nval)
+					t.Size = int64(nval)
 
 				}
 			default:
@@ -318,7 +318,7 @@ func (t *AllocateOKModel) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Size (uint64) (uint64)
+	// t.Size (int64) (int64)
 	if len("size") > 8192 {
 		return fmt.Errorf("string in field \"size\" was too long")
 	}
@@ -329,8 +329,8 @@ func (t *AllocateOKModel) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 
-	if err := jw.WriteUint64(uint64(t.Size)); err != nil {
-		return fmt.Errorf("writing uint64 for field t.Size: %w", err)
+	if err := jw.WriteInt64(int64(t.Size)); err != nil {
+		return fmt.Errorf("writing int64 for field t.Size: %w", err)
 	}
 
 	written++
@@ -393,15 +393,15 @@ func (t *AllocateOKModel) UnmarshalDagJSON(r io.Reader) (err error) {
 					}
 				}
 
-				// t.Size (uint64) (uint64)
+				// t.Size (int64) (int64)
 			case "size":
 				{
 
-					nval, err := jr.ReadNumberAsUint64()
+					nval, err := jr.ReadNumberAsInt64()
 					if err != nil {
-						return fmt.Errorf("reading uint64 for field t.Size: %w", err)
+						return fmt.Errorf("reading int64 for field t.Size: %w", err)
 					}
-					t.Size = uint64(nval)
+					t.Size = int64(nval)
 
 				}
 			default:
@@ -1202,7 +1202,7 @@ func (t *ReplicateArgumentsModel) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Replicas (uint64) (uint64)
+	// t.Replicas (int64) (int64)
 	if len("replicas") > 8192 {
 		return fmt.Errorf("string in field \"replicas\" was too long")
 	}
@@ -1213,8 +1213,8 @@ func (t *ReplicateArgumentsModel) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 
-	if err := jw.WriteUint64(uint64(t.Replicas)); err != nil {
-		return fmt.Errorf("writing uint64 for field t.Replicas: %w", err)
+	if err := jw.WriteInt64(int64(t.Replicas)); err != nil {
+		return fmt.Errorf("writing int64 for field t.Replicas: %w", err)
 	}
 
 	written++
@@ -1286,15 +1286,15 @@ func (t *ReplicateArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 					return fmt.Errorf("unmarshaling t.Blob: %w", err)
 				}
 
-				// t.Replicas (uint64) (uint64)
+				// t.Replicas (int64) (int64)
 			case "replicas":
 				{
 
-					nval, err := jr.ReadNumberAsUint64()
+					nval, err := jr.ReadNumberAsInt64()
 					if err != nil {
-						return fmt.Errorf("reading uint64 for field t.Replicas: %w", err)
+						return fmt.Errorf("reading int64 for field t.Replicas: %w", err)
 					}
-					t.Replicas = uint64(nval)
+					t.Replicas = int64(nval)
 
 				}
 

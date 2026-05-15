@@ -8,7 +8,7 @@ import (
 
 type BlobModel struct {
 	Digest multihash.Multihash `cborgen:"digest"`
-	Size   uint64              `cborgen:"size"`
+	Size   int64               `cborgen:"size"`
 }
 
 type AllocateArgumentsModel struct {

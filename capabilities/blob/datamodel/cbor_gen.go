@@ -153,7 +153,7 @@ func (t *BlobModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Size (uint64) (uint64)
+	// t.Size (int64) (int64)
 	if len("size") > 8192 {
 		return xerrors.Errorf("Value in field \"size\" was too long")
 	}
@@ -165,8 +165,14 @@ func (t *BlobModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Size)); err != nil {
-		return err
+	if t.Size >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Size)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Size-1)); err != nil {
+			return err
+		}
 	}
 
 	// t.Digest (multihash.Multihash) (slice)
@@ -237,20 +243,31 @@ func (t *BlobModel) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Size (uint64) (uint64)
+		// t.Size (int64) (int64)
 		case "size":
-
 			{
-
-				maj, extra, err = cr.ReadHeader()
+				maj, extra, err := cr.ReadHeader()
 				if err != nil {
 					return err
 				}
-				if maj != cbg.MajUnsignedInt {
-					return fmt.Errorf("wrong type for uint64 field")
+				var extraI int64
+				switch maj {
+				case cbg.MajUnsignedInt:
+					extraI = int64(extra)
+					if extraI < 0 {
+						return fmt.Errorf("int64 positive overflow")
+					}
+				case cbg.MajNegativeInt:
+					extraI = int64(extra)
+					if extraI < 0 {
+						return fmt.Errorf("int64 negative overflow")
+					}
+					extraI = -1 - extraI
+				default:
+					return fmt.Errorf("wrong type for int64 field: %d", maj)
 				}
-				t.Size = uint64(extra)
 
+				t.Size = int64(extraI)
 			}
 			// t.Digest (multihash.Multihash) (slice)
 		case "digest":
@@ -302,7 +319,7 @@ func (t *AllocateOKModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Size (uint64) (uint64)
+	// t.Size (int64) (int64)
 	if len("size") > 8192 {
 		return xerrors.Errorf("Value in field \"size\" was too long")
 	}
@@ -314,8 +331,14 @@ func (t *AllocateOKModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Size)); err != nil {
-		return err
+	if t.Size >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Size)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Size-1)); err != nil {
+			return err
+		}
 	}
 
 	// t.Address (datamodel.BlobAddressModel) (struct)
@@ -380,20 +403,31 @@ func (t *AllocateOKModel) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Size (uint64) (uint64)
+		// t.Size (int64) (int64)
 		case "size":
-
 			{
-
-				maj, extra, err = cr.ReadHeader()
+				maj, extra, err := cr.ReadHeader()
 				if err != nil {
 					return err
 				}
-				if maj != cbg.MajUnsignedInt {
-					return fmt.Errorf("wrong type for uint64 field")
+				var extraI int64
+				switch maj {
+				case cbg.MajUnsignedInt:
+					extraI = int64(extra)
+					if extraI < 0 {
+						return fmt.Errorf("int64 positive overflow")
+					}
+				case cbg.MajNegativeInt:
+					extraI = int64(extra)
+					if extraI < 0 {
+						return fmt.Errorf("int64 negative overflow")
+					}
+					extraI = -1 - extraI
+				default:
+					return fmt.Errorf("wrong type for int64 field: %d", maj)
 				}
-				t.Size = uint64(extra)
 
+				t.Size = int64(extraI)
 			}
 			// t.Address (datamodel.BlobAddressModel) (struct)
 		case "address":
@@ -1218,7 +1252,7 @@ func (t *ReplicateArgumentsModel) MarshalCBOR(w io.Writer) error {
 		return xerrors.Errorf("failed to write cid field t.Site: %w", err)
 	}
 
-	// t.Replicas (uint64) (uint64)
+	// t.Replicas (int64) (int64)
 	if len("replicas") > 8192 {
 		return xerrors.Errorf("Value in field \"replicas\" was too long")
 	}
@@ -1230,8 +1264,14 @@ func (t *ReplicateArgumentsModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Replicas)); err != nil {
-		return err
+	if t.Replicas >= 0 {
+		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Replicas)); err != nil {
+			return err
+		}
+	} else {
+		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Replicas-1)); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -1301,20 +1341,31 @@ func (t *ReplicateArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
 				t.Site = c
 
 			}
-			// t.Replicas (uint64) (uint64)
+			// t.Replicas (int64) (int64)
 		case "replicas":
-
 			{
-
-				maj, extra, err = cr.ReadHeader()
+				maj, extra, err := cr.ReadHeader()
 				if err != nil {
 					return err
 				}
-				if maj != cbg.MajUnsignedInt {
-					return fmt.Errorf("wrong type for uint64 field")
+				var extraI int64
+				switch maj {
+				case cbg.MajUnsignedInt:
+					extraI = int64(extra)
+					if extraI < 0 {
+						return fmt.Errorf("int64 positive overflow")
+					}
+				case cbg.MajNegativeInt:
+					extraI = int64(extra)
+					if extraI < 0 {
+						return fmt.Errorf("int64 negative overflow")
+					}
+					extraI = -1 - extraI
+				default:
+					return fmt.Errorf("wrong type for int64 field: %d", maj)
 				}
-				t.Replicas = uint64(extra)
 
+				t.Replicas = int64(extraI)
 			}
 
 		default:

@@ -9,8 +9,8 @@ type BlobModel struct {
 }
 
 type RangeModel struct {
-	Start uint64 `cborgen:"start" dagjsongen:"start"`
-	End   uint64 `cborgen:"end" dagjsongen:"end"`
+	Start int64 `cborgen:"start" dagjsongen:"start"`
+	End   int64 `cborgen:"end" dagjsongen:"end"`
 }
 
 type RetrieveArgumentsModel struct {

@@ -7,7 +7,7 @@ import (
 
 type BlobModel struct {
 	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
-	Size   uint64              `cborgen:"size" dagjsongen:"size"`
+	Size   int64               `cborgen:"size" dagjsongen:"size"`
 }
 
 type AddArgumentsModel struct {

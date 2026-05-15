@@ -28,20 +28,20 @@ func (t *RangeModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array open for field RangeModel: %w", err)
 	}
 
-	// t.Start (uint64) (uint64)
+	// t.Start (int64) (int64)
 
-	if err := jw.WriteUint64(uint64(t.Start)); err != nil {
-		return fmt.Errorf("writing uint64 for field t.Start: %w", err)
+	if err := jw.WriteInt64(int64(t.Start)); err != nil {
+		return fmt.Errorf("writing int64 for field t.Start: %w", err)
 	}
 
 	if err := jw.WriteComma(); err != nil {
 		return fmt.Errorf("writing comma for field End: %w", err)
 	}
 
-	// t.End (uint64) (uint64)
+	// t.End (int64) (int64)
 
-	if err := jw.WriteUint64(uint64(t.End)); err != nil {
-		return fmt.Errorf("writing uint64 for field t.End: %w", err)
+	if err := jw.WriteInt64(int64(t.End)); err != nil {
+		return fmt.Errorf("writing int64 for field t.End: %w", err)
 	}
 
 	if err := jw.WriteArrayClose(); err != nil {
@@ -72,15 +72,15 @@ func (t *RangeModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		}
 	} else {
 
-		// t.Start (uint64) (uint64)
+		// t.Start (int64) (int64)
 
 		{
 
-			nval, err := jr.ReadNumberAsUint64()
+			nval, err := jr.ReadNumberAsInt64()
 			if err != nil {
-				return fmt.Errorf("reading uint64 for field t.Start: %w", err)
+				return fmt.Errorf("reading int64 for field t.Start: %w", err)
 			}
-			t.Start = uint64(nval)
+			t.Start = int64(nval)
 
 		}
 		{
@@ -93,15 +93,15 @@ func (t *RangeModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 		}
 
-		// t.End (uint64) (uint64)
+		// t.End (int64) (int64)
 
 		{
 
-			nval, err := jr.ReadNumberAsUint64()
+			nval, err := jr.ReadNumberAsInt64()
 			if err != nil {
-				return fmt.Errorf("reading uint64 for field t.End: %w", err)
+				return fmt.Errorf("reading int64 for field t.End: %w", err)
 			}
-			t.End = uint64(nval)
+			t.End = int64(nval)
 
 		}
 		if err := jr.ReadArrayClose(); err != nil {
