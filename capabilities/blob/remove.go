@@ -1,16 +1,11 @@
+//go:build !codegen
+
 package blob
 
-import (
-	bdm "github.com/fil-forge/libforge/capabilities/blob/datamodel"
-	cdm "github.com/fil-forge/libforge/capabilities/datamodel"
-	"github.com/fil-forge/ucantone/validator/bindcap"
-)
+import "github.com/fil-forge/libforge/capabilities"
 
 const RemoveCommand = "/blob/remove"
 
-type (
-	RemoveArguments = bdm.RemoveArgumentsModel
-	RemoveOK        = cdm.UnitModel
-)
+type RemoveOK = capabilities.Unit
 
-var Remove, _ = bindcap.New[*RemoveArguments](RemoveCommand)
+var Remove = capabilities.MustNew[*RemoveArguments](RemoveCommand)

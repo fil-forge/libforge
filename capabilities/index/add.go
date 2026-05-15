@@ -1,20 +1,17 @@
+//go:build !codegen
+
 package index
 
 import (
-	cdm "github.com/fil-forge/libforge/capabilities/datamodel"
-	dm "github.com/fil-forge/libforge/capabilities/index/datamodel"
+	"github.com/fil-forge/libforge/capabilities"
 	"github.com/fil-forge/ucantone/errors"
-	"github.com/fil-forge/ucantone/validator/bindcap"
 )
 
 const AddCommand = "/index/add"
 
-type (
-	AddArguments = dm.AddArgumentsModel
-	AddOK        = cdm.UnitModel
-)
+type AddOK = capabilities.Unit
 
-var Add, _ = bindcap.New[*AddArguments](AddCommand)
+var Add = capabilities.MustNew[*AddArguments](AddCommand)
 
 const IndexNotFoundErrorName = "IndexNotFound"
 

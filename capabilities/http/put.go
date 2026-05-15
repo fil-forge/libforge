@@ -1,16 +1,11 @@
+//go:build !codegen
+
 package http
 
-import (
-	cdm "github.com/fil-forge/libforge/capabilities/datamodel"
-	hdm "github.com/fil-forge/libforge/capabilities/http/datamodel"
-	"github.com/fil-forge/ucantone/validator/bindcap"
-)
+import "github.com/fil-forge/libforge/capabilities"
 
 const PutCommand = "/http/put"
 
-type (
-	PutArguments = hdm.PutArgumentsModel
-	PutOK        = cdm.UnitModel
-)
+type PutOK = capabilities.Unit
 
-var Put, _ = bindcap.New[*PutArguments](PutCommand)
+var Put = capabilities.MustNew[*PutArguments](PutCommand)

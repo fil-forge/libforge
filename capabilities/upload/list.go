@@ -1,16 +1,9 @@
+//go:build !codegen
+
 package upload
 
-import (
-	dm "github.com/fil-forge/libforge/capabilities/upload/datamodel"
-	"github.com/fil-forge/ucantone/validator/bindcap"
-)
+import "github.com/fil-forge/libforge/capabilities"
 
 const ListCommand = "/upload/list"
 
-type (
-	ListArguments  = dm.ListArgumentsModel
-	ListOK         = dm.ListOKModel
-	ListUploadItem = dm.ListUploadItem
-)
-
-var List, _ = bindcap.New[*ListArguments](ListCommand)
+var List = capabilities.MustNew[*ListArguments](ListCommand)

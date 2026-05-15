@@ -1,17 +1,11 @@
+//go:build !codegen
+
 package assert
 
-import (
-	adm "github.com/fil-forge/libforge/capabilities/assert/datamodel"
-	cdm "github.com/fil-forge/libforge/capabilities/datamodel"
-	"github.com/fil-forge/ucantone/validator/bindcap"
-)
-
-type (
-	LocationArguments = adm.LocationArgumentsModel
-	LocationOK        = cdm.UnitModel
-	Range             = adm.RangeModel
-)
+import "github.com/fil-forge/libforge/capabilities"
 
 const LocationCommand = "/assert/location"
 
-var Location, _ = bindcap.New[*LocationArguments](LocationCommand)
+type LocationOK = capabilities.Unit
+
+var Location = capabilities.MustNew[*LocationArguments](LocationCommand)

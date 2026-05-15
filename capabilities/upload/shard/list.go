@@ -1,15 +1,9 @@
+//go:build !codegen
+
 package shard
 
-import (
-	dm "github.com/fil-forge/libforge/capabilities/upload/shard/datamodel"
-	"github.com/fil-forge/ucantone/validator/bindcap"
-)
+import "github.com/fil-forge/libforge/capabilities"
 
 const ListCommand = "/upload/shard/list"
 
-type (
-	ListArguments = dm.ListArgumentsModel
-	ListOK        = dm.ListOKModel
-)
-
-var List, _ = bindcap.New[*ListArguments](ListCommand)
+var List = capabilities.MustNew[*ListArguments](ListCommand)

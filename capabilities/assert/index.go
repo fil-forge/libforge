@@ -1,18 +1,13 @@
+//go:build !codegen
+
 package assert
 
-import (
-	adm "github.com/fil-forge/libforge/capabilities/assert/datamodel"
-	cdm "github.com/fil-forge/libforge/capabilities/datamodel"
-	"github.com/fil-forge/ucantone/validator/bindcap"
-)
-
-type (
-	IndexArguments = adm.IndexArgumentsModel
-	IndexOK        = cdm.UnitModel
-)
+import "github.com/fil-forge/libforge/capabilities"
 
 const IndexCommand = "/assert/index"
 
+type IndexOK = capabilities.Unit
+
 // Index claims that a content graph can be found in blob(s) that are identified
 // and indexed in the given index CID.
-var Index, _ = bindcap.New[*IndexArguments](IndexCommand)
+var Index = capabilities.MustNew[*IndexArguments](IndexCommand)

@@ -1,18 +1,13 @@
+//go:build !codegen
+
 package access
 
-import (
-	adm "github.com/fil-forge/libforge/capabilities/access/datamodel"
-	cdm "github.com/fil-forge/libforge/capabilities/datamodel"
-	"github.com/fil-forge/ucantone/validator/bindcap"
-)
-
-type (
-	ClaimArguments = cdm.UnitModel
-	ClaimOK        = adm.ClaimOKModel
-)
+import "github.com/fil-forge/libforge/capabilities"
 
 const ClaimCommand = "/access/claim"
 
+type ClaimArguments = capabilities.Unit
+
 // Claim can be invoked by an agent to claim a set of delegations from the
 // account.
-var Claim, _ = bindcap.New[*ClaimArguments](ClaimCommand)
+var Claim = capabilities.MustNew[*ClaimArguments](ClaimCommand)

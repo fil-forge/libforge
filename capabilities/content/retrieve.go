@@ -1,18 +1,11 @@
+//go:build !codegen
+
 package content
 
-import (
-	dm "github.com/fil-forge/libforge/capabilities/content/datamodel"
-	cdm "github.com/fil-forge/libforge/capabilities/datamodel"
-	"github.com/fil-forge/ucantone/validator/bindcap"
-)
+import "github.com/fil-forge/libforge/capabilities"
 
 const RetrieveCommand = "/content/retrieve"
 
-type (
-	RetrieveArguments = dm.RetrieveArgumentsModel
-	Blob              = dm.BlobModel
-	Range             = dm.RangeModel
-	RetrieveOK        = cdm.UnitModel
-)
+type RetrieveOK = capabilities.Unit
 
-var Retrieve, _ = bindcap.New[*RetrieveArguments](RetrieveCommand)
+var Retrieve = capabilities.MustNew[*RetrieveArguments](RetrieveCommand)

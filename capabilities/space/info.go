@@ -1,18 +1,13 @@
+//go:build !codegen
+
 package space
 
-import (
-	cdm "github.com/fil-forge/libforge/capabilities/datamodel"
-	dm "github.com/fil-forge/libforge/capabilities/space/datamodel"
-	"github.com/fil-forge/ucantone/validator/bindcap"
-)
+import "github.com/fil-forge/libforge/capabilities"
 
 const InfoCommand = "/space/info"
 
-type (
-	InfoArguments = cdm.UnitModel
-	InfoOK        = dm.InfoOKModel
-)
+type InfoArguments = capabilities.Unit
 
-var Info, _ = bindcap.New[*InfoArguments](InfoCommand)
+var Info = capabilities.MustNew[*InfoArguments](InfoCommand)
 
 const UnknownSpaceErrorName = "UnknownSpace"
