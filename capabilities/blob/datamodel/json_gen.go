@@ -1518,7 +1518,7 @@ func (t *ListArgumentsModel) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Size (int64) (int64)
+	// t.Size (uint64) (uint64)
 	if t.Size != nil {
 		if len("size") > 8192 {
 			return fmt.Errorf("string in field \"size\" was too long")
@@ -1535,8 +1535,8 @@ func (t *ListArgumentsModel) MarshalDagJSON(w io.Writer) error {
 				return fmt.Errorf("writing null for field t.Size: %w", err)
 			}
 		} else {
-			if err := jw.WriteInt64(int64(*t.Size)); err != nil {
-				return fmt.Errorf("writing int64 for field t.Size: %w", err)
+			if err := jw.WriteUint64(uint64(*t.Size)); err != nil {
+				return fmt.Errorf("writing uint64 for field t.Size: %w", err)
 			}
 		}
 
@@ -1596,16 +1596,16 @@ func (t *ListArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
 					}
 				}
 
-				// t.Size (int64) (int64)
+				// t.Size (uint64) (uint64)
 			case "size":
 				{
 
-					nval, err := jr.ReadNumberAsInt64OrNull()
+					nval, err := jr.ReadNumberAsUint64OrNull()
 					if err != nil {
-						return fmt.Errorf("reading int64 or null for field t.Size: %w", err)
+						return fmt.Errorf("reading uint64 or null for field t.Size: %w", err)
 					}
 					if nval != nil {
-						typed := int64(*nval)
+						typed := uint64(*nval)
 						t.Size = &typed
 					}
 
@@ -1712,7 +1712,7 @@ func (t *ListOKModel) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Size (int64) (int64)
+	// t.Size (uint64) (uint64)
 	if len("size") > 8192 {
 		return fmt.Errorf("string in field \"size\" was too long")
 	}
@@ -1723,8 +1723,8 @@ func (t *ListOKModel) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 
-	if err := jw.WriteInt64(int64(t.Size)); err != nil {
-		return fmt.Errorf("writing int64 for field t.Size: %w", err)
+	if err := jw.WriteUint64(uint64(t.Size)); err != nil {
+		return fmt.Errorf("writing uint64 for field t.Size: %w", err)
 	}
 
 	written++
@@ -1824,15 +1824,15 @@ func (t *ListOKModel) UnmarshalDagJSON(r io.Reader) (err error) {
 
 				}
 
-				// t.Size (int64) (int64)
+				// t.Size (uint64) (uint64)
 			case "size":
 				{
 
-					nval, err := jr.ReadNumberAsInt64()
+					nval, err := jr.ReadNumberAsUint64()
 					if err != nil {
-						return fmt.Errorf("reading int64 for field t.Size: %w", err)
+						return fmt.Errorf("reading uint64 for field t.Size: %w", err)
 					}
-					t.Size = int64(nval)
+					t.Size = uint64(nval)
 
 				}
 			default:

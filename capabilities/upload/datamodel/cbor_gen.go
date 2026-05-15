@@ -353,7 +353,7 @@ func (t *ListArgumentsModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Size (int64) (int64)
+	// t.Size (uint64) (uint64)
 	if t.Size != nil {
 
 		if len("size") > 8192 {
@@ -372,14 +372,8 @@ func (t *ListArgumentsModel) MarshalCBOR(w io.Writer) error {
 				return err
 			}
 		} else {
-			if *t.Size >= 0 {
-				if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(*t.Size)); err != nil {
-					return err
-				}
-			} else {
-				if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-*t.Size-1)); err != nil {
-					return err
-				}
+			if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(*t.Size)); err != nil {
+				return err
 			}
 		}
 
@@ -460,8 +454,9 @@ func (t *ListArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Size (int64) (int64)
+		// t.Size (uint64) (uint64)
 		case "size":
+
 			{
 
 				b, err := cr.ReadByte()
@@ -472,29 +467,17 @@ func (t *ListArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
 					if err := cr.UnreadByte(); err != nil {
 						return err
 					}
-					maj, extra, err := cr.ReadHeader()
+					maj, extra, err = cr.ReadHeader()
 					if err != nil {
 						return err
 					}
-					var extraI int64
-					switch maj {
-					case cbg.MajUnsignedInt:
-						extraI = int64(extra)
-						if extraI < 0 {
-							return fmt.Errorf("int64 positive overflow")
-						}
-					case cbg.MajNegativeInt:
-						extraI = int64(extra)
-						if extraI < 0 {
-							return fmt.Errorf("int64 negative overflow")
-						}
-						extraI = -1 - extraI
-					default:
-						return fmt.Errorf("wrong type for int64 field: %d", maj)
+					if maj != cbg.MajUnsignedInt {
+						return fmt.Errorf("wrong type for uint64 field")
 					}
-
-					t.Size = (*int64)(&extraI)
+					typed := uint64(extra)
+					t.Size = &typed
 				}
+
 			}
 			// t.Cursor (string) (string)
 		case "cursor":
@@ -545,7 +528,7 @@ func (t *ListOKModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Size (int64) (int64)
+	// t.Size (uint64) (uint64)
 	if len("size") > 8192 {
 		return xerrors.Errorf("Value in field \"size\" was too long")
 	}
@@ -557,14 +540,8 @@ func (t *ListOKModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if t.Size >= 0 {
-		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Size)); err != nil {
-			return err
-		}
-	} else {
-		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Size-1)); err != nil {
-			return err
-		}
+	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Size)); err != nil {
+		return err
 	}
 
 	// t.Cursor (string) (string)
@@ -668,31 +645,20 @@ func (t *ListOKModel) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Size (int64) (int64)
+		// t.Size (uint64) (uint64)
 		case "size":
+
 			{
-				maj, extra, err := cr.ReadHeader()
+
+				maj, extra, err = cr.ReadHeader()
 				if err != nil {
 					return err
 				}
-				var extraI int64
-				switch maj {
-				case cbg.MajUnsignedInt:
-					extraI = int64(extra)
-					if extraI < 0 {
-						return fmt.Errorf("int64 positive overflow")
-					}
-				case cbg.MajNegativeInt:
-					extraI = int64(extra)
-					if extraI < 0 {
-						return fmt.Errorf("int64 negative overflow")
-					}
-					extraI = -1 - extraI
-				default:
-					return fmt.Errorf("wrong type for int64 field: %d", maj)
+				if maj != cbg.MajUnsignedInt {
+					return fmt.Errorf("wrong type for uint64 field")
 				}
+				t.Size = uint64(extra)
 
-				t.Size = int64(extraI)
 			}
 			// t.Cursor (string) (string)
 		case "cursor":
