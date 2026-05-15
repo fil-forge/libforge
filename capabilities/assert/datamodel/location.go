@@ -14,6 +14,6 @@ type LocationArgumentsModel struct {
 }
 
 type RangeModel struct {
-	Offset uint64  `cborgen:"offset" dagjsongen:"offset"`
-	Length *uint64 `cborgen:"length,omitempty" dagjsongen:"length,omitempty"`
+	Start int64  `cborgen:"start" dagjsongen:"start"`
+	End   *int64 `cborgen:"end,omitempty" dagjsongen:"end,omitempty"`
 }
