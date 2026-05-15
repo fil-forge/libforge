@@ -160,7 +160,7 @@ func (t *BlobSliceModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Range (datamodeltype.RangeModel) (struct)
+	// t.Range (datamodel.RangeModel) (struct)
 	if err := t.Range.MarshalCBOR(cw); err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func (t *BlobSliceModel) UnmarshalCBOR(r io.Reader) (err error) {
 		return err
 	}
 
-	// t.Range (datamodeltype.RangeModel) (struct)
+	// t.Range (datamodel.RangeModel) (struct)
 
 	{
 
@@ -251,7 +251,7 @@ func (t *BlobIndexModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Slices ([]datamodeltype.BlobSliceModel) (slice)
+	// t.Slices ([]datamodel.BlobSliceModel) (slice)
 	if len(t.Slices) > 8192 {
 		return xerrors.Errorf("Slice value in field t.Slices was too long")
 	}
@@ -313,7 +313,7 @@ func (t *BlobIndexModel) UnmarshalCBOR(r io.Reader) (err error) {
 		return err
 	}
 
-	// t.Slices ([]datamodeltype.BlobSliceModel) (slice)
+	// t.Slices ([]datamodel.BlobSliceModel) (slice)
 
 	maj, extra, err = cr.ReadHeader()
 	if err != nil {

@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/fil-forge/ucantone/did"
@@ -62,9 +61,7 @@ type VerificationMethod struct {
 }
 
 type HTTPResolver struct {
-	// mapping of did:web to url of service, where we fetch .well-known/did.json to obtain their did:key key
-	webKeys map[did.DID]url.URL
-	cfg     config
+	cfg config
 }
 
 type config struct {
@@ -92,10 +89,10 @@ func InsecureResolution() Option {
 	}
 }
 
-// WithPatterns allows resolving of did:web's that match the provided glob
+// WithPatterns restricts resolving of did:web's that match the provided glob
 // pattern(s).
 //
-// Note: the pattern does not need to include the "did:web:" prefix.
+// Note: the pattern should not include the "did:web:" prefix.
 func WithPatterns(patterns ...string) Option {
 	return func(c *config) error {
 		for _, p := range patterns {
@@ -112,17 +109,15 @@ func WithPatterns(patterns ...string) Option {
 	}
 }
 
-const didWebPrefix = "did:web:"
-
 // ExtractDomainFromDID extracts the domain from a DID web string
 func ExtractDomainFromDID(didWeb did.DID) (string, error) {
 	// Check if it starts with the required prefix
-	if !strings.HasPrefix(didWeb.String(), didWebPrefix) {
-		return "", fmt.Errorf("invalid DID web format: must start with '%s'", didWebPrefix)
+	if didWeb.Method() != "web" {
+		return "", fmt.Errorf("invalid DID web format: must start with 'did:web:'")
 	}
 
 	// Extract the domain part
-	domain := strings.TrimPrefix(didWeb.String(), didWebPrefix)
+	domain := didWeb.Identifier()
 
 	// Check if domain is empty
 	if domain == "" {
@@ -175,52 +170,38 @@ func WellKnownEndpointFromDID(didWeb did.DID, insecure bool) (url.URL, error) {
 
 const WellKnownDIDPath = "/.well-known/did.json"
 
-func NewHTTPResolver(webKeys []did.DID, opts ...Option) (*HTTPResolver, error) {
+func NewHTTPResolver(options ...Option) (*HTTPResolver, error) {
 	cfg := &config{
 		timeout:  10 * time.Second,
 		insecure: false,
 	}
-	for _, opt := range opts {
+	for _, opt := range options {
 		if err := opt(cfg); err != nil {
 			return nil, err
 		}
 	}
-
-	// Convert string map to DID/URL map
-	didMap := make(map[did.DID]url.URL)
-	for _, w := range webKeys {
-		if _, ok := didMap[w]; ok {
-			return nil, fmt.Errorf("duplicate did's provided")
-		}
-		endpoint, err := WellKnownEndpointFromDID(w, cfg.insecure)
-		if err != nil {
-			return nil, err
-		}
-		didMap[w] = endpoint
-	}
 	// default timeout of 10 seconds, options can override
-	resolver := &HTTPResolver{webKeys: didMap, cfg: *cfg}
-	return resolver, nil
+	return &HTTPResolver{cfg: *cfg}, nil
 }
 
 func (r *HTTPResolver) Resolve(ctx context.Context, input did.DID) (ucan.Verifier, error) {
-	endpoint, ok := r.webKeys[input]
-	if !ok { // if not in allowed web keys, try globs
+	if r.cfg.globs != nil {
+		match := false
 		for _, g := range r.cfg.globs {
-			ok = g.Match(strings.TrimPrefix(input.String(), didWebPrefix))
-			if ok {
-				u, err := WellKnownEndpointFromDID(input, r.cfg.insecure)
-				if err != nil {
-					return nil, verrs.NewDIDKeyResolutionError(input, fmt.Errorf("invalid DID: %w", err))
-				}
-				endpoint = u
+			if match = g.Match(input.Identifier()); match {
 				break
 			}
 		}
+		if !match {
+			return nil, verrs.NewDIDKeyResolutionError(input, fmt.Errorf("resolution via HTTP not permitted"))
+		}
 	}
-	if !ok {
-		return nil, verrs.NewDIDKeyResolutionError(input, fmt.Errorf("resolution via HTTP not permitted"))
+
+	endpoint, err := WellKnownEndpointFromDID(input, r.cfg.insecure)
+	if err != nil {
+		return nil, verrs.NewDIDKeyResolutionError(input, fmt.Errorf("invalid DID: %w", err))
 	}
+
 	ctx, cancel := context.WithTimeout(ctx, r.cfg.timeout)
 	defer cancel()
 	didDoc, err := fetchDIDDocument(ctx, endpoint)

@@ -17,42 +17,21 @@ import (
 
 func TestNewHTTPResolver(t *testing.T) {
 	t.Run("creates resolver with default timeout", func(t *testing.T) {
-		mapping := make([]did.DID, 0)
-		resolver, err := didresolver.NewHTTPResolver(mapping)
+		resolver, err := didresolver.NewHTTPResolver()
 		require.NoError(t, err)
 		require.NotNil(t, resolver)
 	})
 
 	t.Run("creates resolver with custom timeout", func(t *testing.T) {
-		mapping := make([]did.DID, 0)
-		resolver, err := didresolver.NewHTTPResolver(mapping, didresolver.WithTimeout(5*time.Second), didresolver.InsecureResolution())
+		resolver, err := didresolver.NewHTTPResolver(didresolver.WithTimeout(5*time.Second), didresolver.InsecureResolution())
 		require.NoError(t, err)
 		require.NotNil(t, resolver)
 	})
 
 	t.Run("fails with zero timeout", func(t *testing.T) {
-		mapping := make([]did.DID, 0)
-		resolver, err := didresolver.NewHTTPResolver(mapping, didresolver.WithTimeout(0))
+		resolver, err := didresolver.NewHTTPResolver(didresolver.WithTimeout(0))
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "timeout cannot be zero")
-		require.Nil(t, resolver)
-	})
-
-	t.Run("fails with duplicate DIDs", func(t *testing.T) {
-		didWeb, _ := did.Parse("did:web:example.com")
-		mapping := []did.DID{didWeb, didWeb}
-		resolver, err := didresolver.NewHTTPResolver(mapping)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "duplicate did's provided")
-		require.Nil(t, resolver)
-	})
-
-	t.Run("fails with invalid DID format", func(t *testing.T) {
-		didWeb, _ := did.Parse("did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK")
-		mapping := []did.DID{didWeb}
-		resolver, err := didresolver.NewHTTPResolver(mapping)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "invalid DID web format")
 		require.Nil(t, resolver)
 	})
 }
@@ -61,7 +40,6 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 	testCases := []struct {
 		name           string
 		setupServer    func() *httptest.Server
-		setupMapping   func(serverURL string) []did.DID
 		setupGlobbing  func(serverURL string) []string
 		inputDID       string
 		expectedDIDKey string
@@ -92,12 +70,6 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 					json.NewEncoder(w).Encode(doc)
 				}))
 			},
-			setupMapping: func(serverURL string) []did.DID {
-				// Extract domain from server URL to create matching did:web
-				u, _ := url.Parse(serverURL)
-				didWeb, _ := did.Parse("did:web:" + u.Host)
-				return []did.DID{didWeb}
-			},
 			inputDID:       "", // Will be set based on server URL
 			expectedDIDKey: "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
 			expectError:    false,
@@ -126,9 +98,6 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 					json.NewEncoder(w).Encode(doc)
 				}))
 			},
-			setupMapping: func(serverURL string) []did.DID {
-				return []did.DID{}
-			},
 			setupGlobbing: func(serverURL string) []string {
 				return []string{"*"}
 			},
@@ -137,10 +106,10 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name:        "DID resolution not permitted",
+			name:        "DID resolution not permitted by pattern",
 			setupServer: func() *httptest.Server { return nil },
-			setupMapping: func(serverURL string) []did.DID {
-				return []did.DID{}
+			setupGlobbing: func(serverURL string) []string {
+				return []string{"*.storacha.network"}
 			},
 			inputDID:      "did:web:notfound.com",
 			expectError:   true,
@@ -149,9 +118,6 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 		{
 			name:        "invalid domain when matching against glob",
 			setupServer: func() *httptest.Server { return nil },
-			setupMapping: func(serverURL string) []did.DID {
-				return []did.DID{}
-			},
 			setupGlobbing: func(serverURL string) []string {
 				return []string{"*.storacha.network"}
 			},
@@ -166,11 +132,6 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusNotFound)
 				}))
-			},
-			setupMapping: func(serverURL string) []did.DID {
-				u, _ := url.Parse(serverURL)
-				didWeb, _ := did.Parse("did:web:" + u.Host)
-				return []did.DID{didWeb}
 			},
 			inputDID:      "", // Will be set based on server URL
 			expectError:   true,
@@ -187,11 +148,6 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 					w.Header().Set("Content-Type", "application/json")
 					w.Write([]byte("invalid json"))
 				}))
-			},
-			setupMapping: func(serverURL string) []did.DID {
-				u, _ := url.Parse(serverURL)
-				didWeb, _ := did.Parse("did:web:" + u.Host)
-				return []did.DID{didWeb}
 			},
 			inputDID:      "", // Will be set based on server URL
 			expectError:   true,
@@ -213,11 +169,6 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 					w.Header().Set("Content-Type", "application/json")
 					json.NewEncoder(w).Encode(doc)
 				}))
-			},
-			setupMapping: func(serverURL string) []did.DID {
-				u, _ := url.Parse(serverURL)
-				didWeb, _ := did.Parse("did:web:" + u.Host)
-				return []did.DID{didWeb}
 			},
 			inputDID:      "", // Will be set based on server URL
 			expectError:   true,
@@ -247,11 +198,6 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 					json.NewEncoder(w).Encode(doc)
 				}))
 			},
-			setupMapping: func(serverURL string) []did.DID {
-				u, _ := url.Parse(serverURL)
-				didWeb, _ := did.Parse("did:web:" + u.Host)
-				return []did.DID{didWeb}
-			},
 			inputDID:      "", // Will be set based on server URL
 			expectError:   true,
 			errorContains: "missing publicKeyMultibase",
@@ -280,11 +226,6 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 					json.NewEncoder(w).Encode(doc)
 				}))
 			},
-			setupMapping: func(serverURL string) []did.DID {
-				u, _ := url.Parse(serverURL)
-				didWeb, _ := did.Parse("did:web:" + u.Host)
-				return []did.DID{didWeb}
-			},
 			inputDID:      "", // Will be set based on server URL
 			expectError:   true,
 			errorContains: "parsing multibase key",
@@ -305,14 +246,12 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 			if server != nil {
 				serverURL = server.URL
 			}
-			mapping := tc.setupMapping(serverURL)
 			var patterns []string
 			if tc.setupGlobbing != nil {
 				patterns = tc.setupGlobbing(serverURL)
 			}
 
 			resolver, err := didresolver.NewHTTPResolver(
-				mapping,
 				didresolver.InsecureResolution(),
 				didresolver.WithPatterns(patterns...),
 			)
@@ -361,9 +300,7 @@ func TestHTTPResolver_ResolveDIDKey_Timeout(t *testing.T) {
 	didWeb, err := did.Parse("did:web:" + u.Host)
 	require.NoError(t, err)
 
-	mapping := []did.DID{didWeb}
-
-	resolver, err := didresolver.NewHTTPResolver(mapping, didresolver.WithTimeout(50*time.Millisecond), didresolver.InsecureResolution())
+	resolver, err := didresolver.NewHTTPResolver(didresolver.WithTimeout(50*time.Millisecond), didresolver.InsecureResolution())
 	require.NoError(t, err)
 
 	result, unresolvedErr := resolver.Resolve(t.Context(), didWeb)
@@ -408,9 +345,7 @@ func TestHTTPResolver_ResolveDIDKey_Context(t *testing.T) {
 	didWeb, err := did.Parse("did:web:" + u.Host)
 	require.NoError(t, err)
 
-	mapping := []did.DID{didWeb}
-
-	resolver, err := didresolver.NewHTTPResolver(mapping, didresolver.InsecureResolution())
+	resolver, err := didresolver.NewHTTPResolver(didresolver.InsecureResolution())
 	require.NoError(t, err)
 
 	result, unresolvedErr := resolver.Resolve(t.Context(), didWeb)
@@ -564,7 +499,7 @@ func TestHTTPResolver_ResolveDIDKey_ContextFormats(t *testing.T) {
 			didWeb, err := did.Parse("did:web:" + u.Host)
 			require.NoError(t, err)
 
-			resolver, err := didresolver.NewHTTPResolver([]did.DID{didWeb}, didresolver.InsecureResolution())
+			resolver, err := didresolver.NewHTTPResolver(didresolver.InsecureResolution())
 			require.NoError(t, err)
 
 			result, unresolvedErr := resolver.Resolve(t.Context(), didWeb)

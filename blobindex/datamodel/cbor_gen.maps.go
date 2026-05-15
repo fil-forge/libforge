@@ -35,7 +35,7 @@ func (t *ShardedDagIndexModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.DagO_1 (datamodeltype.ShardedDagIndexModel_0_1) (struct)
+	// t.DagO_1 (datamodel.ShardedDagIndexModel_0_1) (struct)
 	if t.DagO_1 != nil {
 
 		if len("index/sharded/dag@0.1") > 8192 {
@@ -97,7 +97,7 @@ func (t *ShardedDagIndexModel) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.DagO_1 (datamodeltype.ShardedDagIndexModel_0_1) (struct)
+		// t.DagO_1 (datamodel.ShardedDagIndexModel_0_1) (struct)
 		case "index/sharded/dag@0.1":
 
 			{

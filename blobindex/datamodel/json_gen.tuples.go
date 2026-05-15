@@ -134,7 +134,7 @@ func (t *BlobSliceModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing comma for field Range: %w", err)
 	}
 
-	// t.Range (datamodeltype.RangeModel) (struct)
+	// t.Range (datamodel.RangeModel) (struct)
 	if err := t.Range.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Range: %w", err)
 	}
@@ -191,7 +191,7 @@ func (t *BlobSliceModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 		}
 
-		// t.Range (datamodeltype.RangeModel) (struct)
+		// t.Range (datamodel.RangeModel) (struct)
 
 		if err := t.Range.UnmarshalDagJSON(jr); err != nil {
 			return fmt.Errorf("unmarshaling t.Range: %w", err)
@@ -227,7 +227,7 @@ func (t *BlobIndexModel) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing comma for field Slices: %w", err)
 	}
 
-	// t.Slices ([]datamodeltype.BlobSliceModel) (slice)
+	// t.Slices ([]datamodel.BlobSliceModel) (slice)
 	if len(t.Slices) > 8192 {
 		return fmt.Errorf("slice value in field t.Slices was too long")
 	}
@@ -302,7 +302,7 @@ func (t *BlobIndexModel) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 		}
 
-		// t.Slices ([]datamodeltype.BlobSliceModel) (slice)
+		// t.Slices ([]datamodel.BlobSliceModel) (slice)
 
 		{
 
