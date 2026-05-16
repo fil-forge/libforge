@@ -30,6 +30,7 @@ func main() {
 		access.ClaimOK{},
 		access.ConfirmArguments{},
 		access.DelegateArguments{},
+		access.GrantArguments{},
 	}
 	const (
 		cborFile = "../cbor_gen.go"
