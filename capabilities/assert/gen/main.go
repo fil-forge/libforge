@@ -25,6 +25,7 @@ func tag(path string) {
 func main() {
 	models := []any{
 		assert.IndexArguments{},
+		assert.IndexMetadata{},
 		assert.LocationArguments{},
 		assert.Range{},
 		assert.EqualsArguments{},

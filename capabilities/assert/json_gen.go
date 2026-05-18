@@ -118,6 +118,155 @@ func (t *IndexArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *IndexMetadata) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+
+	// t.RetrievalAuth ([]cid.Cid) (slice)
+	if len("retrievalAuth") > 8192 {
+		return fmt.Errorf("string in field \"retrievalAuth\" was too long")
+	}
+	if err := jw.WriteString(string("retrievalAuth")); err != nil {
+		return fmt.Errorf("writing string for field \"retrievalAuth\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.RetrievalAuth) > 8192 {
+		return fmt.Errorf("slice value in field t.RetrievalAuth was too long")
+	}
+
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("writing array open for field t.RetrievalAuth: %w", err)
+	}
+	for i, v := range t.RetrievalAuth {
+		if i > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return fmt.Errorf("writing comma for field t.RetrievalAuth: %w", err)
+			}
+		}
+
+		if err := jw.WriteCid(v); err != nil {
+			return fmt.Errorf("writing CID for field v: %w", err)
+		}
+
+	}
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("writing array close for field t.RetrievalAuth: %w", err)
+	}
+
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *IndexMetadata) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = IndexMetadata{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("reading object open for IndexMetadata: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("peeking object close for IndexMetadata: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("reading object close for IndexMetadata: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("reading string for field IndexMetadata: string too large")
+				}
+				return fmt.Errorf("reading string for field IndexMetadata: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("reading object colon for field IndexMetadata: %w", err)
+			}
+			switch name {
+
+			// t.RetrievalAuth ([]cid.Cid) (slice)
+			case "retrievalAuth":
+				{
+
+					if err := jr.ReadArrayOpen(); err != nil {
+						return fmt.Errorf("reading array open for field t.RetrievalAuth: %w", err)
+					}
+
+					close, err := jr.PeekArrayClose()
+					if err != nil {
+						return fmt.Errorf("peeking array close for field t.RetrievalAuth: %w", err)
+					}
+					if close {
+						if err := jr.ReadArrayClose(); err != nil {
+							return fmt.Errorf("reading array close for field t.RetrievalAuth: %w", err)
+						}
+
+					} else {
+						for i := 0; i < 8192; i++ {
+							item := make([]cid.Cid, 1)
+							{
+
+								c, err := jr.ReadCid()
+								if err != nil {
+									return fmt.Errorf("reading CID for field item[0]: %w", err)
+								}
+								item[0] = c
+
+							}
+							t.RetrievalAuth = append(t.RetrievalAuth, item[0])
+
+							close, err := jr.ReadArrayCloseOrComma()
+							if err != nil {
+								return fmt.Errorf("reading array close or comma for field t.RetrievalAuth: %w", err)
+							}
+							if close {
+								break
+							}
+							if i == 8192-1 {
+								return fmt.Errorf("reading array for field t.RetrievalAuth: slice too large")
+							}
+						}
+					}
+
+				}
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("ignoring field %s for IndexMetadata: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading object close or comma for field IndexMetadata: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("map too large for IndexMetadata")
+			}
+		}
+	}
+
+	return nil
+}
 func (t *LocationArguments) MarshalDagJSON(w io.Writer) error {
 	jw := jsg.NewDagJsonWriter(w)
 	if t == nil {
