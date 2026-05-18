@@ -2,6 +2,7 @@ package ucanlib
 
 import (
 	"context"
+	"fmt"
 	"iter"
 	"slices"
 
@@ -75,6 +76,9 @@ func NewDelegationMatcher(listDelegations DelegationListerFunc) DelegationMatche
 // in strict sequence where the aud of the previous Delegation matches the iss
 // of the next Delegation.
 func ProofChain(ctx context.Context, matchDelegations DelegationMatcherFunc, aud did.DID, cmd ucan.Command, sub did.DID) ([]ucan.Delegation, []cid.Cid, error) {
+	if !sub.Defined() {
+		return nil, nil, fmt.Errorf("missing proof chain subject")
+	}
 	proofs, links, err := proofChain(ctx, matchDelegations, aud, cmd, sub)
 	if err != nil {
 		return nil, nil, err
