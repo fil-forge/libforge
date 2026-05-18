@@ -6,7 +6,7 @@ import (
 	"os"
 
 	jsg "github.com/alanshaw/dag-json-gen"
-	"github.com/fil-forge/libforge/capabilities/access"
+	"github.com/fil-forge/libforge/capabilities/pdp"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
@@ -24,22 +24,20 @@ func tag(path string) {
 
 func main() {
 	models := []any{
-		access.RequestArguments{},
-		access.CapabilityRequest{},
-		access.RequestOK{},
-		access.ClaimOK{},
-		access.ConfirmArguments{},
-		access.DelegateArguments{},
-		access.GrantArguments{},
+		pdp.AcceptArguments{},
+		pdp.AcceptOK{},
+		pdp.InfoArguments{},
+		pdp.InfoAcceptedAggregate{},
+		pdp.InfoOK{},
 	}
 	const (
 		cborFile = "../cbor_gen.go"
 		jsonFile = "../json_gen.go"
 	)
-	if err := cbg.WriteMapEncodersToFile(cborFile, "access", models...); err != nil {
+	if err := cbg.WriteMapEncodersToFile(cborFile, "pdp", models...); err != nil {
 		panic(err)
 	}
-	if err := jsg.WriteMapEncodersToFile(jsonFile, "access", models...); err != nil {
+	if err := jsg.WriteMapEncodersToFile(jsonFile, "pdp", models...); err != nil {
 		panic(err)
 	}
 	tag(cborFile)

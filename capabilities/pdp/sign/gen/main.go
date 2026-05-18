@@ -1,0 +1,55 @@
+//go:generate go run -tags codegen .
+
+package main
+
+import (
+	"os"
+
+	jsg "github.com/alanshaw/dag-json-gen"
+	sign "github.com/fil-forge/libforge/capabilities/pdp/sign"
+	cbg "github.com/whyrusleeping/cbor-gen"
+)
+
+// The parent sign package has bindcap.New calls that require codec methods
+// to exist on the argument types. Those codecs are what this tool
+// generates. To break the bootstrap, bindings and generated codec files
+// carry `//go:build !codegen`; this tool is built with `-tags codegen`, so
+// the import of `sign` here only pulls in the wire types from types.go.
+//
+// After cbor-gen / dag-json-gen write the codec files, we re-tag them with
+// the same constraint so subsequent codegen runs are stale-safe.
+const buildTag = "//go:build !codegen\n\n"
+
+func tag(path string) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(path, append([]byte(buildTag), data...), 0644); err != nil {
+		panic(err)
+	}
+}
+
+func main() {
+	models := []any{
+		sign.AuthSignature{},
+		sign.Metadata{},
+		sign.PieceProofs{},
+		sign.DataSetCreateArguments{},
+		sign.DataSetDeleteArguments{},
+		sign.PiecesAddArguments{},
+		sign.PiecesRemoveScheduleArguments{},
+	}
+	const (
+		cborFile = "../cbor_gen.go"
+		jsonFile = "../json_gen.go"
+	)
+	if err := cbg.WriteMapEncodersToFile(cborFile, "sign", models...); err != nil {
+		panic(err)
+	}
+	if err := jsg.WriteMapEncodersToFile(jsonFile, "sign", models...); err != nil {
+		panic(err)
+	}
+	tag(cborFile)
+	tag(jsonFile)
+}

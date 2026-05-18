@@ -930,3 +930,188 @@ func (t *DelegateArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *GrantArguments) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+	fieldCount := 2
+
+	if t.Cause == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
+		return err
+	}
+
+	// t.Attenuations ([]access.CapabilityRequest) (slice)
+	if len("att") > 8192 {
+		return xerrors.Errorf("Value in field \"att\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("att"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("att")); err != nil {
+		return err
+	}
+
+	if len(t.Attenuations) > 8192 {
+		return xerrors.Errorf("Slice value in field t.Attenuations was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Attenuations))); err != nil {
+		return err
+	}
+	for _, v := range t.Attenuations {
+		if err := v.MarshalCBOR(cw); err != nil {
+			return err
+		}
+
+	}
+
+	// t.Cause (cid.Cid) (struct)
+	if t.Cause != nil {
+
+		if len("cause") > 8192 {
+			return xerrors.Errorf("Value in field \"cause\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("cause"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("cause")); err != nil {
+			return err
+		}
+
+		if t.Cause == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if err := cbg.WriteCid(cw, *t.Cause); err != nil {
+				return xerrors.Errorf("failed to write cid field t.Cause: %w", err)
+			}
+		}
+
+	}
+	return nil
+}
+
+func (t *GrantArguments) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = GrantArguments{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("GrantArguments: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 5)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Attenuations ([]access.CapabilityRequest) (slice)
+		case "att":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 8192 {
+				return fmt.Errorf("t.Attenuations: array too large (%d)", extra)
+			}
+
+			if maj != cbg.MajArray {
+				return fmt.Errorf("expected cbor array")
+			}
+
+			if extra > 0 {
+				t.Attenuations = make([]CapabilityRequest, extra)
+			}
+
+			for i := 0; i < int(extra); i++ {
+				{
+					var maj byte
+					var extra uint64
+					var err error
+					_ = maj
+					_ = extra
+					_ = err
+
+					{
+
+						if err := t.Attenuations[i].UnmarshalCBOR(cr); err != nil {
+							return xerrors.Errorf("unmarshaling t.Attenuations[i]: %w", err)
+						}
+
+					}
+
+				}
+			}
+			// t.Cause (cid.Cid) (struct)
+		case "cause":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Cause: %w", err)
+					}
+
+					t.Cause = &c
+				}
+
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}

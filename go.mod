@@ -6,6 +6,7 @@ require (
 	github.com/alanshaw/dag-json-gen v0.0.5
 	github.com/fil-forge/automobile v0.0.1
 	github.com/fil-forge/ucantone v0.0.0-20260514184915-8bebe15b0096
+	github.com/filecoin-project/go-data-segment v0.0.1
 	github.com/gobwas/glob v0.2.3
 	github.com/ipfs/go-cid v0.6.1
 	github.com/ipfs/go-log/v2 v2.9.1
@@ -31,6 +32,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/exp v0.0.0-20230418202329-0354be287a23 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect

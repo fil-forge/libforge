@@ -985,3 +985,192 @@ func (t *DelegateArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *GrantArguments) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+	written := 0
+
+	// t.Attenuations ([]access.CapabilityRequest) (slice)
+	if len("att") > 8192 {
+		return fmt.Errorf("string in field \"att\" was too long")
+	}
+	if err := jw.WriteString(string("att")); err != nil {
+		return fmt.Errorf("writing string for field \"att\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Attenuations) > 8192 {
+		return fmt.Errorf("slice value in field t.Attenuations was too long")
+	}
+
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("writing array open for field t.Attenuations: %w", err)
+	}
+	for i, v := range t.Attenuations {
+		if i > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return fmt.Errorf("writing comma for field t.Attenuations: %w", err)
+			}
+		}
+		if err := v.MarshalDagJSON(jw); err != nil {
+			return fmt.Errorf("marshaling field v: %w", err)
+		}
+	}
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("writing array close for field t.Attenuations: %w", err)
+	}
+
+	written++
+	if t.Cause != nil {
+		if written > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// t.Cause (cid.Cid) (struct)
+	if t.Cause != nil {
+		if len("cause") > 8192 {
+			return fmt.Errorf("string in field \"cause\" was too long")
+		}
+		if err := jw.WriteString(string("cause")); err != nil {
+			return fmt.Errorf("writing string for field \"cause\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+
+		if t.Cause == nil {
+			if err := jw.WriteNull(); err != nil {
+				return fmt.Errorf("writing null for field t.Cause: %w", err)
+			}
+		} else {
+			if err := jw.WriteCid(*t.Cause); err != nil {
+				return fmt.Errorf("writing CID for field t.Cause: %w", err)
+			}
+		}
+
+		written++
+	}
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *GrantArguments) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = GrantArguments{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("reading object open for GrantArguments: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("peeking object close for GrantArguments: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("reading object close for GrantArguments: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("reading string for field GrantArguments: string too large")
+				}
+				return fmt.Errorf("reading string for field GrantArguments: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("reading object colon for field GrantArguments: %w", err)
+			}
+			switch name {
+
+			// t.Attenuations ([]access.CapabilityRequest) (slice)
+			case "att":
+				{
+
+					if err := jr.ReadArrayOpen(); err != nil {
+						return fmt.Errorf("reading array open for field t.Attenuations: %w", err)
+					}
+
+					close, err := jr.PeekArrayClose()
+					if err != nil {
+						return fmt.Errorf("peeking array close for field t.Attenuations: %w", err)
+					}
+					if close {
+						if err := jr.ReadArrayClose(); err != nil {
+							return fmt.Errorf("reading array close for field t.Attenuations: %w", err)
+						}
+
+					} else {
+						for i := 0; i < 8192; i++ {
+							item := make([]CapabilityRequest, 1)
+
+							if err := item[0].UnmarshalDagJSON(jr); err != nil {
+								return fmt.Errorf("unmarshaling item[0]: %w", err)
+							}
+
+							t.Attenuations = append(t.Attenuations, item[0])
+
+							close, err := jr.ReadArrayCloseOrComma()
+							if err != nil {
+								return fmt.Errorf("reading array close or comma for field t.Attenuations: %w", err)
+							}
+							if close {
+								break
+							}
+							if i == 8192-1 {
+								return fmt.Errorf("reading array for field t.Attenuations: slice too large")
+							}
+						}
+					}
+
+				}
+
+				// t.Cause (cid.Cid) (struct)
+			case "cause":
+				{
+
+					c, err := jr.ReadCidOrNull()
+					if err != nil {
+						return fmt.Errorf("reading CID or null for field t.Cause: %w", err)
+					}
+					t.Cause = c
+
+				}
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("ignoring field %s for GrantArguments: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading object close or comma for field GrantArguments: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("map too large for GrantArguments")
+			}
+		}
+	}
+
+	return nil
+}

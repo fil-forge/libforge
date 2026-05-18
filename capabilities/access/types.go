@@ -43,3 +43,12 @@ type DelegateArguments struct {
 	// The delegations to store.
 	Delegations []cid.Cid `cborgen:"delegations" dagjsongen:"delegations"`
 }
+
+type GrantArguments struct {
+	// Attenuations are the capabilities the agent wishes to be granted.
+	Attenuations []CapabilityRequest `cborgen:"att" dagjsongen:"att"`
+	// Cause optionally links to a UCAN invocation that contextualizes the
+	// grant request. Leave nil when no cause is needed; otherwise the
+	// linked invocation MUST be present in the request container.
+	Cause *cid.Cid `cborgen:"cause,omitempty" dagjsongen:"cause,omitempty"`
+}
