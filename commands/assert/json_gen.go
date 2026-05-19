@@ -12,7 +12,7 @@ import (
 	"sort"
 
 	jsg "github.com/alanshaw/dag-json-gen"
-	"github.com/fil-forge/libforge/commands"
+	commands "github.com/fil-forge/libforge/commands"
 	cid "github.com/ipfs/go-cid"
 )
 
