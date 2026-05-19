@@ -1,4 +1,4 @@
-.PHONY: gen clean-gen
+.PHONY: gen
 
 gen:
 	go generate ./...
