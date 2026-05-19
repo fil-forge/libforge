@@ -5,7 +5,7 @@ go 1.25.3
 require (
 	github.com/alanshaw/dag-json-gen v0.0.5
 	github.com/fil-forge/automobile v0.0.1
-	github.com/fil-forge/ucantone v0.0.0-20260514184915-8bebe15b0096
+	github.com/fil-forge/ucantone v0.0.0-20260519193222-ad31490eaa10
 	github.com/gobwas/glob v0.2.3
 	github.com/ipfs/go-cid v0.6.1
 	github.com/ipfs/go-log/v2 v2.9.1
@@ -28,6 +28,8 @@ require (
 	github.com/multiformats/go-varint v0.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
+	gitlab.com/yawning/secp256k1-voi v0.0.0-20230925100816-f2616030848b // indirect
+	gitlab.com/yawning/tuplehash v0.0.0-20230713102510-df83abbf9a02 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
 	golang.org/x/crypto v0.50.0 // indirect

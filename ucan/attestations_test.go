@@ -6,7 +6,7 @@ import (
 	"iter"
 	"testing"
 
-	"github.com/fil-forge/libforge/capabilities/ucan/attest"
+	"github.com/fil-forge/libforge/commands/ucan/attest"
 	"github.com/fil-forge/libforge/didmailto"
 	"github.com/fil-forge/libforge/testutil"
 	ucanlib "github.com/fil-forge/libforge/ucan"
@@ -105,7 +105,7 @@ func TestProofAttestations(t *testing.T) {
 		// Lister should be called with the proof's audience, the /ucan/attest/proof
 		// command, and the authority as subject.
 		require.Equal(t, agent.DID(), calls[0].aud)
-		require.Equal(t, ucan.Command(attest.ProofCommand), calls[0].cmd)
+		require.Equal(t, attest.Proof.Command, calls[0].cmd)
 		require.Equal(t, service.DID(), calls[0].sub)
 	})
 

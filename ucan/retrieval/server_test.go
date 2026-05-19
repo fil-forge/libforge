@@ -14,11 +14,11 @@ import (
 	"github.com/fil-forge/ucantone/testutil"
 	"github.com/fil-forge/ucantone/ucan/container"
 	"github.com/fil-forge/ucantone/ucan/invocation"
-	"github.com/fil-forge/ucantone/validator/capability"
+	"github.com/fil-forge/ucantone/validator/bindcom"
 	"github.com/stretchr/testify/require"
 )
 
-var contentRetrieveCapability, _ = capability.New("/content/retrieve")
+var contentRetrieve, _ = bindcom.Parse[datamodel.Map]("/content/retrieve")
 
 func TestServer(t *testing.T) {
 	service := testutil.RandomSigner(t)
@@ -35,7 +35,7 @@ func TestServer(t *testing.T) {
 	)
 
 	s := retrieval.NewServer(service)
-	s.Handle(contentRetrieveCapability, func(req execution.Request, res execution.Response) error {
+	s.Handle(contentRetrieve.Command, func(req execution.Request, res execution.Response) error {
 		hcReq, ok := req.Metadata().(*retrieval.HTTPHeaderRequestContainer)
 		require.True(t, ok, "expected HTTPHeaderRequestContainer as request metadata")
 		capturedMethod = hcReq.Method
@@ -59,7 +59,7 @@ func TestServer(t *testing.T) {
 	httpServer := httptest.NewServer(s)
 	t.Cleanup(httpServer.Close)
 
-	inv, err := contentRetrieveCapability.Invoke(
+	inv, err := contentRetrieve.Invoke(
 		alice,
 		alice.DID(),
 		datamodel.Map{},

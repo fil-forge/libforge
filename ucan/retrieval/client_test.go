@@ -27,7 +27,7 @@ func startTestServer(t *testing.T, handler execution.HandlerFunc) (*url.URL, pri
 	t.Helper()
 	service := testutil.RandomSigner(t)
 	s := retrieval.NewServer(service)
-	s.Handle(contentRetrieveCapability, handler)
+	s.Handle(contentRetrieve.Command, handler)
 	httpServer := httptest.NewServer(s)
 	t.Cleanup(httpServer.Close)
 	u, err := url.Parse(httpServer.URL)
@@ -55,7 +55,7 @@ func TestClient(t *testing.T) {
 		client, err := retrieval.NewClient(serviceURL)
 		require.NoError(t, err)
 
-		inv, err := contentRetrieveCapability.Invoke(
+		inv, err := contentRetrieve.Invoke(
 			alice,
 			alice.DID(),
 			datamodel.Map{},
@@ -104,7 +104,7 @@ func TestClient(t *testing.T) {
 		require.NoError(t, err)
 
 		for range 2 {
-			inv, err := contentRetrieveCapability.Invoke(
+			inv, err := contentRetrieve.Invoke(
 				alice,
 				alice.DID(),
 				datamodel.Map{},
@@ -129,7 +129,7 @@ func TestClient(t *testing.T) {
 		client, err := retrieval.NewClient(serviceURL, retrieval.WithEventListener(listener))
 		require.NoError(t, err)
 
-		inv, err := contentRetrieveCapability.Invoke(
+		inv, err := contentRetrieve.Invoke(
 			alice,
 			alice.DID(),
 			datamodel.Map{},
@@ -160,7 +160,7 @@ func TestClient(t *testing.T) {
 		client, err := retrieval.NewClient(serviceURL, retrieval.WithHTTPClient(httpClient))
 		require.NoError(t, err)
 
-		inv, err := contentRetrieveCapability.Invoke(
+		inv, err := contentRetrieve.Invoke(
 			alice,
 			alice.DID(),
 			datamodel.Map{},

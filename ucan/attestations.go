@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"iter"
 
-	"github.com/fil-forge/libforge/capabilities/ucan/attest"
+	"github.com/fil-forge/libforge/commands/ucan/attest"
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/varsig/algorithm/nonstandard"
@@ -27,7 +27,7 @@ func ProofAttestations(ctx context.Context, listInvocations InvocationListerFunc
 			continue
 		}
 		var attestation ucan.Invocation
-		for inv, err := range listInvocations(ctx, proof.Audience(), attest.ProofCommand, authority) {
+		for inv, err := range listInvocations(ctx, proof.Audience(), attest.Proof.Command, authority) {
 			if err != nil {
 				return nil, fmt.Errorf("listing invocations for proof signed by %q: %w", proof.Issuer(), err)
 			}

@@ -180,6 +180,18 @@ func TestProofChain_UnrelatedCommandIgnored(t *testing.T) {
 	require.Empty(t, links)
 }
 
+func TestProofChain_MissingSubject(t *testing.T) {
+	alice := testutil.Alice
+	cmd := testutil.Must(command.Parse("/test/do"))(t)
+
+	matcher := ucanlib.NewDelegationMatcher((&memLister{}).List)
+	proofs, links, err := ucanlib.ProofChain(t.Context(), matcher, alice.DID(), cmd, did.Undef)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "subject")
+	require.Nil(t, proofs)
+	require.Nil(t, links)
+}
+
 func TestProofChain_FinderError(t *testing.T) {
 	space := testutil.RandomSigner(t)
 	alice := testutil.Alice
