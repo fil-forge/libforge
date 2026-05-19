@@ -19,10 +19,10 @@ type IndexMetadata struct {
 }
 
 type LocationArguments struct {
-	Space    did.DID                `cborgen:"space" dagjsongen:"space"`
-	Content  multihash.Multihash    `cborgen:"content" dagjsongen:"content"`
-	Location []commands.CborURL `cborgen:"location" dagjsongen:"location"`
-	Range    *Range                 `cborgen:"range,omitempty" dagjsongen:"range,omitempty"`
+	Space    did.DID             `cborgen:"space" dagjsongen:"space"`
+	Content  multihash.Multihash `cborgen:"content" dagjsongen:"content"`
+	Location []commands.CborURL  `cborgen:"location" dagjsongen:"location"`
+	Range    *Range              `cborgen:"range,omitempty" dagjsongen:"range,omitempty"`
 }
 
 type Range struct {

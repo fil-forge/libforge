@@ -12,7 +12,7 @@ import (
 // the storage node has staged); Endpoint is the URL the tracking service
 // should fetch that archive from.
 type TrackArguments struct {
-	Receipts cid.Cid              `cborgen:"receipts" dagjsongen:"receipts"`
+	Receipts cid.Cid          `cborgen:"receipts" dagjsongen:"receipts"`
 	Endpoint commands.CborURL `cborgen:"endpoint" dagjsongen:"endpoint"`
 }
 

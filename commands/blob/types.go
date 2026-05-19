@@ -42,9 +42,9 @@ type AllocateOK struct {
 }
 
 type BlobAddress struct {
-	URL     commands.CborURL `cborgen:"url" dagjsongen:"url"`
-	Headers map[string]string    `cborgen:"headers" dagjsongen:"headers"`
-	Expires int64                `cborgen:"expires" dagjsongen:"expires"`
+	URL     commands.CborURL  `cborgen:"url" dagjsongen:"url"`
+	Headers map[string]string `cborgen:"headers" dagjsongen:"headers"`
+	Expires int64             `cborgen:"expires" dagjsongen:"expires"`
 }
 
 type ListArguments struct {
