@@ -4,8 +4,6 @@ package http
 
 import "github.com/fil-forge/libforge/commands"
 
-const PutCommand = "/http/put"
-
 type PutOK = commands.Unit
 
-var Put = commands.MustParse[*PutArguments](PutCommand)
+var Put = commands.MustParse[*PutArguments]("/http/put")

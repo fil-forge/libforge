@@ -105,7 +105,7 @@ func TestProofAttestations(t *testing.T) {
 		// Lister should be called with the proof's audience, the /ucan/attest/proof
 		// command, and the authority as subject.
 		require.Equal(t, agent.DID(), calls[0].aud)
-		require.Equal(t, ucan.Command(attest.ProofCommand), calls[0].cmd)
+		require.Equal(t, ucan.Command(attest.Proof), calls[0].cmd)
 		require.Equal(t, service.DID(), calls[0].sub)
 	})
 

@@ -4,8 +4,6 @@ package blob
 
 import "github.com/fil-forge/libforge/commands"
 
-const RetrieveCommand = "/blob/retrieve"
-
 // Retrieve is the service-level retrieval capability (e.g. used by the
 // indexer to fetch content claims from a Piri node). It is NOT space-scoped:
 // any holder of a valid delegation for `/blob/retrieve` may fetch the blob
@@ -14,4 +12,4 @@ const RetrieveCommand = "/blob/retrieve"
 // For user-facing retrieval that requires an allocation in a specific space
 // see `libforge/commands/content.Retrieve` (the `/content/retrieve`
 // capability).
-var Retrieve = commands.MustParse[*RetrieveArguments](RetrieveCommand)
+var Retrieve = commands.MustParse[*RetrieveArguments]("/blob/retrieve")

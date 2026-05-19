@@ -7,11 +7,9 @@ import (
 	"github.com/fil-forge/ucantone/errors"
 )
 
-const ConcludeCommand = "/ucan/conclude"
-
 type ConcludeOK = commands.Unit
 
-var Conclude = commands.MustParse[*ConcludeArguments](ConcludeCommand)
+var Conclude = commands.MustParse[*ConcludeArguments]("/ucan/conclude")
 
 const ConclusionReceiptNotFoundErrorName = "ConclusionReceiptNotFound"
 

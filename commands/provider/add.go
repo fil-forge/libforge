@@ -7,9 +7,7 @@ import (
 	"github.com/fil-forge/ucantone/errors"
 )
 
-const AddCommand = "/provider/add"
-
-var Add = commands.MustParse[*AddArguments](AddCommand)
+var Add = commands.MustParse[*AddArguments]("/provider/add")
 
 const (
 	InvalidAccountErrorName     = "InvalidAccount"

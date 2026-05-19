@@ -27,7 +27,7 @@ func ProofAttestations(ctx context.Context, listInvocations InvocationListerFunc
 			continue
 		}
 		var attestation ucan.Invocation
-		for inv, err := range listInvocations(ctx, proof.Audience(), attest.ProofCommand, authority) {
+		for inv, err := range listInvocations(ctx, proof.Audience(), ucan.Command(attest.Proof), authority) {
 			if err != nil {
 				return nil, fmt.Errorf("listing invocations for proof signed by %q: %w", proof.Issuer(), err)
 			}

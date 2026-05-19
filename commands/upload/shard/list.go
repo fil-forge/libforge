@@ -4,6 +4,4 @@ package shard
 
 import "github.com/fil-forge/libforge/commands"
 
-const ListCommand = "/upload/shard/list"
-
-var List = commands.MustParse[*ListArguments](ListCommand)
+var List = commands.MustParse[*ListArguments]("/upload/shard/list")

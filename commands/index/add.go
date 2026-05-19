@@ -7,11 +7,9 @@ import (
 	"github.com/fil-forge/ucantone/errors"
 )
 
-const AddCommand = "/index/add"
-
 type AddOK = commands.Unit
 
-var Add = commands.MustParse[*AddArguments](AddCommand)
+var Add = commands.MustParse[*AddArguments]("/index/add")
 
 const IndexNotFoundErrorName = "IndexNotFound"
 

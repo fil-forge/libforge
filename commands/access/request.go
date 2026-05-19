@@ -9,11 +9,9 @@ import "github.com/fil-forge/libforge/commands"
 // invocation.
 const RequestMetaKey = "accessRequest"
 
-const RequestCommand = "/access/request"
-
 // Request can be invoked by an agent to request set of capabilities from the
 // account.
-var Request = commands.MustParse[*RequestArguments](RequestCommand)
+var Request = commands.MustParse[*RequestArguments]("/access/request")
 
 const (
 	InvalidAuthorizationAccountErrorName  = "InvalidAuthorizationAccount"
