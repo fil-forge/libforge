@@ -16,8 +16,8 @@ type (
 )
 
 var (
-	DataSetCreate        = commands.MustParse[*DataSetCreateArguments]("/pdp/sign/dataset/create")
-	DataSetDelete        = commands.MustParse[*DataSetDeleteArguments]("pdp/sign/dataset/delete")
-	PiecesAdd            = commands.MustParse[*PiecesAddArguments]("pdp/sign/pieces/add")
-	PiecesRemoveSchedule = commands.MustParse[*PiecesRemoveScheduleArguments]("pdp/sign/pieces/remove/schedule")
+	DataSetCreate        = commands.MustParse[*DataSetCreateArguments, *DataSetCreateOK]("/pdp/sign/dataset/create")
+	DataSetDelete        = commands.MustParse[*DataSetDeleteArguments, *DataSetDeleteOK]("/pdp/sign/dataset/delete")
+	PiecesAdd            = commands.MustParse[*PiecesAddArguments, *PiecesAddOK]("/pdp/sign/pieces/add")
+	PiecesRemoveSchedule = commands.MustParse[*PiecesRemoveScheduleArguments, *PiecesRemoveScheduleOK]("/pdp/sign/pieces/remove/schedule")
 )
