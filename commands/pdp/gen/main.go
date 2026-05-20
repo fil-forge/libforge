@@ -5,7 +5,6 @@ package main
 import (
 	"os"
 
-	jsg "github.com/alanshaw/dag-json-gen"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/fil-forge/libforge/commands/pdp"
@@ -31,16 +30,11 @@ func main() {
 		pdp.InfoAcceptedAggregate{},
 		pdp.InfoOK{},
 	}
-	const (
-		cborFile = "../cbor_gen.go"
-		jsonFile = "../json_gen.go"
-	)
+	const cborFile = "../cbor_gen.go"
+	// merkletree.ProofData implements CBOR but not dag-json, and the stack is
+	// CBOR-only on the wire, so we don't generate dag-json codecs here.
 	if err := cbg.WriteMapEncodersToFile(cborFile, "pdp", models...); err != nil {
 		panic(err)
 	}
-	if err := jsg.WriteMapEncodersToFile(jsonFile, "pdp", models...); err != nil {
-		panic(err)
-	}
 	tag(cborFile)
-	tag(jsonFile)
 }

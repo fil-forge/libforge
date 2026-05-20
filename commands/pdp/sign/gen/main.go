@@ -5,7 +5,6 @@ package main
 import (
 	"os"
 
-	jsg "github.com/alanshaw/dag-json-gen"
 	cbg "github.com/whyrusleeping/cbor-gen"
 
 	"github.com/fil-forge/libforge/commands/pdp/sign"
@@ -17,8 +16,8 @@ import (
 // carry `//go:build !codegen`; this tool is built with `-tags codegen`, so
 // the import of `sign` here only pulls in the wire types from types.go.
 //
-// After cbor-gen / dag-json-gen write the codec files, we re-tag them with
-// the same constraint so subsequent codegen runs are stale-safe.
+// After cbor-gen writes the codec file, we re-tag it with the same
+// constraint so subsequent codegen runs are stale-safe.
 const buildTag = "//go:build !codegen\n\n"
 
 func tag(path string) {
@@ -41,16 +40,10 @@ func main() {
 		sign.PiecesAddArguments{},
 		sign.PiecesRemoveScheduleArguments{},
 	}
-	const (
-		cborFile = "../cbor_gen.go"
-		jsonFile = "../json_gen.go"
-	)
+	const cborFile = "../cbor_gen.go"
+	// The stack is CBOR-only on the wire, so we don't generate dag-json codecs.
 	if err := cbg.WriteMapEncodersToFile(cborFile, "sign", models...); err != nil {
 		panic(err)
 	}
-	if err := jsg.WriteMapEncodersToFile(jsonFile, "sign", models...); err != nil {
-		panic(err)
-	}
 	tag(cborFile)
-	tag(jsonFile)
 }
