@@ -5,7 +5,7 @@ go 1.25.3
 require (
 	github.com/alanshaw/dag-json-gen v0.0.5
 	github.com/fil-forge/automobile v0.0.1
-	github.com/fil-forge/ucantone v0.0.0-20260519193222-ad31490eaa10
+	github.com/fil-forge/ucantone v0.0.0-20260520204404-e2ce81a7ec06
 	github.com/filecoin-project/go-data-segment v0.0.1
 	github.com/gobwas/glob v0.2.3
 	github.com/ipfs/go-cid v0.6.1
