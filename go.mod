@@ -40,5 +40,3 @@ require (
 	lukechampine.com/blake3 v1.4.1 // indirect
 	pitr.ca/jsontokenizer v0.3.0 // indirect
 )
-
-replace github.com/fil-forge/ucantone => ../ucantone
