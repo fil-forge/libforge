@@ -3,9 +3,9 @@
 package access
 
 import (
+	"github.com/fil-forge/ucantone/binding"
 	"github.com/fil-forge/ucantone/errors"
-
-	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/ucan/command"
 )
 
 const GrantCommand = "/access/grant"
@@ -18,7 +18,7 @@ type GrantOK = ClaimOK
 // Grant can be invoked by an agent to request that a set of capabilities be
 // granted directly. Unlike Request -> Confirm, Grant is one-shot: the
 // executor decides immediately whether to issue the delegation.
-var Grant = commands.MustParse[*GrantArguments](GrantCommand)
+var Grant = binding.Bind[*GrantArguments, *GrantOK](command.MustParse(GrantCommand))
 
 const (
 	UnknownAbilityErrorName    = "UnknownAbility"

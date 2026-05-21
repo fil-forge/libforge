@@ -3,8 +3,9 @@
 package access
 
 import (
-	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
 	"github.com/fil-forge/ucantone/errors"
+	command "github.com/fil-forge/ucantone/ucan/command"
 )
 
 // ConfirmOK mirrors ClaimOK — confirming an access request grants the same
@@ -17,7 +18,7 @@ type ConfirmOK = ClaimOK
 const ConfirmMetaKey = "accessConfirm"
 
 // Confirm can be invoked by an agent to confirm an access request.
-var Confirm = commands.MustParse[*ConfirmArguments]("/access/confirm")
+var Confirm = binding.Bind[*ConfirmArguments, *ConfirmOK](command.MustParse("/access/confirm"))
 
 const (
 	InvalidAccessConfirmSubjectErrorName = "InvalidAccessConfirmSubject"

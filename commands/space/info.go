@@ -2,10 +2,14 @@
 
 package space
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
+)
 
 type InfoArguments = commands.Unit
 
-var Info = commands.MustParse[*InfoArguments]("/space/info")
+var Info = binding.Bind[*InfoArguments, *InfoOK](command.MustParse("/space/info"))
 
 const UnknownSpaceErrorName = "UnknownSpace"

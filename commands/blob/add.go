@@ -2,6 +2,9 @@
 
 package blob
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
+)
 
-var Add = commands.MustParse[*AddArguments]("/blob/add")
+var Add = binding.Bind[*AddArguments, *AddOK](command.MustParse("/blob/add"))

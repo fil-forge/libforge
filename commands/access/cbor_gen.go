@@ -10,7 +10,6 @@ import (
 	"math"
 	"sort"
 
-	command "github.com/fil-forge/ucantone/ucan/command"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
@@ -190,7 +189,7 @@ func (t *CapabilityRequest) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Command (command.Command) (string)
+	// t.Command (command.Command) (struct)
 	if len("cmd") > 8192 {
 		return xerrors.Errorf("Value in field \"cmd\" was too long")
 	}
@@ -202,14 +201,7 @@ func (t *CapabilityRequest) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if len(t.Command) > 8192 {
-		return xerrors.Errorf("Value in field t.Command was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.Command))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string(t.Command)); err != nil {
+	if err := t.Command.MarshalCBOR(cw); err != nil {
 		return err
 	}
 	return nil
@@ -256,16 +248,15 @@ func (t *CapabilityRequest) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Command (command.Command) (string)
+		// t.Command (command.Command) (struct)
 		case "cmd":
 
 			{
-				sval, err := cbg.ReadStringWithMax(cr, 8192)
-				if err != nil {
-					return err
+
+				if err := t.Command.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Command: %w", err)
 				}
 
-				t.Command = command.Command(sval)
 			}
 
 		default:

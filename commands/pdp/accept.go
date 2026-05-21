@@ -2,6 +2,9 @@
 
 package pdp
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
+)
 
-var Accept = commands.MustParse[*AcceptArguments]("/pdp/accept")
+var Accept = binding.Bind[*AcceptArguments, *AcceptOK](command.MustParse("/pdp/accept"))

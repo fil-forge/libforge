@@ -4,12 +4,14 @@ package index
 
 import (
 	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
 	"github.com/fil-forge/ucantone/errors"
+	"github.com/fil-forge/ucantone/ucan/command"
 )
 
 type AddOK = commands.Unit
 
-var Add = commands.MustParse[*AddArguments]("/index/add")
+var Add = binding.Bind[*AddArguments, *AddOK](command.MustParse("/index/add"))
 
 const IndexNotFoundErrorName = "IndexNotFound"
 

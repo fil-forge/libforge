@@ -2,8 +2,12 @@
 
 package upload
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
+)
 
 type AddOK = commands.Unit
 
-var Add = commands.MustParse[*AddArguments]("/upload/add")
+var Add = binding.Bind[*AddArguments, *AddOK](command.MustParse("/upload/add"))

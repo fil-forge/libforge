@@ -12,7 +12,6 @@ import (
 	"sort"
 
 	jsg "github.com/alanshaw/dag-json-gen"
-	command "github.com/fil-forge/ucantone/ucan/command"
 	cid "github.com/ipfs/go-cid"
 )
 
@@ -204,7 +203,7 @@ func (t *CapabilityRequest) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 
-	// t.Command (command.Command) (string)
+	// t.Command (command.Command) (struct)
 	if len("cmd") > 8192 {
 		return fmt.Errorf("string in field \"cmd\" was too long")
 	}
@@ -214,11 +213,8 @@ func (t *CapabilityRequest) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
-	if len(t.Command) > 8192 {
-		return fmt.Errorf("string in field t.Command was too long")
-	}
-	if err := jw.WriteString(string(t.Command)); err != nil {
-		return fmt.Errorf("writing string for field t.Command: %w", err)
+	if err := t.Command.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Command: %w", err)
 	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
@@ -259,18 +255,13 @@ func (t *CapabilityRequest) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Command (command.Command) (string)
+			// t.Command (command.Command) (struct)
 			case "cmd":
-				{
-					sval, err := jr.ReadString(8192)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("reading string for field t.Command: string too long")
-						}
-						return fmt.Errorf("reading string for field t.Command: %w", err)
-					}
-					t.Command = command.Command(sval)
+
+				if err := t.Command.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Command: %w", err)
 				}
+
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {

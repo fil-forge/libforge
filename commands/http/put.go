@@ -2,8 +2,12 @@
 
 package http
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
+)
 
 type PutOK = commands.Unit
 
-var Put = commands.MustParse[*PutArguments]("/http/put")
+var Put = binding.Bind[*PutArguments, *PutOK](command.MustParse("/http/put"))

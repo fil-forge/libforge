@@ -4,12 +4,14 @@ package ucan
 
 import (
 	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
 	"github.com/fil-forge/ucantone/errors"
+	"github.com/fil-forge/ucantone/ucan/command"
 )
 
 type ConcludeOK = commands.Unit
 
-var Conclude = commands.MustParse[*ConcludeArguments]("/ucan/conclude")
+var Conclude = binding.Bind[*ConcludeArguments, *ConcludeOK](command.MustParse("/ucan/conclude"))
 
 const ConclusionReceiptNotFoundErrorName = "ConclusionReceiptNotFound"
 
