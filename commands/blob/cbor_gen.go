@@ -791,7 +791,23 @@ func (t *AcceptOK) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{161}); err != nil {
+	if _, err := cw.Write([]byte{162}); err != nil {
+		return err
+	}
+
+	// t.PDP (promise.AwaitOK) (struct)
+	if len("pdp") > 8192 {
+		return xerrors.Errorf("Value in field \"pdp\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("pdp"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("pdp")); err != nil {
+		return err
+	}
+
+	if err := t.PDP.MarshalCBOR(cw); err != nil {
 		return err
 	}
 
@@ -855,7 +871,17 @@ func (t *AcceptOK) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Site (cid.Cid) (struct)
+		// t.PDP (promise.AwaitOK) (struct)
+		case "pdp":
+
+			{
+
+				if err := t.PDP.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.PDP: %w", err)
+				}
+
+			}
+			// t.Site (cid.Cid) (struct)
 		case "site":
 
 			{

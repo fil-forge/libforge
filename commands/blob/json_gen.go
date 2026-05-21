@@ -798,6 +798,27 @@ func (t *AcceptOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
+	written := 0
+
+	// t.PDP (promise.AwaitOK) (struct)
+	if len("pdp") > 8192 {
+		return fmt.Errorf("string in field \"pdp\" was too long")
+	}
+	if err := jw.WriteString(string("pdp")); err != nil {
+		return fmt.Errorf("writing string for field \"pdp\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.PDP.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.PDP: %w", err)
+	}
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
 
 	// t.Site (cid.Cid) (struct)
 	if len("site") > 8192 {
@@ -814,6 +835,7 @@ func (t *AcceptOK) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Site: %w", err)
 	}
 
+	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -853,7 +875,14 @@ func (t *AcceptOK) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Site (cid.Cid) (struct)
+			// t.PDP (promise.AwaitOK) (struct)
+			case "pdp":
+
+				if err := t.PDP.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.PDP: %w", err)
+				}
+
+				// t.Site (cid.Cid) (struct)
 			case "site":
 				{
 
