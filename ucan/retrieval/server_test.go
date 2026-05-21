@@ -8,18 +8,19 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/fil-forge/ucantone/binding"
 	"github.com/fil-forge/ucantone/execution"
 	"github.com/fil-forge/ucantone/ipld/datamodel"
 	"github.com/fil-forge/ucantone/testutil"
+	"github.com/fil-forge/ucantone/ucan/command"
 	"github.com/fil-forge/ucantone/ucan/container"
 	"github.com/fil-forge/ucantone/ucan/invocation"
-	"github.com/fil-forge/ucantone/validator/bindcom"
 	"github.com/stretchr/testify/require"
 
 	"github.com/fil-forge/libforge/ucan/retrieval"
 )
 
-var contentRetrieve, _ = bindcom.Parse[*datamodel.Map]("/content/retrieve")
+var contentRetrieve = binding.Bind[*datamodel.Map, *datamodel.Map](command.MustParse("/content/retrieve"))
 
 func TestServer(t *testing.T) {
 	service := testutil.RandomSigner(t)

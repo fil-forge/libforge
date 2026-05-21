@@ -2,8 +2,12 @@
 
 package content
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
+)
 
 type RetrieveOK = commands.Unit
 
-var Retrieve = commands.MustParse[*RetrieveArguments]("/content/retrieve")
+var Retrieve = binding.Bind[*RetrieveArguments, *RetrieveOK](command.MustParse("/content/retrieve"))

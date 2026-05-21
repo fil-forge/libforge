@@ -3,11 +3,12 @@
 package provider
 
 import (
-	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
 	"github.com/fil-forge/ucantone/errors"
+	"github.com/fil-forge/ucantone/ucan/command"
 )
 
-var Add = commands.MustParse[*AddArguments]("/provider/add")
+var Add = binding.Bind[*AddArguments, *AddOK](command.MustParse("/provider/add"))
 
 const (
 	InvalidAccountErrorName     = "InvalidAccount"

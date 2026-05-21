@@ -2,8 +2,12 @@
 
 package claim
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
+)
 
 type CacheOK = commands.Unit
 
-var Cache = commands.MustParse[*CacheArguments]("/claim/cache")
+var Cache = binding.Bind[*CacheArguments, *CacheOK](command.MustParse("/claim/cache"))

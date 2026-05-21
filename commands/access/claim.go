@@ -2,10 +2,14 @@
 
 package access
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
+	command "github.com/fil-forge/ucantone/ucan/command"
+)
 
 type ClaimArguments = commands.Unit
 
 // Claim can be invoked by an agent to claim a set of delegations from the
 // account.
-var Claim = commands.MustParse[*ClaimArguments]("/access/claim")
+var Claim = binding.Bind[*ClaimArguments, *ClaimOK](command.MustParse("/access/claim"))

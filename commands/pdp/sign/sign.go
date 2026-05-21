@@ -3,7 +3,8 @@
 package sign
 
 import (
-	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
 )
 
 // Every /pdp/sign/* operation returns the same shape; these per-operation
@@ -16,8 +17,8 @@ type (
 )
 
 var (
-	DataSetCreate        = commands.MustParse[*DataSetCreateArguments]("/pdp/sign/dataset/create")
-	DataSetDelete        = commands.MustParse[*DataSetDeleteArguments]("/pdp/sign/dataset/delete")
-	PiecesAdd            = commands.MustParse[*PiecesAddArguments]("/pdp/sign/pieces/add")
-	PiecesRemoveSchedule = commands.MustParse[*PiecesRemoveScheduleArguments]("/pdp/sign/pieces/remove/schedule")
+	DataSetCreate        = binding.Bind[*DataSetCreateArguments, *DataSetCreateOK](command.MustParse("/pdp/sign/dataset/create"))
+	DataSetDelete        = binding.Bind[*DataSetDeleteArguments, *DataSetDeleteOK](command.MustParse("/pdp/sign/dataset/delete"))
+	PiecesAdd            = binding.Bind[*PiecesAddArguments, *PiecesAddOK](command.MustParse("/pdp/sign/pieces/add"))
+	PiecesRemoveSchedule = binding.Bind[*PiecesRemoveScheduleArguments, *PiecesRemoveScheduleOK](command.MustParse("/pdp/sign/pieces/remove/schedule"))
 )

@@ -2,6 +2,9 @@
 
 package replica
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
+)
 
-var Transfer = commands.MustParse[*TransferArguments]("/blob/replica/transfer")
+var Transfer = binding.Bind[*TransferArguments, *TransferOK](command.MustParse("/blob/replica/transfer"))

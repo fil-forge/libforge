@@ -2,8 +2,11 @@
 
 package pdp
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
+)
 
 const InfoCommand = "/pdp/info"
 
-var Info = commands.MustParse[*InfoArguments]("/pdp/info")
+var Info = binding.Bind[*InfoArguments, *InfoOK](command.MustParse(InfoCommand))

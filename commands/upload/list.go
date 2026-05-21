@@ -2,6 +2,9 @@
 
 package upload
 
-import "github.com/fil-forge/libforge/commands"
+import (
+	"github.com/fil-forge/ucantone/binding"
+	"github.com/fil-forge/ucantone/ucan/command"
+)
 
-var List = commands.MustParse[*ListArguments]("/upload/list")
+var List = binding.Bind[*ListArguments, *ListOK](command.MustParse("/upload/list"))
