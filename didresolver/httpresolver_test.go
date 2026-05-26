@@ -12,6 +12,7 @@ import (
 
 	"github.com/fil-forge/libforge/didresolver"
 	"github.com/fil-forge/ucantone/did"
+	"github.com/fil-forge/ucantone/principal"
 	"github.com/stretchr/testify/require"
 )
 
@@ -279,9 +280,22 @@ func TestHTTPResolver_ResolveDIDKey(t *testing.T) {
 				}
 			} else {
 				require.Nil(t, unresolvedErr)
-				expectedDID, err := did.Parse(tc.expectedDIDKey)
+				// The resolver wraps the underlying did:key verifier so it
+				// announces the originally-requested DID — required for
+				// ucantone token.VerifySignature, which compares the token's
+				// issuer DID against the verifier's DID before checking
+				// signature bytes.
+				require.Equal(t, inputDID, result.DID())
+				// expectedDIDKey identifies the underlying did:key the
+				// resolver should have extracted from the document; reach
+				// through Unwrap() to assert it.
+				expectedDIDKey, err := did.Parse(tc.expectedDIDKey)
 				require.NoError(t, err)
-				require.Equal(t, expectedDID, result.DID())
+				unwrapper, ok := result.(interface {
+					Unwrap() principal.Verifier
+				})
+				require.True(t, ok, "resolver should return a wrapped verifier")
+				require.Equal(t, expectedDIDKey, unwrapper.Unwrap().DID())
 			}
 		})
 	}
@@ -505,9 +519,16 @@ func TestHTTPResolver_ResolveDIDKey_ContextFormats(t *testing.T) {
 			result, unresolvedErr := resolver.Resolve(t.Context(), didWeb)
 			require.Nil(t, unresolvedErr)
 
-			expectedDID, err := did.Parse(tc.expectedDIDKey)
+			// Resolver wraps the underlying did:key as the requested did:web —
+			// see ucantone/ucan/token/token.go for why this matters.
+			require.Equal(t, didWeb, result.DID())
+			expectedDIDKey, err := did.Parse(tc.expectedDIDKey)
 			require.NoError(t, err)
-			require.Equal(t, expectedDID, result.DID())
+			unwrapper, ok := result.(interface {
+				Unwrap() principal.Verifier
+			})
+			require.True(t, ok, "resolver should return a wrapped verifier")
+			require.Equal(t, expectedDIDKey, unwrapper.Unwrap().DID())
 		})
 	}
 }

@@ -154,15 +154,17 @@ func TestTieredResolver_ResolveDIDKey(t *testing.T) {
 			Tiers: []didresolver.DIDVerifierResolverFunc{mapA.Resolve, mapB.Resolve},
 		}
 
-		// Resolves via the first tier
+		// Resolves via the first tier. MapResolver wraps the did:key verifier
+		// as the requested did:web so token.VerifySignature's issuer-vs-verifier
+		// DID equality check passes — see ucantone/ucan/token/token.go.
 		resA, err := resolver.Resolve(t.Context(), didA)
 		require.NoError(t, err)
-		require.Equal(t, keyA, resA)
+		require.Equal(t, didA, resA.DID())
 
 		// Falls through to the second tier
 		resB, err := resolver.Resolve(t.Context(), didB)
 		require.NoError(t, err)
-		require.Equal(t, keyB, resB)
+		require.Equal(t, didB, resB.DID())
 
 		// Not resolvable by any tier
 		_, err = resolver.Resolve(t.Context(), didC)

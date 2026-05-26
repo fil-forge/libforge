@@ -271,28 +271,28 @@ func TestCachedResolver_WithMapResolver(t *testing.T) {
 		// Test alice
 		aliceDID, err := did.Parse("did:web:alice.example.com")
 		require.NoError(t, err)
-		aliceKey, err := verifier.Parse("did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK")
-		require.NoError(t, err)
+
+		// MapResolver now wraps verifiers as the requested DID — see
+		// ucantone/ucan/token/token.go for why. The cached verifier's DID()
+		// should match the input DID, not the underlying did:key.
 
 		// First call - should hit MapResolver
 		result1, err1 := cachedResolver.Resolve(t.Context(), aliceDID)
 		require.Nil(t, err1)
-		require.Equal(t, aliceKey, result1)
+		require.Equal(t, aliceDID, result1.DID())
 
 		// Second call - should use cache (we can't directly verify this without instrumentation)
 		result2, err2 := cachedResolver.Resolve(t.Context(), aliceDID)
 		require.Nil(t, err2)
-		require.Equal(t, aliceKey, result2)
+		require.Equal(t, aliceDID, result2.DID())
 
 		// Test bob while alice is still cached
 		bobDID, err := did.Parse("did:web:bob.example.com")
 		require.NoError(t, err)
-		bobKey, err := verifier.Parse("did:key:z6Mkfriq1MqLBoPWecGoDLjguo1sB9brj6wT3qZ5BxkKpuP6")
-		require.NoError(t, err)
 
 		result3, err3 := cachedResolver.Resolve(t.Context(), bobDID)
 		require.Nil(t, err3)
-		require.Equal(t, bobKey, result3)
+		require.Equal(t, bobDID, result3.DID())
 
 		// Wait for cache to expire
 		time.Sleep(250 * time.Millisecond)
@@ -300,7 +300,7 @@ func TestCachedResolver_WithMapResolver(t *testing.T) {
 		// Alice's entry should have expired, this should hit MapResolver again
 		result4, err4 := cachedResolver.Resolve(t.Context(), aliceDID)
 		require.Nil(t, err4)
-		require.Equal(t, aliceKey, result4)
+		require.Equal(t, aliceDID, result4.DID())
 
 		// Test non-existent DID
 		unknownDID, err := did.Parse("did:web:unknown.example.com")

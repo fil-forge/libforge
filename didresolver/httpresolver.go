@@ -11,6 +11,7 @@ import (
 
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/principal/ed25519/verifier"
+	pverifier "github.com/fil-forge/ucantone/principal/verifier"
 	"github.com/fil-forge/ucantone/ucan"
 	verrs "github.com/fil-forge/ucantone/validator/errors"
 	"github.com/gobwas/glob"
@@ -223,7 +224,16 @@ func (r *HTTPResolver) Resolve(ctx context.Context, input did.DID) (ucan.Verifie
 		return nil, verrs.NewDIDKeyResolutionError(input, fmt.Errorf("parsing multibase key: %w", err))
 	}
 
-	return didKey, nil
+	// token.VerifySignature compares the token's Issuer DID against the
+	// verifier's DID — if the issuer is did:web:foo and we return an unwrapped
+	// did:key verifier, that equality check fails and the signature is
+	// rejected before the bytes are even examined. Wrap so the verifier
+	// announces the originally-requested DID.
+	wrapped, err := pverifier.Wrap(didKey, input)
+	if err != nil {
+		return nil, verrs.NewDIDKeyResolutionError(input, fmt.Errorf("wrapping verifier as %s: %w", input, err))
+	}
+	return wrapped, nil
 }
 
 func fetchDIDDocument(ctx context.Context, endpoint url.URL) (*Document, error) {

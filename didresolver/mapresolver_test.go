@@ -22,7 +22,10 @@ func TestPrincipalResolver(t *testing.T) {
 
 	resolved, err := ppr.Resolve(t.Context(), p0)
 	require.NoError(t, err)
-	require.Equal(t, r, resolved.DID())
+	// Resolver wraps the underlying did:key verifier so it announces the
+	// requested did:web — required for ucantone token.VerifySignature, which
+	// compares issuer DID against verifier DID before checking signature bytes.
+	require.Equal(t, p0, resolved.DID())
 
 	// cannot resolve DID not in mapping
 	_, err = ppr.Resolve(t.Context(), p1)

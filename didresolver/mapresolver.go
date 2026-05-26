@@ -6,6 +6,7 @@ import (
 
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/principal/ed25519/verifier"
+	pverifier "github.com/fil-forge/ucantone/principal/verifier"
 	"github.com/fil-forge/ucantone/ucan"
 	verrs "github.com/fil-forge/ucantone/validator/errors"
 )
@@ -33,9 +34,22 @@ func NewMapResolver(smap map[string]string) (*MapResolver, error) {
 			return nil, err
 		}
 		// TODO: multiple verification methods when https://github.com/fil-forge/ucantone/pull/7 lands
-		dv, err := verifier.Parse(v)
+		didKey, err := verifier.Parse(v)
 		if err != nil {
 			return nil, err
+		}
+		// token.VerifySignature compares the token's Issuer DID against the
+		// verifier's DID. If a did:web (or any non-key DID) maps to a did:key
+		// verifier, the equality check fails and signature verification is
+		// rejected before the bytes are even examined. Wrap the verifier so
+		// it announces the requested DID. did:key inputs are stored unwrapped.
+		var dv ucan.Verifier = didKey
+		if dk.Method() != "key" {
+			wrapped, err := pverifier.Wrap(didKey, dk)
+			if err != nil {
+				return nil, fmt.Errorf("wrapping verifier as %s: %w", dk, err)
+			}
+			dv = wrapped
 		}
 		dmap[dk] = dv
 	}
