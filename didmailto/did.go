@@ -47,6 +47,8 @@ func Email(d did.DID) (string, error) {
 	return fmt.Sprintf("%s@%s", emailLocal, domain), nil
 }
 
+// Parse parses a mailto DID from a string. This is the same as [did.Parse],
+// with validation that the DID is a mailto DID.
 func Parse(str string) (did.DID, error) {
 	d, err := did.Parse(str)
 	if err != nil {
