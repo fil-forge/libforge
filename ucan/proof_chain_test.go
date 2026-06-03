@@ -57,7 +57,7 @@ func assertChain(t *testing.T, proofs []ucan.Delegation, links []cid.Cid, want [
 }
 
 func TestProofChain_SelfIssued(t *testing.T) {
-	space := testutil.RandomSigner(t)
+	space := testutil.RandomIssuer(t)
 	alice := testutil.Alice
 	cmd := testutil.Must(command.Parse("/test/do"))(t)
 
@@ -73,7 +73,7 @@ func TestProofChain_SelfIssued(t *testing.T) {
 }
 
 func TestProofChain_MultiHop(t *testing.T) {
-	space := testutil.RandomSigner(t)
+	space := testutil.RandomIssuer(t)
 	alice := testutil.Alice
 	bob := testutil.Bob
 	carol := testutil.Carol
@@ -96,7 +96,7 @@ func TestProofChain_MultiHop(t *testing.T) {
 }
 
 func TestProofChain_NoDelegations(t *testing.T) {
-	space := testutil.RandomSigner(t)
+	space := testutil.RandomIssuer(t)
 	alice := testutil.Alice
 	cmd := testutil.Must(command.Parse("/test/do"))(t)
 
@@ -108,7 +108,7 @@ func TestProofChain_NoDelegations(t *testing.T) {
 }
 
 func TestProofChain_BrokenChain(t *testing.T) {
-	space := testutil.RandomSigner(t)
+	space := testutil.RandomIssuer(t)
 	alice := testutil.Alice
 	bob := testutil.Bob
 	cmd := testutil.Must(command.Parse("/test/do"))(t)
@@ -126,7 +126,7 @@ func TestProofChain_BrokenChain(t *testing.T) {
 }
 
 func TestProofChain_ParentCommand(t *testing.T) {
-	space := testutil.RandomSigner(t)
+	space := testutil.RandomIssuer(t)
 	alice := testutil.Alice
 	parent := testutil.Must(command.Parse("/test"))(t)
 	child := testutil.Must(command.Parse("/test/do"))(t)
@@ -144,7 +144,7 @@ func TestProofChain_ParentCommand(t *testing.T) {
 }
 
 func TestProofChain_Powerline(t *testing.T) {
-	space := testutil.RandomSigner(t)
+	space := testutil.RandomIssuer(t)
 	alice := testutil.Alice
 	bob := testutil.Bob
 	cmd := testutil.Must(command.Parse("/test/do"))(t)
@@ -163,7 +163,7 @@ func TestProofChain_Powerline(t *testing.T) {
 }
 
 func TestProofChain_UnrelatedCommandIgnored(t *testing.T) {
-	space := testutil.RandomSigner(t)
+	space := testutil.RandomIssuer(t)
 	alice := testutil.Alice
 	cmd := testutil.Must(command.Parse("/test/do"))(t)
 	other := testutil.Must(command.Parse("/other/op"))(t)
@@ -193,7 +193,7 @@ func TestProofChain_MissingSubject(t *testing.T) {
 }
 
 func TestProofChain_FinderError(t *testing.T) {
-	space := testutil.RandomSigner(t)
+	space := testutil.RandomIssuer(t)
 	alice := testutil.Alice
 	cmd := testutil.Must(command.Parse("/test/do"))(t)
 

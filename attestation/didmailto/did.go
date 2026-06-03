@@ -27,7 +27,7 @@ func New(email string) (did.DID, error) {
 		return did.DID{}, fmt.Errorf("malformed email address: %s", email)
 	}
 	local, domain = a.Address[:at], a.Address[at+1:]
-	return did.Parse(fmt.Sprintf("did:mailto:%s:%s", url.QueryEscape(domain), url.QueryEscape(local)))
+	return did.New(Method, fmt.Sprintf("%s:%s", url.QueryEscape(domain), url.QueryEscape(local))), nil
 }
 
 // Email extracts the email address from the DID.

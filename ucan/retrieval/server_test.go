@@ -23,8 +23,8 @@ import (
 var contentRetrieve = binding.Bind[*datamodel.Map, *datamodel.Map](command.MustParse("/content/retrieve"))
 
 func TestServer(t *testing.T) {
-	service := testutil.RandomSigner(t)
-	alice := testutil.RandomSigner(t)
+	service := testutil.RandomIssuer(t)
+	alice := testutil.RandomIssuer(t)
 
 	blobBytes := []byte("retrieved blob bytes")
 	const customHeader = "X-Test-Custom"

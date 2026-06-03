@@ -11,7 +11,6 @@ import (
 
 	"github.com/fil-forge/ucantone/execution"
 	"github.com/fil-forge/ucantone/ipld/datamodel"
-	"github.com/fil-forge/ucantone/principal"
 	"github.com/fil-forge/ucantone/testutil"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/container"
@@ -23,10 +22,10 @@ import (
 
 // startTestServer spins up a retrieval server that registers the given
 // handler for `/content/retrieve` and returns its base URL plus the service
-// signer.
-func startTestServer(t *testing.T, handler execution.HandlerFunc) (*url.URL, principal.Signer) {
+// issuer.
+func startTestServer(t *testing.T, handler execution.HandlerFunc) (*url.URL, ucan.Issuer) {
 	t.Helper()
-	service := testutil.RandomSigner(t)
+	service := testutil.RandomIssuer(t)
 	s := retrieval.NewServer(service)
 	s.Handle(contentRetrieve.Command, handler)
 	httpServer := httptest.NewServer(s)
@@ -38,7 +37,7 @@ func startTestServer(t *testing.T, handler execution.HandlerFunc) (*url.URL, pri
 
 func TestClient(t *testing.T) {
 	t.Run("execute round trip", func(t *testing.T) {
-		alice := testutil.RandomSigner(t)
+		alice := testutil.RandomIssuer(t)
 		blobBytes := []byte("retrieved blob bytes")
 
 		serviceURL, service := startTestServer(t, func(req execution.Request, res execution.Response) error {
@@ -87,7 +86,7 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("with HTTP headers adds headers to every request", func(t *testing.T) {
-		alice := testutil.RandomSigner(t)
+		alice := testutil.RandomIssuer(t)
 		const headerName = "X-Test-Auth"
 		const headerValue = "token-123"
 
@@ -120,7 +119,7 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("with event listener observes request and response", func(t *testing.T) {
-		alice := testutil.RandomSigner(t)
+		alice := testutil.RandomIssuer(t)
 
 		serviceURL, service := startTestServer(t, func(req execution.Request, res execution.Response) error {
 			return res.SetSuccess(datamodel.Map{})
@@ -151,7 +150,7 @@ func TestClient(t *testing.T) {
 	})
 
 	t.Run("with HTTP client uses provided client", func(t *testing.T) {
-		alice := testutil.RandomSigner(t)
+		alice := testutil.RandomIssuer(t)
 
 		serviceURL, service := startTestServer(t, func(req execution.Request, res execution.Response) error {
 			return res.SetSuccess(datamodel.Map{})
