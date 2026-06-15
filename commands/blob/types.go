@@ -2,6 +2,7 @@ package blob
 
 import (
 	"github.com/fil-forge/libforge/commands"
+	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/ucan/promise"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multihash"
@@ -23,8 +24,9 @@ type AddOK struct {
 }
 
 type AcceptArguments struct {
-	Blob Blob            `cborgen:"blob" dagjsongen:"blob"`
-	Put  promise.AwaitOK `cborgen:"_put" dagjsongen:"_put"`
+	Space did.DID         `cborgen:"space" dagjsongen:"space"`
+	Blob  Blob            `cborgen:"blob" dagjsongen:"blob"`
+	Put   promise.AwaitOK `cborgen:"_put" dagjsongen:"_put"`
 }
 
 type AcceptOK struct {
@@ -35,6 +37,7 @@ type AcceptOK struct {
 }
 
 type AllocateArguments struct {
+	Space did.DID `cborgen:"space" dagjsongen:"space"`
 	Blob  Blob    `cborgen:"blob" dagjsongen:"blob"`
 	Cause cid.Cid `cborgen:"cause" dagjsongen:"cause"`
 }
