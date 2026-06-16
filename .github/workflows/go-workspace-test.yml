@@ -1,0 +1,209 @@
+# Reusable workspace CI for the fil-forge repo set.
+#
+# Called by a thin `workspace-test.yml` in each fil-forge repo. It reads the
+# CALLING repo's go.mod, finds its `github.com/fil-forge/*` dependencies, and
+# checks whether any of those sibling repos has a branch matching THIS PR's
+# branch (coordinated change sets share a branch name across repos).
+#
+#   - If NO sibling has a matching branch, the workspace-test job is SKIPPED
+#     (grey, a non-event). The repo's normal go-test.yml already tests against
+#     the published go.mod versions and is the real signal there.
+#   - If >=1 sibling matches, it clones ONLY those matching-branch siblings,
+#     synthesizes a go.work over them, and runs the tests against that
+#     integrated workspace. The matching repos are shown in the check's name on
+#     the PR.
+#
+# This job is INFORMATIONAL, not a merge gate: the convention is that a
+# coordinated PR keeps its go.mod on the published sibling versions until the
+# siblings land, so the normal go-test.yml is the blocker. Do NOT make this a
+# required status check (a skipped required check would block no-match PRs).
+#
+# All fil-forge repos are public, so the built-in GITHUB_TOKEN can read the
+# siblings. No status is posted, so only contents:read is needed.
+
+name: Go Workspace Test (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        description: 'Go toolchain to install. Must be >= the max `go` directive across all workspace members (guppy pins 1.26.1).'
+        type: string
+        default: 'stable'
+
+permissions:
+  contents: read
+
+env:
+  HEAD_REF: ${{ github.head_ref }}
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  # --- Cheap probe: which sibling repos have a branch matching this PR? -------
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      matched: ${{ steps.probe.outputs.matched }}
+      repos: ${{ steps.probe.outputs.repos }}
+      tsv_b64: ${{ steps.probe.outputs.tsv_b64 }}
+    steps:
+      - name: Checkout primary repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: false
+
+      # Parse THIS go.mod for fil-forge deps (direct + indirect). Emit
+      # module<TAB>repo<TAB>subdir. repo = first path segment after the org;
+      # subdir = the rest (so filecoin-services/go -> repo filecoin-services,
+      # dir go/). Then ls-remote each unique repo for the PR branch — one
+      # round-trip, no clone.
+      - name: Probe sibling branches
+        id: probe
+        run: |
+          set -euo pipefail
+
+          # No PR branch (e.g. push to main) -> nothing to match.
+          if [ -z "${HEAD_REF:-}" ]; then
+            echo "no head_ref; nothing to match"
+            {
+              echo "matched=false"
+              echo "repos="
+              echo "tsv_b64="
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          go mod edit -json \
+            | jq -r '
+                .Require[]?
+                | select(.Path | startswith("github.com/fil-forge/"))
+                | .Path' \
+            | while read -r mod; do
+                rest=${mod#github.com/fil-forge/}
+                repo=${rest%%/*}
+                if [ "$repo" = "$rest" ]; then sub="."; else sub=${rest#*/}; fi
+                printf '%s\t%s\t%s\n' "$mod" "$repo" "$sub"
+              done > deps.tsv
+          echo "fil-forge deps:"; cat deps.tsv || true
+
+          auth_url() { echo "https://x-access-token:${GH_TOKEN}@github.com/fil-forge/$1.git"; }
+
+          : > matched.tsv
+          matched_repos=""
+          seen=""
+          while IFS=$'\t' read -r mod repo sub; do
+            [ -z "$repo" ] && continue
+            case " $seen " in *" $repo "*) ;; *)
+              seen="$seen $repo"
+              if git ls-remote --exit-code --heads "$(auth_url "$repo")" "$HEAD_REF" >/dev/null 2>&1; then
+                echo "match: $repo has branch $HEAD_REF"
+                matched_repos="$matched_repos $repo"
+              fi
+            ;; esac
+          done < deps.tsv
+
+          # Keep only the dep lines whose repo matched (a repo may host >1 module).
+          while IFS=$'\t' read -r mod repo sub; do
+            case " $matched_repos " in *" $repo "*) printf '%s\t%s\t%s\n' "$mod" "$repo" "$sub" >> matched.tsv ;; esac
+          done < deps.tsv
+
+          if [ -n "$matched_repos" ]; then
+            echo "matched=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "matched=false" >> "$GITHUB_OUTPUT"
+          fi
+          # Display list: comma-separated, trimmed.
+          echo "repos=$(echo "$matched_repos" | xargs | sed 's/ /, /g')" >> "$GITHUB_OUTPUT"
+          echo "tsv_b64=$(base64 -w0 < matched.tsv 2>/dev/null || base64 < matched.tsv | tr -d '\n')" >> "$GITHUB_OUTPUT"
+
+  # --- Only runs when >=1 sibling matched; otherwise shows as skipped --------
+  workspace-test:
+    needs: detect
+    if: needs.detect.outputs.matched == 'true'
+    name: Workspace test (${{ needs.detect.outputs.repos }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout primary repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: false
+
+      # Clone only the matching-branch siblings (de-duped per repo).
+      - name: Clone matching siblings
+        run: |
+          set -euo pipefail
+          mkdir -p _siblings
+          base64 -d <<< '${{ needs.detect.outputs.tsv_b64 }}' > matched.tsv || true
+
+          auth_url() { echo "https://x-access-token:${GH_TOKEN}@github.com/fil-forge/$1.git"; }
+          seen=""
+          while IFS=$'\t' read -r _mod repo _sub; do
+            [ -z "$repo" ] && continue
+            case " $seen " in *" $repo "*) continue ;; esac
+            seen="$seen $repo"
+            git clone --depth 1 --branch "$HEAD_REF" "$(auth_url "$repo")" "_siblings/$repo" 2>&1 \
+              | sed 's#x-access-token:[^@]*@#x-access-token:***@#g'
+            echo "cloned $repo @ $HEAD_REF"
+          done < matched.tsv
+
+      - name: Synthesize go.work
+        run: |
+          set -euo pipefail
+          base64 -d <<< '${{ needs.detect.outputs.tsv_b64 }}' > matched.tsv || true
+
+          # Module dirs to `go work use` (handles subdir modules).
+          members=""
+          while IFS=$'\t' read -r _mod repo sub; do
+            [ -d "_siblings/$repo" ] || continue
+            if [ "$sub" = "." ]; then p="./_siblings/$repo"; else p="./_siblings/$repo/$sub"; fi
+            [ -f "$p/go.mod" ] && members="$members $p"
+          done < matched.tsv
+
+          # Workspace `go` directive must be >= the max across all members.
+          maxver="$(go mod edit -json | jq -r '.Go')"
+          for m in $members; do
+            v="$(cd "$m" && go mod edit -json | jq -r '.Go')"
+            maxver="$(printf '%s\n%s\n' "$maxver" "$v" | sort -V | tail -1)"
+          done
+          echo "workspace go directive -> $maxver"
+
+          rm -f go.work go.work.sum
+          go work init
+          go work edit -go "$maxver"
+          go work use .
+          for m in $members; do go work use "$m"; done
+
+          # Replicate the parent go.work's replace so CI matches local dev.
+          go work edit -replace google.golang.org/genproto=google.golang.org/genproto@v0.0.0-20260526163538-3dc84a4a5aaa
+
+          echo "----- go.work -----"; cat go.work
+          go work sync || true
+
+      # Run the repo's own `make test` target so the test command stays a single
+      # source of truth per repo. It runs from the repo root and inherits the
+      # synthesized go.work via cwd (do NOT set GOWORK=off), so the matching
+      # sibling branches are what gets tested. Linting is intentionally NOT run
+      # here — that's each repo's separate go-check.yml signal.
+      - name: make test (against the workspace)
+        run: make test
+
+      - name: Summary
+        if: ${{ always() }}
+        run: |
+          {
+            echo "### Workspace test"
+            echo ""
+            echo "Tested against matching sibling branches (\`$HEAD_REF\`): **${{ needs.detect.outputs.repos }}**"
+          } >> "$GITHUB_STEP_SUMMARY"
