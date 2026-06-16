@@ -9,8 +9,8 @@ import (
 
 func NewResolver(authority did.DID) did.ResolverFunc {
 	return func(_ context.Context, d did.DID) (did.Document, error) {
-		if d.Method() != Method {
-			return did.Document{}, did.MethodNotSupportedError{Method: d.Method()}
+		if err := did.ValidateMethod(d, Method); err != nil {
+			return did.Document{}, err
 		}
 
 		doc := did.NewDocument(d)
