@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/fil-forge/libforge/identity"
-	"github.com/fil-forge/ucantone/verification/multikey/ed25519"
+	"github.com/fil-forge/ucantone/multikey/ed25519"
 	"github.com/stretchr/testify/require"
 )
 

@@ -7,8 +7,8 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"github.com/fil-forge/ucantone/verification/multikey"
-	"github.com/fil-forge/ucantone/verification/multikey/ed25519"
+	"github.com/fil-forge/ucantone/multikey"
+	"github.com/fil-forge/ucantone/multikey/ed25519"
 )
 
 // EncodeSignerToPEM encodes a signer to a PKCS#8 PEM format. The signer's key

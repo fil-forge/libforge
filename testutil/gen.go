@@ -10,8 +10,9 @@ var (
 	RandomDigest         = testutil.RandomDigest
 	RandomDID            = testutil.RandomDID
 	RandomSigner         = testutil.RandomSigner
-	RandomMultikeyIssuer = testutil.RandomMultikeyIssuer
 	RandomIssuer         = testutil.RandomIssuer
+	RandomMultikeySigner = testutil.RandomMultikeySigner
+	RandomMultikeyIssuer = testutil.RandomMultikeyIssuer
 	RandomPrincipal      = testutil.RandomPrincipal
 
 	// Deprecated alias for RandomDigest, which is a more accurate name.

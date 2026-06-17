@@ -7,7 +7,7 @@ import (
 
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/ucan"
-	"github.com/fil-forge/ucantone/verification"
+	"github.com/fil-forge/ucantone/validator"
 )
 
 var (
@@ -15,12 +15,12 @@ var (
 	AuthorityProp = "authority"
 )
 
-// NewVerifierFactory returns a [verification.Factory] for AuthorityAttestation
-// verification methods. Pass it to the validator via
+// NewVerifierFactory returns a [validator.VerifierFactory] for
+// AuthorityAttestation verification methods. Pass it to the validator via
 // [validator.WithVerifierFactories]. The provided DID resolver and
 // verifierFactories are used to derive verifiers for the authority's own
 // verification methods.
-func NewVerifierFactory(resolver did.Resolver, verifierFactories map[string]verification.Factory) verification.Factory {
+func NewVerifierFactory(resolver did.Resolver, verifierFactories map[string]validator.VerifierFactory) validator.VerifierFactory {
 	return func(ctx context.Context, mat did.VerificationMaterial) (ucan.Verifier, error) {
 		authorityDidStr, ok := mat[AuthorityProp].(string)
 		if !ok {
@@ -66,12 +66,12 @@ func (m multiVerifier) String() string {
 	return fmt.Sprintf("multiVerifier{%d verifiers: %s}", len(m), str.String())
 }
 
-func newMultiVerifier(ctx context.Context, registry map[string]verification.Factory, vms []did.VerificationMethod) (ucan.Verifier, error) {
+func newMultiVerifier(ctx context.Context, registry map[string]validator.VerifierFactory, vms []did.VerificationMethod) (ucan.Verifier, error) {
 	verifiers := make([]ucan.Verifier, 0, len(vms))
 	for _, vm := range vms {
 		f, ok := registry[vm.Type]
 		if !ok {
-			return nil, fmt.Errorf("%w for VM type %q", verification.ErrNoVerifierFactory, vm.Type)
+			return nil, fmt.Errorf("%w for VM type %q", validator.ErrNoVerifierFactory, vm.Type)
 		}
 		v, err := f(ctx, vm.Material)
 		if err != nil {

@@ -4,8 +4,8 @@ import (
 	"net/url"
 
 	"github.com/fil-forge/ucantone/did"
-	"github.com/fil-forge/ucantone/verification/multikey"
-	"github.com/fil-forge/ucantone/verification/multikey/ed25519"
+	"github.com/fil-forge/ucantone/multikey"
+	"github.com/fil-forge/ucantone/multikey/ed25519"
 )
 
 var (
