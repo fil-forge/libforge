@@ -17,11 +17,6 @@ type ProofStore interface {
 	// in strict sequence where the aud of the previous Delegation matches the iss
 	// of the next Delegation.
 	ProofChain(ctx context.Context, aud did.DID, cmd ucan.Command, sub did.DID) ([]ucan.Delegation, []cid.Cid, error)
-	// ProofAttestations returns a list of attestations for proofs that need them.
-	// i.e. if a proof is signed with a non-standard signature this function will
-	// fetch an attestation for it, and fail if it cannot. The authority parameter
-	// is the DID of the service we trust to be issuing attestations.
-	// ProofAttestations(ctx context.Context, proofs []ucan.Delegation, authority did.DID) ([]ucan.Invocation, error)
 }
 
 // ContainerProofStore is a proof store backed by an in-memory container.
@@ -37,10 +32,6 @@ func NewContainerProofStore(ct ucan.Container) *ContainerProofStore {
 func (cps *ContainerProofStore) ProofChain(ctx context.Context, aud did.DID, cmd ucan.Command, sub did.DID) ([]ucan.Delegation, []cid.Cid, error) {
 	return ProofChain(ctx, cps.matchDelegations, aud, cmd, sub)
 }
-
-// func (cps *ContainerProofStore) ProofAttestations(ctx context.Context, proofs []ucan.Delegation, authority did.DID) ([]ucan.Invocation, error) {
-// 	return ProofAttestations(ctx, cps.listInvocations, proofs, authority)
-// }
 
 func (ps *ContainerProofStore) listDelegations(ctx context.Context, aud did.DID, cmd ucan.Command, sub did.DID) iter.Seq2[ucan.Delegation, error] {
 	return func(yield func(ucan.Delegation, error) bool) {
@@ -60,18 +51,3 @@ func (ps *ContainerProofStore) listDelegations(ctx context.Context, aud did.DID,
 func (ps *ContainerProofStore) matchDelegations(ctx context.Context, aud did.DID, cmd ucan.Command, sub did.DID) iter.Seq2[ucan.Delegation, error] {
 	return NewDelegationMatcher(ps.listDelegations)(ctx, aud, cmd, sub)
 }
-
-// func (ps *ContainerProofStore) listInvocations(ctx context.Context, aud did.DID, cmd ucan.Command, sub did.DID) iter.Seq2[ucan.Invocation, error] {
-// 	return func(yield func(ucan.Invocation, error) bool) {
-// 		if ps.container == nil {
-// 			return
-// 		}
-// 		for _, d := range ps.container.Invocations() {
-// 			if d.Audience() == aud && d.Command() == cmd && d.Subject() == sub {
-// 				if !yield(d, nil) {
-// 					return
-// 				}
-// 			}
-// 		}
-// 	}
-// }
