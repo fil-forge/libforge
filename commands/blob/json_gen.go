@@ -68,6 +68,26 @@ func (t *AllocateArguments) MarshalDagJSON(w io.Writer) error {
 	}
 
 	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Space (did.DID) (struct)
+	if len("space") > 8192 {
+		return fmt.Errorf("string in field \"space\" was too long")
+	}
+	if err := jw.WriteString(string("space")); err != nil {
+		return fmt.Errorf("writing string for field \"space\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.Space.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Space: %w", err)
+	}
+	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -125,6 +145,14 @@ func (t *AllocateArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 					t.Cause = c
 
 				}
+
+				// t.Space (did.DID) (struct)
+			case "space":
+
+				if err := t.Space.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Space: %w", err)
+				}
+
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
@@ -714,6 +742,26 @@ func (t *AcceptArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("marshaling field t.Blob: %w", err)
 	}
 	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Space (did.DID) (struct)
+	if len("space") > 8192 {
+		return fmt.Errorf("string in field \"space\" was too long")
+	}
+	if err := jw.WriteString(string("space")); err != nil {
+		return fmt.Errorf("writing string for field \"space\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.Space.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Space: %w", err)
+	}
+	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -765,6 +813,13 @@ func (t *AcceptArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 
 				if err := t.Blob.UnmarshalDagJSON(jr); err != nil {
 					return fmt.Errorf("unmarshaling t.Blob: %w", err)
+				}
+
+				// t.Space (did.DID) (struct)
+			case "space":
+
+				if err := t.Space.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Space: %w", err)
 				}
 
 			default:
