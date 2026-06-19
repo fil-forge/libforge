@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/fil-forge/ucantone/execution"
-	"github.com/fil-forge/ucantone/principal"
 	"github.com/fil-forge/ucantone/server"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/container"
@@ -28,12 +27,12 @@ import (
 // permitted and ignored).
 type Server struct {
 	*server.HTTPServer
-	id    principal.Signer
+	id    ucan.Issuer
 	codec *HTTPHeaderInboundCodec
 }
 
 // NewServer creates a new UCAN retrieval server.
-func NewServer(id principal.Signer, options ...server.HTTPOption) *Server {
+func NewServer(id ucan.Issuer, options ...server.HTTPOption) *Server {
 	codec := DefaultHTTPHeaderInboundCodec
 	options = append(options, server.WithHTTPCodec(codec))
 	return &Server{

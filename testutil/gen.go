@@ -1,34 +1,20 @@
 package testutil
 
 import (
-	crand "crypto/rand"
-	"testing"
-
-	"github.com/fil-forge/ucantone/did"
-	"github.com/fil-forge/ucantone/principal/ed25519"
-	"github.com/ipfs/go-cid"
-	mh "github.com/multiformats/go-multihash"
+	"github.com/fil-forge/ucantone/testutil"
 )
 
-func RandomBytes(t *testing.T, size int) []byte {
-	bytes := make([]byte, size)
-	_, _ = crand.Read(bytes)
-	return bytes
-}
+var (
+	RandomBytes          = testutil.RandomBytes
+	RandomCID            = testutil.RandomCID
+	RandomDigest         = testutil.RandomDigest
+	RandomDID            = testutil.RandomDID
+	RandomSigner         = testutil.RandomSigner
+	RandomIssuer         = testutil.RandomIssuer
+	RandomMultikeySigner = testutil.RandomMultikeySigner
+	RandomMultikeyIssuer = testutil.RandomMultikeyIssuer
+	RandomPrincipal      = testutil.RandomPrincipal
 
-func RandomCID(t *testing.T) cid.Cid {
-	return cid.NewCidV1(cid.Raw, RandomMultihash(t))
-}
-
-func RandomDID(t *testing.T) did.DID {
-	return RandomSigner(t).DID()
-}
-
-func RandomMultihash(t *testing.T) mh.Multihash {
-	bytes := RandomBytes(t, 10)
-	return Must(mh.Sum(bytes, mh.SHA2_256, -1))(t)
-}
-
-func RandomSigner(t *testing.T) ed25519.Signer {
-	return Must(ed25519.Generate())(t)
-}
+	// Deprecated alias for RandomDigest, which is a more accurate name.
+	RandomMultihash = testutil.RandomDigest
+)

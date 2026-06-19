@@ -18,13 +18,13 @@ func TestFromToArchive(t *testing.T) {
 		byteRange []int
 	}{
 		testutil.RandomCID(t): {
-			{digest: testutil.RandomMultihash(t), byteRange: []int{0, 99}},
-			{digest: testutil.RandomMultihash(t), byteRange: []int{100, 199}},
-			{digest: testutil.RandomMultihash(t), byteRange: []int{200, 299}},
+			{digest: testutil.RandomDigest(t), byteRange: []int{0, 99}},
+			{digest: testutil.RandomDigest(t), byteRange: []int{100, 199}},
+			{digest: testutil.RandomDigest(t), byteRange: []int{200, 299}},
 		},
 		testutil.RandomCID(t): {
-			{digest: testutil.RandomMultihash(t), byteRange: []int{0, 34}},
-			{digest: testutil.RandomMultihash(t), byteRange: []int{35, 58}},
+			{digest: testutil.RandomDigest(t), byteRange: []int{0, 34}},
+			{digest: testutil.RandomDigest(t), byteRange: []int{35, 58}},
 		},
 	}
 
