@@ -12,7 +12,7 @@ import (
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/invocation"
-	"github.com/fil-forge/ucantone/validator"
+	"github.com/fil-forge/ucantone/ucan/token"
 )
 
 // Verifier is a ucan.Verifier for a DID whose signing is attested by an
@@ -54,7 +54,13 @@ func (v Verifier) Verify(msg []byte, sig []byte) bool {
 		return false
 	}
 
-	if validator.ValidateInvocation(v.ctx, inv) != nil {
+	// Verify the attestation invocation was actually signed by the authority,
+	// using the already-resolved authority verifier directly. Previously this
+	// re-validated via validator.ValidateInvocation with no options, which
+	// defaults to a did:key-only resolver and therefore fails to resolve a
+	// did:web authority — the cause of "signature mismatch" for did:web services
+	// (e.g. did:web:upload) while did:key authorities (and unit tests) passed.
+	if !token.VerifySignature(inv, v.authorityVerifier) {
 		return false
 	}
 
