@@ -15,10 +15,7 @@ import (
 )
 
 // These codecs are hand-written because cbor-gen / dag-json-gen do not support
-// slice-valued maps. They follow the conventions of the generated code: DAG-CBOR
-// map keys are emitted in canonical (length-then-lexicographic) order, DAG-JSON
-// object keys in lexicographic order, and dynamic map keys are sorted before
-// encoding for deterministic output.
+// slice-valued maps.
 
 const (
 	maxString = 8192
