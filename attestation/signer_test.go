@@ -2,6 +2,7 @@ package attestation_test
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/ipfs/go-cid"
@@ -20,6 +21,58 @@ import (
 	"github.com/fil-forge/libforge/commands/ucan/attest"
 	"github.com/fil-forge/libforge/testutil"
 )
+
+// TestChainedAttestation verifies that attested signatures chain correctly when
+// the authority is itself a did:mailto attested by a root key. In other words,
+// this demonstrates that the signature is validated as an invocation using the
+// same DID resolvers and verifier factories that the top `ValidateToken` got.
+func TestChainedAttestation(t *testing.T) {
+	// root signs with real ed25519 keys (did:key)
+	root := testutil.RandomIssuer(t)
+
+	// service is a did:mailto DID that signs via attestation from root
+	serviceDID, err := did.Parse("did:mailto:service.example.com:svc")
+	require.NoError(t, err)
+	service := attestation.Attest(t.Context(), serviceDID, root)
+
+	// alice is a did:mailto DID that signs via attestation from service
+	aliceDID, err := did.Parse("did:mailto:example.com:alice")
+	require.NoError(t, err)
+	alice := attestation.Attest(t.Context(), aliceDID, service)
+
+	del, err := delegation.Delegate(
+		alice,
+		testutil.RandomDID(t),
+		alice.DID(),
+		command.MustParse("/example/command"),
+	)
+	require.NoError(t, err)
+
+	encoded, err := delegation.Encode(del)
+	require.NoError(t, err)
+
+	decoded, err := delegation.Decode(encoded)
+	require.NoError(t, err)
+
+	// The resolver needs to know both mailto DIDs with their distinct authorities.
+	resolver := did.ResolverMap{
+		"key": key.Resolver,
+		"mailto": did.ResolverFunc(func(ctx context.Context, d did.DID) (did.Document, error) {
+			authority := serviceDID // default: alice and others attested by service
+			if d == serviceDID {
+				authority = root.DID() // service itself is attested by root
+			}
+			return didmailto.NewResolver(authority).Resolve(ctx, d)
+		}),
+	}
+	factories := validator.DefaultFactories()
+	factories[attestation.Type] = attestation.NewVerifierFactory(resolver, factories)
+	err = validator.ValidateToken(t.Context(), decoded,
+		validator.WithDIDResolver(resolver),
+		validator.WithVerifierFactories(factories),
+	)
+	require.NoError(t, err)
+}
 
 func TestSigner(t *testing.T) {
 	authority := testutil.RandomIssuer(t)

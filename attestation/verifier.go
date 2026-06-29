@@ -21,6 +21,7 @@ type Verifier struct {
 	ctx               context.Context
 	authorityID       did.DID
 	authorityVerifier ucan.Verifier
+	validationOptions []validator.Option
 }
 
 var _ ucan.Verifier = Verifier{}
@@ -54,17 +55,18 @@ func (v Verifier) Verify(msg []byte, sig []byte) bool {
 		return false
 	}
 
-	if validator.ValidateInvocation(v.ctx, inv) != nil {
+	if validator.ValidateInvocation(v.ctx, inv, v.validationOptions...) != nil {
 		return false
 	}
 
 	return true
 }
 
-func AttestedVerifier(ctx context.Context, authorityID did.DID, authority ucan.Verifier) ucan.Verifier {
+func AttestedVerifier(ctx context.Context, authorityID did.DID, authority ucan.Verifier, options ...validator.Option) ucan.Verifier {
 	return Verifier{
 		ctx:               ctx,
 		authorityID:       authorityID,
 		authorityVerifier: authority,
+		validationOptions: options,
 	}
 }

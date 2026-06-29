@@ -39,7 +39,10 @@ func NewVerifierFactory(resolver did.Resolver, verifierFactories map[string]vali
 		if err != nil {
 			return nil, fmt.Errorf("failed to derive multi-verifier: %w", err)
 		}
-		return AttestedVerifier(ctx, authorityDid, v), nil
+		return AttestedVerifier(ctx, authorityDid, v,
+			validator.WithDIDResolver(resolver),
+			validator.WithVerifierFactories(verifierFactories),
+		), nil
 	}
 }
 
