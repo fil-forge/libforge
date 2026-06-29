@@ -157,52 +157,77 @@ maximizes the risk of subtle byte drift across ~19.4k lines of generated code
 (key ordering, header bytes, `omitempty` semantics, scratch-buffer use, the
 `// t.Field (type)` comments cbor-gen emits, interface detection). We reject it.
 
-Instead: **fork cbor-gen and dag-json-gen at their pinned versions and keep the
-byte-producing code verbatim; replace only the front end.** Internally these
-generators are two layers:
+Instead: **keep cbor-gen's and dag-json-gen's byte-producing code verbatim and
+replace only how it learns about types.** Internally each generator is two
+layers, and — verified against `whyrusleeping/cbor-gen@v0.3.1` — **both are
+already exported**:
 
 ```
-ParseTypeInfo(reflect.Type) → GenTypeInfo {Fields []Field}      ← reflect front end
-GenMapEncodersForType / GenTupleEncodersForType(*GenTypeInfo)    ← byte-producing back end
+ParseTypeInfo(interface{}) (*GenTypeInfo, error)               ← reflect front end (gen.go:239)
+GenMapEncodersForType / GenTupleEncodersForType(*GenTypeInfo)   ← byte-producing back end (gen.go:1997 / :1698)
+type GenTypeInfo struct { Fields []Field }                     ← gen.go:199
+type Field struct { Type reflect.Type; … }                     ← gen.go:141
 ```
 
 The back end is where the bytes come from. If we leave it untouched and supply a
 `GenTypeInfo` built from `go/types` instead of `reflect`, output is identical by
 construction.
 
-The complication: `Field.Type` is a `reflect.Type`, and the back end calls
-`reflect` methods on it (`Kind`, `Elem`, `Key`, `Name`, `PkgPath`, `Implements`,
-struct iteration, `String`). So the central task of the fork is to **abstract
-that `reflect.Type` dependency behind a small interface** — call it `TypeRef` —
-covering only the handful of methods the back end actually uses, then provide:
+**So why a fork at all, if the back end is exported?** Because of exactly one
+field: `Field.Type` is a concrete `reflect.Type`, and the back end is hard-wired
+to it — in `v0.3.1`'s `gen.go` that's **~83 reflect-method calls** on field
+types (`43× Kind`, `26× Elem`, plus `Key`/`Len`/`Name`/`PkgPath`/`String`/
+`NumField`) and **3 identity sentinels** built with `reflect.TypeOf` and compared
+by `==`:
 
-- a `reflect`-backed `TypeRef` (lets us A/B against upstream during the port),
-  and
-- a `go/types`-backed `TypeRef` (the real front end).
+```go
+cidType      = reflect.TypeOf(cid.Cid{})
+bigIntType   = reflect.TypeOf(big.Int{})
+deferredType = reflect.TypeOf(Deferred{})
+// … if f.Type == cidType { … }
+```
+
+You cannot populate `Field.Type` from `go/types`, and you cannot faithfully
+synthesize a `reflect.Type` (named types, custom-marshaler detection, recursion,
+and those `==` checks all need the real runtime type). So the export lets us
+*call* the emitter but not *feed it without reflection*. Removing the reflection
+requirement means editing `Field.Type`'s type and the sentinel comparisons —
+source changes, hence a patched copy.
+
+**"Fork" = a patched copy we own in-tree** (e.g. `cmd/forgegen/internal/cborgen`),
+*not* a GitHub fork. (A GitHub fork + `go.mod replace` is possible but adds no
+value here.) The patch is small and mechanical: introduce an interface — call it
+`TypeRef` — replacing `reflect.Type` in `Field.Type` and the few helpers, and
+turn the 3 sentinels into methods (`IsCid()` / `IsBigInt()` / `IsDeferred()`).
+`Kind()` can keep returning `reflect.Kind` (it's just an enum — only
+`reflect.Type` itself is unsynthesizable), so the 43 `.Kind()` switch cases stay
+untouched.
 
 ```go
 type TypeRef interface {
-    Kind() Kind            // map onto the reflect.Kind cases the emitter switches on
+    Kind() reflect.Kind   // reuse the enum; only reflect.Type is unsynthesizable
     Elem() TypeRef
     Key() TypeRef
+    Len() int
     Name() string
     PkgPath() string
-    Implements(iface) bool // CBORMarshaler / json marshaler detection
-    Fields() []FieldRef    // for nested struct literals
     String() string
+    Fields() []FieldRef    // nested struct literals
+    Implements(iface) bool // CBORMarshaler / json marshaler detection
+    IsCid() bool; IsBigInt() bool; IsDeferred() bool
 }
 ```
 
-This is a contained, well-defined fork: we own ~the front end of two small
-libraries, the emitter logic stays upstream-equivalent, and divergence from
-upstream is limited to the `TypeRef` seam.
+Provide two implementations: a `reflect`-backed one (lets us A/B against upstream
+during the port) and the real `go/types`-backed one. The ~2000 lines of
+byte-producing logic are otherwise unchanged — which is what keeps the output
+frozen. Divergence from upstream is confined to the `TypeRef` seam.
 
-> Verification needed during implementation: confirm the exact exported/unexported
-> surface of `whyrusleeping/cbor-gen@v0.3.1` and `alanshaw/dag-json-gen@v0.0.6`
-> (`GenTypeInfo`, `Field`, the `Gen*EncodersForType` functions) and the precise
-> set of `reflect.Type` methods the back end calls. The `TypeRef` interface is
-> sized to that set. The plan is robust to the details, but the seam's exact
-> shape depends on them.
+> Considered and rejected: transpiling the parsed structs into a throwaway
+> package, compiling *that* in isolation, and reflecting over it (avoids the
+> fork). It fails because the synthetic package still imports the real referenced
+> types (`did.DID`, `promise.AwaitOK`, …), so those must compile — back to the
+> bootstrap requirement.
 
 ### 4.4 The tool — `cmd/forgegen`
 
