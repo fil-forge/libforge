@@ -29,44 +29,12 @@ func (t *AddArguments) MarshalCBOR(w io.Writer) error {
 	cw := cbg.NewCborWriter(w)
 	fieldCount := 4
 
-	if t.Account == nil {
+	if t.ExternalAccount == nil {
 		fieldCount--
 	}
 
 	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
 		return err
-	}
-
-	// t.Account (string) (string)
-	if t.Account != nil {
-
-		if len("account") > 8192 {
-			return xerrors.Errorf("Value in field \"account\" was too long")
-		}
-
-		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("account"))); err != nil {
-			return err
-		}
-		if _, err := cw.WriteString(string("account")); err != nil {
-			return err
-		}
-
-		if t.Account == nil {
-			if _, err := cw.Write(cbg.CborNull); err != nil {
-				return err
-			}
-		} else {
-			if len(*t.Account) > 8192 {
-				return xerrors.Errorf("Value in field t.Account was too long")
-			}
-
-			if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(*t.Account))); err != nil {
-				return err
-			}
-			if _, err := cw.WriteString(string(*t.Account)); err != nil {
-				return err
-			}
-		}
 	}
 
 	// t.Details (map[string]string) (map)
@@ -154,6 +122,38 @@ func (t *AddArguments) MarshalCBOR(w io.Writer) error {
 	if err := t.Customer.MarshalCBOR(cw); err != nil {
 		return err
 	}
+
+	// t.ExternalAccount (string) (string)
+	if t.ExternalAccount != nil {
+
+		if len("externalAccount") > 8192 {
+			return xerrors.Errorf("Value in field \"externalAccount\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("externalAccount"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("externalAccount")); err != nil {
+			return err
+		}
+
+		if t.ExternalAccount == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if len(*t.ExternalAccount) > 8192 {
+				return xerrors.Errorf("Value in field t.ExternalAccount was too long")
+			}
+
+			if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(*t.ExternalAccount))); err != nil {
+				return err
+			}
+			if _, err := cw.WriteString(string(*t.ExternalAccount)); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -182,7 +182,7 @@ func (t *AddArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 	n := extra
 
-	nameBuf := make([]byte, 8)
+	nameBuf := make([]byte, 15)
 	for i := uint64(0); i < n; i++ {
 		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
 		if err != nil {
@@ -198,28 +198,7 @@ func (t *AddArguments) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Account (string) (string)
-		case "account":
-
-			{
-				b, err := cr.ReadByte()
-				if err != nil {
-					return err
-				}
-				if b != cbg.CborNull[0] {
-					if err := cr.UnreadByte(); err != nil {
-						return err
-					}
-
-					sval, err := cbg.ReadStringWithMax(cr, 8192)
-					if err != nil {
-						return err
-					}
-
-					t.Account = (*string)(&sval)
-				}
-			}
-			// t.Details (map[string]string) (map)
+		// t.Details (map[string]string) (map)
 		case "details":
 
 			maj, extra, err = cr.ReadHeader()
@@ -281,6 +260,27 @@ func (t *AddArguments) UnmarshalCBOR(r io.Reader) (err error) {
 					return xerrors.Errorf("unmarshaling t.Customer: %w", err)
 				}
 
+			}
+			// t.ExternalAccount (string) (string)
+		case "externalAccount":
+
+			{
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					sval, err := cbg.ReadStringWithMax(cr, 8192)
+					if err != nil {
+						return err
+					}
+
+					t.ExternalAccount = (*string)(&sval)
+				}
 			}
 
 		default:

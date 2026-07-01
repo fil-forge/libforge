@@ -31,37 +31,6 @@ func (t *AddArguments) MarshalDagJSON(w io.Writer) error {
 	}
 	written := 0
 
-	// t.Account (string) (string)
-	if t.Account != nil {
-		if len("account") > 8192 {
-			return fmt.Errorf("string in field \"account\" was too long")
-		}
-		if err := jw.WriteString(string("account")); err != nil {
-			return fmt.Errorf("writing string for field \"account\": %w", err)
-		}
-		if err := jw.WriteObjectColon(); err != nil {
-			return err
-		}
-		if t.Account == nil {
-			if err := jw.WriteNull(); err != nil {
-				return fmt.Errorf("writing null for field t.Account: %w", err)
-			}
-		} else {
-			if len(*t.Account) > 8192 {
-				return fmt.Errorf("string in field t.Account was too long")
-			}
-			if err := jw.WriteString(string(*t.Account)); err != nil {
-				return fmt.Errorf("writing string for field t.Account: %w", err)
-			}
-		}
-		written++
-	}
-	if written > 0 {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
 	// t.Customer (did.DID) (struct)
 	if len("customer") > 8192 {
 		return fmt.Errorf("string in field \"customer\" was too long")
@@ -136,6 +105,39 @@ func (t *AddArguments) MarshalDagJSON(w io.Writer) error {
 	}
 
 	written++
+	if t.ExternalAccount != nil {
+		if written > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// t.ExternalAccount (string) (string)
+	if t.ExternalAccount != nil {
+		if len("externalAccount") > 8192 {
+			return fmt.Errorf("string in field \"externalAccount\" was too long")
+		}
+		if err := jw.WriteString(string("externalAccount")); err != nil {
+			return fmt.Errorf("writing string for field \"externalAccount\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+		if t.ExternalAccount == nil {
+			if err := jw.WriteNull(); err != nil {
+				return fmt.Errorf("writing null for field t.ExternalAccount: %w", err)
+			}
+		} else {
+			if len(*t.ExternalAccount) > 8192 {
+				return fmt.Errorf("string in field t.ExternalAccount was too long")
+			}
+			if err := jw.WriteString(string(*t.ExternalAccount)); err != nil {
+				return fmt.Errorf("writing string for field t.ExternalAccount: %w", err)
+			}
+		}
+		written++
+	}
 	if written > 0 {
 		if err := jw.WriteComma(); err != nil {
 			return err
@@ -195,22 +197,7 @@ func (t *AddArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Account (string) (string)
-			case "account":
-				{
-					sval, err := jr.ReadStringOrNull(8192)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("reading string or null for field t.Account: string too long")
-						}
-						return fmt.Errorf("reading string or null for field t.Account: %w", err)
-					}
-					if sval != nil {
-						t.Account = (*string)(sval)
-					}
-				}
-
-				// t.Customer (did.DID) (struct)
+			// t.Customer (did.DID) (struct)
 			case "customer":
 
 				if err := t.Customer.UnmarshalDagJSON(jr); err != nil {
@@ -268,6 +255,21 @@ func (t *AddArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 						if close {
 							break
 						}
+					}
+				}
+
+				// t.ExternalAccount (string) (string)
+			case "externalAccount":
+				{
+					sval, err := jr.ReadStringOrNull(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading string or null for field t.ExternalAccount: string too long")
+						}
+						return fmt.Errorf("reading string or null for field t.ExternalAccount: %w", err)
+					}
+					if sval != nil {
+						t.ExternalAccount = (*string)(sval)
 					}
 				}
 
