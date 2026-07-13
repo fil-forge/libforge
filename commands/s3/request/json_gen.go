@@ -12,6 +12,7 @@ import (
 	"sort"
 
 	jsg "github.com/alanshaw/dag-json-gen"
+	did "github.com/fil-forge/ucantone/did"
 	cid "github.com/ipfs/go-cid"
 )
 
@@ -123,19 +124,21 @@ func (t *AuthorizeOK) MarshalDagJSON(w io.Writer) error {
 	written := 0
 
 	// t.Bucket (did.DID) (struct)
-	if len("bucket") > 8192 {
-		return fmt.Errorf("string in field \"bucket\" was too long")
+	if t.Bucket != nil {
+		if len("bucket") > 8192 {
+			return fmt.Errorf("string in field \"bucket\" was too long")
+		}
+		if err := jw.WriteString(string("bucket")); err != nil {
+			return fmt.Errorf("writing string for field \"bucket\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+		if err := t.Bucket.MarshalDagJSON(jw); err != nil {
+			return fmt.Errorf("marshaling field t.Bucket: %w", err)
+		}
+		written++
 	}
-	if err := jw.WriteString(string("bucket")); err != nil {
-		return fmt.Errorf("writing string for field \"bucket\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if err := t.Bucket.MarshalDagJSON(jw); err != nil {
-		return fmt.Errorf("marshaling field t.Bucket: %w", err)
-	}
-	written++
 	if written > 0 {
 		if err := jw.WriteComma(); err != nil {
 			return err
@@ -238,8 +241,21 @@ func (t *AuthorizeOK) UnmarshalDagJSON(r io.Reader) (err error) {
 			// t.Bucket (did.DID) (struct)
 			case "bucket":
 
-				if err := t.Bucket.UnmarshalDagJSON(jr); err != nil {
-					return fmt.Errorf("unmarshaling t.Bucket: %w", err)
+				{
+					null, err := jr.PeekNull()
+					if err != nil {
+						return fmt.Errorf("peeking null for field t.Bucket: %w", err)
+					}
+					if null {
+						if err := jr.ReadNull(); err != nil {
+							return fmt.Errorf("reading null for field t.Bucket: %w", err)
+						}
+					} else {
+						t.Bucket = new(did.DID)
+						if err := t.Bucket.UnmarshalDagJSON(jr); err != nil {
+							return fmt.Errorf("unmarshaling t.Bucket pointer: %w", err)
+						}
+					}
 				}
 
 				// t.Delegations (s3.ProofSet) (struct)

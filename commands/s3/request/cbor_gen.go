@@ -10,6 +10,7 @@ import (
 	"math"
 	"sort"
 
+	did "github.com/fil-forge/ucantone/did"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
@@ -119,8 +120,13 @@ func (t *AuthorizeOK) MarshalCBOR(w io.Writer) error {
 	}
 
 	cw := cbg.NewCborWriter(w)
+	fieldCount := 4
 
-	if _, err := cw.Write([]byte{164}); err != nil {
+	if t.Bucket == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
 		return err
 	}
 
@@ -141,19 +147,22 @@ func (t *AuthorizeOK) MarshalCBOR(w io.Writer) error {
 	}
 
 	// t.Bucket (did.DID) (struct)
-	if len("bucket") > 8192 {
-		return xerrors.Errorf("Value in field \"bucket\" was too long")
-	}
+	if t.Bucket != nil {
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("bucket"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("bucket")); err != nil {
-		return err
-	}
+		if len("bucket") > 8192 {
+			return xerrors.Errorf("Value in field \"bucket\" was too long")
+		}
 
-	if err := t.Bucket.MarshalCBOR(cw); err != nil {
-		return err
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("bucket"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("bucket")); err != nil {
+			return err
+		}
+
+		if err := t.Bucket.MarshalCBOR(cw); err != nil {
+			return err
+		}
 	}
 
 	// t.Delegations (s3.ProofSet) (struct)
@@ -246,8 +255,18 @@ func (t *AuthorizeOK) UnmarshalCBOR(r io.Reader) (err error) {
 
 			{
 
-				if err := t.Bucket.UnmarshalCBOR(cr); err != nil {
-					return xerrors.Errorf("unmarshaling t.Bucket: %w", err)
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.Bucket = new(did.DID)
+					if err := t.Bucket.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.Bucket pointer: %w", err)
+					}
 				}
 
 			}

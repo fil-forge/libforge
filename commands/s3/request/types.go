@@ -21,8 +21,10 @@ type AuthorizeArguments struct {
 // struct types ([s3.PermissionSet] etc.) with their own codecs, so this struct
 // is generated normally (the generators delegate to a struct field's codec).
 type AuthorizeOK struct {
-	// Bucket is the DID of the bucket addressed by the request.
-	Bucket did.DID `cborgen:"bucket" dagjsongen:"bucket"`
+	// Bucket is the DID of the bucket addressed by the request. Note: not all
+	// requests are bucket-scoped, so this field may be nil. e.g. CreateBucket,
+	// ListAllMyBuckets, etc.
+	Bucket *did.DID `cborgen:"bucket,omitempty" dagjsongen:"bucket,omitempty"`
 	// Permissions maps the access key DID to its assigned S3 permissions.
 	Permissions s3.PermissionSet `cborgen:"permissions" dagjsongen:"permissions"`
 	// Keys maps the access key DID to its derived signing key(s).

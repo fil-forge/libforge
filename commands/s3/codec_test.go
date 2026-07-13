@@ -11,6 +11,7 @@ import (
 	"github.com/fil-forge/libforge/commands/s3/request"
 	"github.com/fil-forge/ucantone/did"
 	"github.com/ipfs/go-cid"
+	"github.com/stretchr/testify/require"
 )
 
 func mustCid(t *testing.T, s string) cid.Cid {
@@ -20,6 +21,10 @@ func mustCid(t *testing.T, s string) cid.Cid {
 		t.Fatalf("parsing cid %q: %v", s, err)
 	}
 	return c
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }
 
 func TestRequestRoundTrip(t *testing.T) {
@@ -68,7 +73,7 @@ func TestAuthorizeOKRoundTrip(t *testing.T) {
 	delCid := mustCid(t, "bafyreienos3cw7hcga5vwani3pberioe2qscnz5jk2um5jajo4v7bwmvvm")
 
 	in := &request.AuthorizeOK{
-		Bucket: did.MustParse("did:key:z6MkmNBgCewjYfEDTdKLpHkbMWUogJk29CxmiVdLeW4Kz3UG"),
+		Bucket: ptr(did.MustParse("did:key:z6MkmNBgCewjYfEDTdKLpHkbMWUogJk29CxmiVdLeW4Kz3UG")),
 		Permissions: s3.PermissionSet{Entries: map[did.DID][]string{
 			access: {"s3:GetObject", "s3:PutObject"},
 		}},
@@ -102,6 +107,27 @@ func TestAuthorizeOKRoundTrip(t *testing.T) {
 	}
 	if !reflect.DeepEqual(*in, outJSON) {
 		t.Fatalf("DAG-JSON round-trip mismatch:\n got %#v\nwant %#v", outJSON, *in)
+	}
+}
+
+func TestAuthorizeOKEmptyValuesRoundTrip(t *testing.T) {
+	// Nil/empty slice-valued maps must encode as empty objects and decode back.
+	in := &request.AuthorizeOK{
+		Permissions: s3.PermissionSet{},
+		Keys:        s3.KeySet{},
+		Delegations: s3.ProofSet{},
+	}
+	var jb bytes.Buffer
+	if err := in.MarshalDagJSON(&jb); err != nil {
+		t.Fatalf("MarshalDagJSON: %v", err)
+	}
+	var out request.AuthorizeOK
+	if err := out.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())); err != nil {
+		t.Fatalf("UnmarshalDagJSON: %v\njson: %s", err, jb.String())
+	}
+	require.Nil(t, out.Bucket)
+	if len(out.Permissions.Entries) != 0 || len(out.Keys.Entries) != 0 || len(out.Delegations.Entries) != 0 {
+		t.Fatalf("expected empty maps, got %#v", out)
 	}
 }
 
@@ -142,26 +168,5 @@ func TestInfoOKRoundTrip(t *testing.T) {
 	}
 	if !reflect.DeepEqual(*in, outJSON) {
 		t.Fatalf("DAG-JSON round-trip mismatch:\n got %#v\nwant %#v", outJSON, *in)
-	}
-}
-
-func TestEmptyMapsRoundTrip(t *testing.T) {
-	// Nil/empty slice-valued maps must encode as empty objects and decode back.
-	in := &request.AuthorizeOK{
-		Bucket:      did.MustParse("did:key:z6MkmNBgCewjYfEDTdKLpHkbMWUogJk29CxmiVdLeW4Kz3UG"),
-		Permissions: s3.PermissionSet{},
-		Keys:        s3.KeySet{},
-		Delegations: s3.ProofSet{},
-	}
-	var jb bytes.Buffer
-	if err := in.MarshalDagJSON(&jb); err != nil {
-		t.Fatalf("MarshalDagJSON: %v", err)
-	}
-	var out request.AuthorizeOK
-	if err := out.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())); err != nil {
-		t.Fatalf("UnmarshalDagJSON: %v\njson: %s", err, jb.String())
-	}
-	if len(out.Permissions.Entries) != 0 || len(out.Keys.Entries) != 0 || len(out.Delegations.Entries) != 0 {
-		t.Fatalf("expected empty maps, got %#v", out)
 	}
 }
