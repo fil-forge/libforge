@@ -69,7 +69,13 @@ type ListBlobItem struct {
 	InsertedAt int64 `cborgen:"insertedAt" dagjsongen:"insertedAt"`
 }
 
+// RemoveArguments releases Space's claim on the blob identified by Digest.
+// Space is explicit (matching Allocate/Accept) because storage nodes key
+// allocations and acceptances by (digest, space): removal drops one space's
+// claim, and the node performs physical deletion only once no space claims
+// the digest at all.
 type RemoveArguments struct {
+	Space  did.DID             `cborgen:"space" dagjsongen:"space"`
 	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
 }
 

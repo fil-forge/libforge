@@ -1161,6 +1161,7 @@ func (t *RemoveArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
+	written := 0
 
 	// t.Digest (multihash.Multihash) (slice)
 	if len("digest") > 8192 {
@@ -1180,6 +1181,27 @@ func (t *RemoveArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Digest: %w", err)
 	}
 
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Space (did.DID) (struct)
+	if len("space") > 8192 {
+		return fmt.Errorf("string in field \"space\" was too long")
+	}
+	if err := jw.WriteString(string("space")); err != nil {
+		return fmt.Errorf("writing string for field \"space\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.Space.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Space: %w", err)
+	}
+	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1233,6 +1255,13 @@ func (t *RemoveArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 					if len(bval) > 0 {
 						t.Digest = []uint8(bval)
 					}
+				}
+
+				// t.Space (did.DID) (struct)
+			case "space":
+
+				if err := t.Space.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Space: %w", err)
 				}
 
 			default:

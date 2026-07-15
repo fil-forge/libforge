@@ -1148,7 +1148,23 @@ func (t *RemoveArguments) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{161}); err != nil {
+	if _, err := cw.Write([]byte{162}); err != nil {
+		return err
+	}
+
+	// t.Space (did.DID) (struct)
+	if len("space") > 8192 {
+		return xerrors.Errorf("Value in field \"space\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("space"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("space")); err != nil {
+		return err
+	}
+
+	if err := t.Space.MarshalCBOR(cw); err != nil {
 		return err
 	}
 
@@ -1220,7 +1236,17 @@ func (t *RemoveArguments) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Digest (multihash.Multihash) (slice)
+		// t.Space (did.DID) (struct)
+		case "space":
+
+			{
+
+				if err := t.Space.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Space: %w", err)
+				}
+
+			}
+			// t.Digest (multihash.Multihash) (slice)
 		case "digest":
 
 			maj, extra, err = cr.ReadHeader()
