@@ -1279,6 +1279,199 @@ func (t *RemoveArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *UnallocateArguments) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+	fieldCount := 3
+
+	if t.Cause == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
+		return err
+	}
+
+	// t.Cause (cid.Cid) (struct)
+	if t.Cause != nil {
+
+		if len("cause") > 8192 {
+			return xerrors.Errorf("Value in field \"cause\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("cause"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("cause")); err != nil {
+			return err
+		}
+
+		if t.Cause == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if err := cbg.WriteCid(cw, *t.Cause); err != nil {
+				return xerrors.Errorf("failed to write cid field t.Cause: %w", err)
+			}
+		}
+
+	}
+
+	// t.Space (did.DID) (struct)
+	if len("space") > 8192 {
+		return xerrors.Errorf("Value in field \"space\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("space"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("space")); err != nil {
+		return err
+	}
+
+	if err := t.Space.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Digest (multihash.Multihash) (slice)
+	if len("digest") > 8192 {
+		return xerrors.Errorf("Value in field \"digest\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("digest"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("digest")); err != nil {
+		return err
+	}
+
+	if len(t.Digest) > 2097152 {
+		return xerrors.Errorf("Byte array in field t.Digest was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Digest))); err != nil {
+		return err
+	}
+
+	if _, err := cw.Write(t.Digest); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *UnallocateArguments) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = UnallocateArguments{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("UnallocateArguments: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 6)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Cause (cid.Cid) (struct)
+		case "cause":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Cause: %w", err)
+					}
+
+					t.Cause = &c
+				}
+
+			}
+			// t.Space (did.DID) (struct)
+		case "space":
+
+			{
+
+				if err := t.Space.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Space: %w", err)
+				}
+
+			}
+			// t.Digest (multihash.Multihash) (slice)
+		case "digest":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 2097152 {
+				return fmt.Errorf("t.Digest: byte array too large (%d)", extra)
+			}
+			if maj != cbg.MajByteString {
+				return fmt.Errorf("expected byte array")
+			}
+
+			if extra > 0 {
+				t.Digest = make([]uint8, extra)
+			}
+
+			if _, err := io.ReadFull(cr, t.Digest); err != nil {
+				return err
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
 func (t *ReplicateArguments) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
