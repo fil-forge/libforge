@@ -25,6 +25,7 @@ func tag(path string) {
 func main() {
 	models := []any{
 		ucan.ConcludeArguments{},
+		ucan.RevokeArguments{},
 	}
 	const (
 		cborFile = "../cbor_gen.go"
