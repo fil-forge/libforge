@@ -33,6 +33,8 @@ func main() {
 		blob.AddArguments{},
 		blob.AddOK{},
 		blob.RemoveArguments{},
+		blob.AbortArguments{},
+		blob.RejectArguments{},
 		blob.ReplicateArguments{},
 		blob.ReplicateOK{},
 		blob.ListArguments{},

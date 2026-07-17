@@ -69,7 +69,32 @@ type ListBlobItem struct {
 	InsertedAt int64 `cborgen:"insertedAt" dagjsongen:"insertedAt"`
 }
 
+// RemoveArguments releases Space's claim on the blob identified by Digest.
+// Space is explicit (matching Allocate/Accept) because storage nodes key
+// allocations and acceptances by (digest, space): removal drops one space's
+// claim, and the node performs physical deletion only once no space claims
+// the digest at all.
 type RemoveArguments struct {
+	Space  did.DID             `cborgen:"space" dagjsongen:"space"`
+	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
+}
+
+// AbortArguments abandons Space's in-flight upload of the parked
+// (never-accepted) blob identified by Digest. Cause is the
+// `/space/blob/add` task link: the upload service uses it to recover which
+// storage node holds the parked blob — a parked blob has no registration or
+// acceptance to look the node up by.
+type AbortArguments struct {
+	Space  did.DID             `cborgen:"space" dagjsongen:"space"`
+	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
+	Cause  cid.Cid             `cborgen:"cause" dagjsongen:"cause"`
+}
+
+// RejectArguments drops Space's allocation for the parked (never-accepted)
+// blob identified by Digest on the storage node; the node deletes the bytes
+// once no space holds an allocation.
+type RejectArguments struct {
+	Space  did.DID             `cborgen:"space" dagjsongen:"space"`
 	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
 }
 
