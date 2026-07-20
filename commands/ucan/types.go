@@ -7,6 +7,10 @@ type ConcludeArguments struct {
 }
 
 type RevokeArguments struct {
-	Revoke cid.Cid   `cborgen:"revoke" dagjsongen:"revoke"`
-	Path   []cid.Cid `cborgen:"path" dagjsongen:"path"`
+	// Revoke is the CID of the UCAN delegation to revoke.
+	Revoke cid.Cid `cborgen:"revoke" dagjsongen:"revoke"`
+	// Path is the delegation path to the UCAN delegation to revoke. The path is a
+	// list of CIDs that represent the delegation chain from the root UCAN to the
+	// UCAN being revoked.
+	Path []cid.Cid `cborgen:"path" dagjsongen:"path"`
 }
