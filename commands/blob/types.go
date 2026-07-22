@@ -69,30 +69,40 @@ type ListBlobItem struct {
 	InsertedAt int64 `cborgen:"insertedAt" dagjsongen:"insertedAt"`
 }
 
-// RemoveArguments releases Space's claim on the blob identified by Digest.
-// Space is explicit (matching Allocate/Accept) because storage nodes key
-// allocations and acceptances by (digest, space): removal drops one space's
-// claim, and the node performs physical deletion only once no space claims
-// the digest at all.
+// RemoveArguments releases the invoking space's claim on the blob
+// identified by Digest. The space is the invocation subject — it is not
+// repeated in the arguments (compare ReleaseArguments, the provider-rooted
+// leg, where the subject is the provider and the space must travel
+// explicitly).
 type RemoveArguments struct {
+	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
+}
+
+// ReleaseArguments drops Space's claim on the blob identified by Digest on a
+// storage node. Space is explicit (matching Allocate/Accept) because the
+// invocation subject is the provider, and storage nodes key allocations and
+// acceptances by (digest, space): release drops one space's claim, and the
+// node performs physical deletion only once no space claims the digest at
+// all.
+type ReleaseArguments struct {
 	Space  did.DID             `cborgen:"space" dagjsongen:"space"`
 	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
 }
 
-// AbortArguments abandons Space's in-flight upload of the parked
-// (never-accepted) blob identified by Digest. Cause is the
-// `/space/blob/add` task link: the upload service uses it to recover which
-// storage node holds the parked blob — a parked blob has no registration or
-// acceptance to look the node up by.
+// AbortArguments abandons the invoking space's in-flight upload of the
+// parked (never-accepted) blob identified by Digest. The space is the
+// invocation subject. Cause is the `/space/blob/add` task link: the upload
+// service uses it to recover which storage node holds the parked blob — a
+// parked blob has no registration or acceptance to look the node up by.
 type AbortArguments struct {
-	Space  did.DID             `cborgen:"space" dagjsongen:"space"`
 	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
 	Cause  cid.Cid             `cborgen:"cause" dagjsongen:"cause"`
 }
 
 // RejectArguments drops Space's allocation for the parked (never-accepted)
-// blob identified by Digest on the storage node; the node deletes the bytes
-// once no space holds an allocation.
+// blob identified by Digest on the storage node; the node deletes any
+// received bytes once no space holds an allocation or acceptance for the
+// digest.
 type RejectArguments struct {
 	Space  did.DID             `cborgen:"space" dagjsongen:"space"`
 	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
