@@ -32,9 +32,9 @@ type AbortOK = commands.Unit
 var Abort = binding.Bind[*AbortArguments, *AbortOK](command.MustParse("/blob/abort"))
 
 // MissingCauseErrorName is the stable receipt-failure name when an abort's
-// Cause is missing or does not resolve to a known `/space/blob/add` task —
+// Cause is missing or does not resolve to a known `/blob/add` task —
 // without it the upload service cannot recover which storage node holds the
 // parked blob.
 const MissingCauseErrorName = "MissingCause"
 
-var ErrMissingCause = errors.New(MissingCauseErrorName, "abort requires the cause of the /space/blob/add task that parked the blob")
+var ErrMissingCause = errors.New(MissingCauseErrorName, "abort requires the cause of the /blob/add task that parked the blob")

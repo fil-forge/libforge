@@ -91,7 +91,7 @@ type ReleaseArguments struct {
 
 // AbortArguments abandons the invoking space's in-flight upload of the
 // parked (never-accepted) blob identified by Digest. The space is the
-// invocation subject. Cause is the `/space/blob/add` task link: the upload
+// invocation subject. Cause is the `/blob/add` task link: the upload
 // service uses it to recover which storage node holds the parked blob — a
 // parked blob has no registration or acceptance to look the node up by.
 type AbortArguments struct {
