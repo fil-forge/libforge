@@ -63,7 +63,10 @@ func (i Identity) DIDDocument() (did.Document, error) {
 	if !ok {
 		return did.Document{}, fmt.Errorf("identity does not have a multikey verifier")
 	}
-	vm := multikey.DeriveVerificationMethod(doc.Fragment("#key-0"), mkVerifier)
+	// Fragment expects a bare name and prepends the "#" itself; passing "#key-0"
+	// would serialize as "#%23key-0".
+	vm := multikey.DeriveVerificationMethod(doc.Fragment("key-0"), mkVerifier)
+	vm.Controller = doc.ID
 
 	if err := doc.VerificationMethods.Add(vm); err != nil {
 		return did.Document{}, err
