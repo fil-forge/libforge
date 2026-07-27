@@ -14,7 +14,6 @@ import (
 // Round-trips AbortArguments through cbor.
 func TestAbortArgumentsRoundTrip(t *testing.T) {
 	in := blob.AbortArguments{
-		Space:  testutil.RandomDID(t),
 		Digest: testutil.RandomMultihash(t),
 		Cause:  testutil.RandomCID(t),
 	}
@@ -22,9 +21,22 @@ func TestAbortArgumentsRoundTrip(t *testing.T) {
 	require.NoError(t, in.MarshalCBOR(&buf))
 	var out blob.AbortArguments
 	require.NoError(t, out.UnmarshalCBOR(&buf))
-	require.Equal(t, in.Space, out.Space)
 	require.Equal(t, in.Digest, out.Digest)
 	require.Equal(t, in.Cause, out.Cause)
+}
+
+// Round-trips ReleaseArguments through cbor.
+func TestReleaseArgumentsRoundTrip(t *testing.T) {
+	in := blob.ReleaseArguments{
+		Space:  testutil.RandomDID(t),
+		Digest: testutil.RandomMultihash(t),
+	}
+	var buf bytes.Buffer
+	require.NoError(t, in.MarshalCBOR(&buf))
+	var out blob.ReleaseArguments
+	require.NoError(t, out.UnmarshalCBOR(&buf))
+	require.Equal(t, in.Space, out.Space)
+	require.Equal(t, in.Digest, out.Digest)
 }
 
 // Round-trips RejectArguments through cbor.
