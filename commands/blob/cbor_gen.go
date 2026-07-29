@@ -1261,8 +1261,24 @@ func (t *ReleaseArguments) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{162}); err != nil {
+	if _, err := cw.Write([]byte{163}); err != nil {
 		return err
+	}
+
+	// t.Cause (cid.Cid) (struct)
+	if len("cause") > 8192 {
+		return xerrors.Errorf("Value in field \"cause\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("cause"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("cause")); err != nil {
+		return err
+	}
+
+	if err := cbg.WriteCid(cw, t.Cause); err != nil {
+		return xerrors.Errorf("failed to write cid field t.Cause: %w", err)
 	}
 
 	// t.Space (did.DID) (struct)
@@ -1349,7 +1365,20 @@ func (t *ReleaseArguments) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Space (did.DID) (struct)
+		// t.Cause (cid.Cid) (struct)
+		case "cause":
+
+			{
+
+				c, err := cbg.ReadCid(cr)
+				if err != nil {
+					return xerrors.Errorf("failed to read cid field t.Cause: %w", err)
+				}
+
+				t.Cause = c
+
+			}
+			// t.Space (did.DID) (struct)
 		case "space":
 
 			{

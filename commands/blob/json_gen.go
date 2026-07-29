@@ -1268,6 +1268,28 @@ func (t *ReleaseArguments) MarshalDagJSON(w io.Writer) error {
 	}
 	written := 0
 
+	// t.Cause (cid.Cid) (struct)
+	if len("cause") > 8192 {
+		return fmt.Errorf("string in field \"cause\" was too long")
+	}
+	if err := jw.WriteString(string("cause")); err != nil {
+		return fmt.Errorf("writing string for field \"cause\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+
+	if err := jw.WriteCid(t.Cause); err != nil {
+		return fmt.Errorf("writing CID for field t.Cause: %w", err)
+	}
+
+	written++
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
 	// t.Digest (multihash.Multihash) (slice)
 	if len("digest") > 8192 {
 		return fmt.Errorf("string in field \"digest\" was too long")
@@ -1346,7 +1368,19 @@ func (t *ReleaseArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Digest (multihash.Multihash) (slice)
+			// t.Cause (cid.Cid) (struct)
+			case "cause":
+				{
+
+					c, err := jr.ReadCid()
+					if err != nil {
+						return fmt.Errorf("reading CID for field t.Cause: %w", err)
+					}
+					t.Cause = c
+
+				}
+
+				// t.Digest (multihash.Multihash) (slice)
 			case "digest":
 
 				{
