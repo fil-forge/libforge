@@ -30,6 +30,7 @@ func TestReleaseArgumentsRoundTrip(t *testing.T) {
 	in := blob.ReleaseArguments{
 		Space:  testutil.RandomDID(t),
 		Digest: testutil.RandomMultihash(t),
+		Cause:  testutil.RandomCID(t),
 	}
 	var buf bytes.Buffer
 	require.NoError(t, in.MarshalCBOR(&buf))
@@ -37,6 +38,7 @@ func TestReleaseArgumentsRoundTrip(t *testing.T) {
 	require.NoError(t, out.UnmarshalCBOR(&buf))
 	require.Equal(t, in.Space, out.Space)
 	require.Equal(t, in.Digest, out.Digest)
+	require.Equal(t, in.Cause, out.Cause)
 }
 
 // Round-trips RejectArguments through cbor.

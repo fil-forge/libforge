@@ -83,10 +83,16 @@ type RemoveArguments struct {
 // invocation subject is the provider, and storage nodes key allocations and
 // acceptances by (digest, space): release drops one space's claim, and the
 // node performs physical deletion only once no space claims the digest at
-// all.
+// all. Cause proves the release originates from the space: it links the
+// `/blob/remove` task the release translates.
 type ReleaseArguments struct {
 	Space  did.DID             `cborgen:"space" dagjsongen:"space"`
 	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
+	// Cause is the link to the `/blob/remove` task this release translates.
+	// The linked invocation MUST be present in the request container; the
+	// node verifies its subject equals Space and its digest equals Digest
+	// before dropping the claim.
+	Cause cid.Cid `cborgen:"cause" dagjsongen:"cause"`
 }
 
 // AbortArguments abandons the invoking space's in-flight upload of the
