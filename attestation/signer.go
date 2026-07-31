@@ -7,6 +7,7 @@ import (
 	"github.com/fil-forge/libforge/commands/ucan/attest"
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/ucan"
+	"github.com/fil-forge/ucantone/ucan/invocation"
 	"github.com/fil-forge/ucantone/varsig"
 	"github.com/ipfs/go-cid"
 	mh "github.com/multiformats/go-multihash"
@@ -42,10 +43,16 @@ func (s Issuer) Sign(data []byte) []byte {
 		panic(fmt.Sprintf("failed to compute message digest: %v", err))
 	}
 
+	// The attestation is an assertion of fact: it is inherently idempotent
+	// (no nonce) and cannot expire (the attested delegation's own exp bounds
+	// the authorization). See the attested authority spec, signature
+	// invocation fields.
 	inv, err := attest.Proof.Invoke(
 		s.authority,
 		s.authority.DID(),
 		&attest.ProofArguments{Proof: cid.NewCidV1(cid.Raw, msgDigest)},
+		invocation.WithNoNonce(),
+		invocation.WithNoExpiration(),
 	)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create invocation: %v", err))
