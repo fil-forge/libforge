@@ -3,9 +3,9 @@ module github.com/fil-forge/libforge
 go 1.25.3
 
 require (
-	github.com/alanshaw/dag-json-gen v0.0.6
+	github.com/alanshaw/dag-json-gen v0.0.8
 	github.com/fil-forge/automobile v0.0.1
-	github.com/fil-forge/ucantone v0.0.0-20260619013642-7985ec010b88
+	github.com/fil-forge/ucantone v0.0.0-20260727203046-ccb77059de44
 	github.com/filecoin-project/go-data-segment v0.0.1
 	github.com/filecoin-project/go-fil-commcid v0.3.1
 	github.com/filecoin-project/go-fil-commp-hashhash v0.2.0
@@ -17,6 +17,7 @@ require (
 	github.com/multiformats/go-varint v0.1.0
 	github.com/stretchr/testify v1.11.1
 	github.com/whyrusleeping/cbor-gen v0.3.1
+	go.uber.org/zap v1.28.0
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
 )
 
@@ -32,11 +33,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.28.0 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
-	pitr.ca/jsontokenizer v0.3.0 // indirect
+	pitr.ca/jsontokenizer v0.3.2 // indirect
 )
