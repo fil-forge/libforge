@@ -14,7 +14,8 @@ type Blob struct {
 }
 
 type AddArguments struct {
-	Blob Blob `cborgen:"blob" dagjsongen:"blob"`
+	Blob     Blob      `cborgen:"blob" dagjsongen:"blob"`
+	Affinity []did.DID `cborgen:"affinity,omitempty" dagjsongen:"affinity,omitempty"`
 }
 
 type AddOK struct {

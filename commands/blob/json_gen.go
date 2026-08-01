@@ -12,6 +12,7 @@ import (
 	"sort"
 
 	jsg "github.com/alanshaw/dag-json-gen"
+	did "github.com/fil-forge/ucantone/did"
 	promise "github.com/fil-forge/ucantone/ucan/promise"
 	cid "github.com/ipfs/go-cid"
 )
@@ -979,6 +980,47 @@ func (t *AddArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
+	written := 0
+
+	// t.Affinity ([]did.DID) (slice)
+	if t.Affinity != nil {
+		if len("affinity") > 8192 {
+			return fmt.Errorf("string in field \"affinity\" was too long")
+		}
+		if err := jw.WriteString(string("affinity")); err != nil {
+			return fmt.Errorf("writing string for field \"affinity\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+		if len(t.Affinity) > 8192 {
+			return fmt.Errorf("slice value in field t.Affinity was too long")
+		}
+
+		if err := jw.WriteArrayOpen(); err != nil {
+			return fmt.Errorf("writing array open for field t.Affinity: %w", err)
+		}
+		for i, v := range t.Affinity {
+			if i > 0 {
+				if err := jw.WriteComma(); err != nil {
+					return fmt.Errorf("writing comma for field t.Affinity: %w", err)
+				}
+			}
+			if err := v.MarshalDagJSON(jw); err != nil {
+				return fmt.Errorf("marshaling field v: %w", err)
+			}
+		}
+		if err := jw.WriteArrayClose(); err != nil {
+			return fmt.Errorf("writing array close for field t.Affinity: %w", err)
+		}
+
+		written++
+	}
+	if written > 0 {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
 
 	// t.Blob (blob.Blob) (struct)
 	if len("blob") > 8192 {
@@ -993,6 +1035,7 @@ func (t *AddArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Blob.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Blob: %w", err)
 	}
+	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1032,7 +1075,49 @@ func (t *AddArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Blob (blob.Blob) (struct)
+			// t.Affinity ([]did.DID) (slice)
+			case "affinity":
+				{
+
+					if err := jr.ReadArrayOpen(); err != nil {
+						return fmt.Errorf("reading array open for field t.Affinity: %w", err)
+					}
+
+					close, err := jr.PeekArrayClose()
+					if err != nil {
+						return fmt.Errorf("peeking array close for field t.Affinity: %w", err)
+					}
+					if close {
+						if err := jr.ReadArrayClose(); err != nil {
+							return fmt.Errorf("reading array close for field t.Affinity: %w", err)
+						}
+
+					} else {
+						for i := 0; i < 8192; i++ {
+							item := make([]did.DID, 1)
+
+							if err := item[0].UnmarshalDagJSON(jr); err != nil {
+								return fmt.Errorf("unmarshaling item[0]: %w", err)
+							}
+
+							t.Affinity = append(t.Affinity, item[0])
+
+							close, err := jr.ReadArrayCloseOrComma()
+							if err != nil {
+								return fmt.Errorf("reading array close or comma for field t.Affinity: %w", err)
+							}
+							if close {
+								break
+							}
+							if i == 8192-1 {
+								return fmt.Errorf("reading array for field t.Affinity: slice too large")
+							}
+						}
+					}
+
+				}
+
+				// t.Blob (blob.Blob) (struct)
 			case "blob":
 
 				if err := t.Blob.UnmarshalDagJSON(jr); err != nil {
