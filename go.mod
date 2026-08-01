@@ -3,7 +3,7 @@ module github.com/fil-forge/libforge
 go 1.25.3
 
 require (
-	github.com/alanshaw/dag-json-gen v0.0.6
+	github.com/alanshaw/dag-json-gen v0.0.8
 	github.com/fil-forge/automobile v0.0.1
 	github.com/fil-forge/ucantone v0.0.0-20260619013642-7985ec010b88
 	github.com/filecoin-project/go-data-segment v0.0.1
@@ -38,5 +38,5 @@ require (
 	golang.org/x/sys v0.43.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
-	pitr.ca/jsontokenizer v0.3.0 // indirect
+	pitr.ca/jsontokenizer v0.3.2 // indirect
 )
