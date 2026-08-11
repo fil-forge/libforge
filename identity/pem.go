@@ -16,7 +16,7 @@ import (
 func EncodeSignerToPEM(signer multikey.Signer) ([]byte, error) {
 	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(signer.PrivateKey())
 	if err != nil {
-		return nil, fmt.Errorf("marshaling private key of signer %s: %w", signer, err)
+		return nil, fmt.Errorf("marshaling private key of signer %s: %w", signer.KeyDID(), err)
 	}
 
 	privateKeyBlock := &pem.Block{
@@ -26,7 +26,7 @@ func EncodeSignerToPEM(signer multikey.Signer) ([]byte, error) {
 
 	buffer := new(bytes.Buffer)
 	if err := pem.Encode(buffer, privateKeyBlock); err != nil {
-		return nil, fmt.Errorf("encoding private key of signer %s: %w", signer, err)
+		return nil, fmt.Errorf("encoding private key of signer %s: %w", signer.KeyDID(), err)
 	}
 
 	return buffer.Bytes(), nil
