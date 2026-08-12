@@ -13,7 +13,11 @@ import (
 
 // EncodeSignerToPEM encodes a signer to a PKCS#8 PEM format. The signer's key
 // should be of a type supported by ["crypto/x509".MarshalPKCS8PrivateKey].
-func EncodeSignerToPEM(signer multikey.Signer) ([]byte, error) {
+func EncodeSignerToPEM(keySigner multikey.Signer) ([]byte, error) {
+	// Wrap the signer so the error messages below name it by its DID instead of
+	// printing its private key bytes.
+	signer := NewSigner(keySigner)
+
 	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(signer.PrivateKey())
 	if err != nil {
 		return nil, fmt.Errorf("marshaling private key of signer %s: %w", signer, err)
@@ -34,7 +38,7 @@ func EncodeSignerToPEM(signer multikey.Signer) ([]byte, error) {
 
 // DecodeSignerFromPEM loads a private key from a PKCS#8 PEM as a signer.
 // Currently, only Ed25519 keys are supported.
-func DecodeSignerFromPEM(pemData []byte) (multikey.Signer, error) {
+func DecodeSignerFromPEM(pemData []byte) (Signer, error) {
 	var privateKey *crypto_ed25519.PrivateKey
 	rest := pemData
 	for {
@@ -47,12 +51,12 @@ func DecodeSignerFromPEM(pemData []byte) (multikey.Signer, error) {
 		if block.Type == "PRIVATE KEY" {
 			parsedKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 			if err != nil {
-				return nil, fmt.Errorf("parsing PKCS#8 private key: %w", err)
+				return Signer{}, fmt.Errorf("parsing PKCS#8 private key: %w", err)
 			}
 
 			key, ok := parsedKey.(crypto_ed25519.PrivateKey)
 			if !ok {
-				return nil, fmt.Errorf("key is not an Ed25519 private key")
+				return Signer{}, fmt.Errorf("key is not an Ed25519 private key")
 			}
 			privateKey = &key
 			break
@@ -60,8 +64,13 @@ func DecodeSignerFromPEM(pemData []byte) (multikey.Signer, error) {
 	}
 
 	if privateKey == nil {
-		return nil, fmt.Errorf("no PRIVATE KEY block found in PEM file")
+		return Signer{}, fmt.Errorf("no PRIVATE KEY block found in PEM file")
 	}
 
-	return ed25519.FromRaw(privateKey.Seed())
+	signer, err := ed25519.FromRaw(privateKey.Seed())
+	if err != nil {
+		return Signer{}, fmt.Errorf("creating signer from private key: %w", err)
+	}
+
+	return NewSigner(signer), nil
 }

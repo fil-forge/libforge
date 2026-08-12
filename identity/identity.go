@@ -20,23 +20,24 @@ type Identity struct {
 // New creates a new identity. If privateKeyBase64 is empty, generates a new
 // key. If serviceDID is empty, uses the key DID derived from the key.
 func New(privateKeyBase64 string, serviceDID string) (Identity, error) {
-	var signer multikey.Signer
+	var keySigner multikey.Signer
 	var issuer multikey.Issuer
 	var err error
 
 	if privateKeyBase64 == "" {
 		// Generate ephemeral identity
-		signer, err = ed25519.Generate()
+		keySigner, err = ed25519.Generate()
 		if err != nil {
 			return Identity{}, fmt.Errorf("failed to generate signer: %w", err)
 		}
 	} else {
 		// Decode provided key
-		signer, err = ed25519.Parse(privateKeyBase64)
+		keySigner, err = ed25519.Parse(privateKeyBase64)
 		if err != nil {
 			return Identity{}, fmt.Errorf("failed to create signer from key: %w", err)
 		}
 	}
+	signer := NewSigner(keySigner)
 
 	if serviceDID == "" {
 		issuer = multikey.KeyIssuer(signer)
