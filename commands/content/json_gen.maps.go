@@ -134,7 +134,7 @@ func (t *RetrieveArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Blob (content.Blob) (struct)
 	if len("blob") > 8192 {
@@ -149,8 +149,8 @@ func (t *RetrieveArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Blob.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Blob: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -169,7 +169,6 @@ func (t *RetrieveArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Range.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Range: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

@@ -126,7 +126,7 @@ func (t *RevokeArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Path ([]cid.Cid) (slice)
 	if len("path") > 8192 {
@@ -161,8 +161,8 @@ func (t *RevokeArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Path: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -183,7 +183,6 @@ func (t *RevokeArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Revoke: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

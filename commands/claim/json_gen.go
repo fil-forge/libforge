@@ -29,7 +29,7 @@ func (t *CacheArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Claim (cid.Cid) (struct)
 	if len("claim") > 8192 {
@@ -46,8 +46,8 @@ func (t *CacheArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Claim: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -66,7 +66,6 @@ func (t *CacheArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Provider.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Provider: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

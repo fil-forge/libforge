@@ -29,7 +29,7 @@ func (t *ListArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Cursor (string) (string)
 	if t.Cursor != nil {
@@ -54,9 +54,9 @@ func (t *ListArguments) MarshalDagJSON(w io.Writer) error {
 				return fmt.Errorf("writing string for field t.Cursor: %w", err)
 			}
 		}
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -77,9 +77,9 @@ func (t *ListArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Root: %w", err)
 	}
 
-	written++
+	written = true
 	if t.Size != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -108,7 +108,6 @@ func (t *ListArguments) MarshalDagJSON(w io.Writer) error {
 			}
 		}
 
-		written++
 	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
@@ -221,7 +220,7 @@ func (t *ListOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Cursor (string) (string)
 	if t.Cursor != nil {
@@ -246,9 +245,9 @@ func (t *ListOK) MarshalDagJSON(w io.Writer) error {
 				return fmt.Errorf("writing string for field t.Cursor: %w", err)
 			}
 		}
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -287,8 +286,8 @@ func (t *ListOK) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Results: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -309,7 +308,6 @@ func (t *ListOK) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing uint64 for field t.Size: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

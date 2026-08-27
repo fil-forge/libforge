@@ -276,7 +276,7 @@ func (t *LocationArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Content (multihash.Multihash) (slice)
 	if len("content") > 8192 {
@@ -296,8 +296,8 @@ func (t *LocationArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Content: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -334,9 +334,9 @@ func (t *LocationArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Location: %w", err)
 	}
 
-	written++
+	written = true
 	if t.Range != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -357,9 +357,9 @@ func (t *LocationArguments) MarshalDagJSON(w io.Writer) error {
 		if err := t.Range.MarshalDagJSON(jw); err != nil {
 			return fmt.Errorf("marshaling field t.Range: %w", err)
 		}
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -378,7 +378,6 @@ func (t *LocationArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Space.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Space: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -534,7 +533,7 @@ func (t *Range) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.End (uint64) (uint64)
 	if t.End != nil {
@@ -558,9 +557,9 @@ func (t *Range) MarshalDagJSON(w io.Writer) error {
 			}
 		}
 
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -581,7 +580,6 @@ func (t *Range) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing uint64 for field t.Start: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -678,7 +676,7 @@ func (t *EqualsArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Content (multihash.Multihash) (slice)
 	if len("content") > 8192 {
@@ -698,8 +696,8 @@ func (t *EqualsArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Content: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -720,7 +718,6 @@ func (t *EqualsArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Equals: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
