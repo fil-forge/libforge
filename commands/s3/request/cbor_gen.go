@@ -120,7 +120,7 @@ func (t *AuthorizeOK) MarshalCBOR(w io.Writer) error {
 	}
 
 	cw := cbg.NewCborWriter(w)
-	fieldCount := 4
+	fieldCount := 5
 
 	if t.Bucket == nil {
 		fieldCount--
@@ -163,6 +163,22 @@ func (t *AuthorizeOK) MarshalCBOR(w io.Writer) error {
 		if err := t.Bucket.MarshalCBOR(cw); err != nil {
 			return err
 		}
+	}
+
+	// t.Tenant (did.DID) (struct)
+	if len("tenant") > 8192 {
+		return xerrors.Errorf("Value in field \"tenant\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("tenant"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("tenant")); err != nil {
+		return err
+	}
+
+	if err := t.Tenant.MarshalCBOR(cw); err != nil {
+		return err
 	}
 
 	// t.Delegations (s3.ProofSet) (struct)
@@ -267,6 +283,16 @@ func (t *AuthorizeOK) UnmarshalCBOR(r io.Reader) (err error) {
 					if err := t.Bucket.UnmarshalCBOR(cr); err != nil {
 						return xerrors.Errorf("unmarshaling t.Bucket pointer: %w", err)
 					}
+				}
+
+			}
+			// t.Tenant (did.DID) (struct)
+		case "tenant":
+
+			{
+
+				if err := t.Tenant.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Tenant: %w", err)
 				}
 
 			}
