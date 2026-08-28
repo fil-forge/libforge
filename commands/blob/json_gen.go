@@ -30,7 +30,7 @@ func (t *AllocateArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Blob (blob.Blob) (struct)
 	if len("blob") > 8192 {
@@ -45,8 +45,8 @@ func (t *AllocateArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Blob.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Blob: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -67,8 +67,8 @@ func (t *AllocateArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Cause: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -87,7 +87,6 @@ func (t *AllocateArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Space.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Space: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -184,7 +183,7 @@ func (t *Blob) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Digest (multihash.Multihash) (slice)
 	if len("digest") > 8192 {
@@ -204,8 +203,8 @@ func (t *Blob) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Digest: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -226,7 +225,6 @@ func (t *Blob) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing uint64 for field t.Size: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -324,7 +322,7 @@ func (t *AllocateOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Address (blob.BlobAddress) (struct)
 	if t.Address != nil {
@@ -340,9 +338,9 @@ func (t *AllocateOK) MarshalDagJSON(w io.Writer) error {
 		if err := t.Address.MarshalDagJSON(jw); err != nil {
 			return fmt.Errorf("marshaling field t.Address: %w", err)
 		}
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -363,7 +361,6 @@ func (t *AllocateOK) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing uint64 for field t.Size: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -465,7 +462,7 @@ func (t *BlobAddress) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Expires (int64) (int64)
 	if len("expires") > 8192 {
@@ -482,8 +479,8 @@ func (t *BlobAddress) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing int64 for field t.Expires: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -542,8 +539,8 @@ func (t *BlobAddress) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -562,7 +559,6 @@ func (t *BlobAddress) MarshalDagJSON(w io.Writer) error {
 	if err := t.URL.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.URL: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -706,7 +702,7 @@ func (t *AcceptArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Put (promise.AwaitOK) (struct)
 	if len("_put") > 8192 {
@@ -721,8 +717,8 @@ func (t *AcceptArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Put.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Put: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -741,8 +737,8 @@ func (t *AcceptArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Blob.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Blob: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -761,7 +757,6 @@ func (t *AcceptArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Space.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Space: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -853,7 +848,7 @@ func (t *AcceptOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.PDP (promise.AwaitOK) (struct)
 	if len("pdp") > 8192 {
@@ -868,8 +863,8 @@ func (t *AcceptOK) MarshalDagJSON(w io.Writer) error {
 	if err := t.PDP.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.PDP: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -890,7 +885,6 @@ func (t *AcceptOK) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Site: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1266,7 +1260,7 @@ func (t *ReleaseArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Cause (cid.Cid) (struct)
 	if len("cause") > 8192 {
@@ -1283,8 +1277,8 @@ func (t *ReleaseArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Cause: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -1308,8 +1302,8 @@ func (t *ReleaseArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Digest: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -1328,7 +1322,6 @@ func (t *ReleaseArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Space.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Space: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1434,7 +1427,7 @@ func (t *AbortArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Cause (cid.Cid) (struct)
 	if len("cause") > 8192 {
@@ -1451,8 +1444,8 @@ func (t *AbortArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Cause: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -1476,7 +1469,6 @@ func (t *AbortArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Digest: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1575,7 +1567,7 @@ func (t *RejectArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Digest (multihash.Multihash) (slice)
 	if len("digest") > 8192 {
@@ -1595,8 +1587,8 @@ func (t *RejectArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Digest: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -1615,7 +1607,6 @@ func (t *RejectArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Space.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Space: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1709,7 +1700,7 @@ func (t *ReplicateArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Blob (blob.Blob) (struct)
 	if len("blob") > 8192 {
@@ -1724,8 +1715,8 @@ func (t *ReplicateArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Blob.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Blob: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -1746,8 +1737,8 @@ func (t *ReplicateArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing uint64 for field t.Replicas: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -1768,7 +1759,6 @@ func (t *ReplicateArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Site: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -2012,7 +2002,7 @@ func (t *ListArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Cursor (string) (string)
 	if t.Cursor != nil {
@@ -2037,10 +2027,10 @@ func (t *ListArguments) MarshalDagJSON(w io.Writer) error {
 				return fmt.Errorf("writing string for field t.Cursor: %w", err)
 			}
 		}
-		written++
+		written = true
 	}
 	if t.Size != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -2069,7 +2059,6 @@ func (t *ListArguments) MarshalDagJSON(w io.Writer) error {
 			}
 		}
 
-		written++
 	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
@@ -2170,7 +2159,7 @@ func (t *ListOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Cursor (string) (string)
 	if t.Cursor != nil {
@@ -2195,9 +2184,9 @@ func (t *ListOK) MarshalDagJSON(w io.Writer) error {
 				return fmt.Errorf("writing string for field t.Cursor: %w", err)
 			}
 		}
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -2234,8 +2223,8 @@ func (t *ListOK) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Results: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -2256,7 +2245,6 @@ func (t *ListOK) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing uint64 for field t.Size: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -2395,7 +2383,7 @@ func (t *ListBlobItem) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Blob (blob.Blob) (struct)
 	if len("blob") > 8192 {
@@ -2410,8 +2398,8 @@ func (t *ListBlobItem) MarshalDagJSON(w io.Writer) error {
 	if err := t.Blob.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Blob: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -2432,7 +2420,6 @@ func (t *ListBlobItem) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing int64 for field t.InsertedAt: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

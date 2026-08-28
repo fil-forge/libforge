@@ -29,7 +29,7 @@ func (t *Request) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Headers (map[string]string) (map)
 	if len("headers") > 8192 {
@@ -84,8 +84,8 @@ func (t *Request) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -107,8 +107,8 @@ func (t *Request) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Method)); err != nil {
 		return fmt.Errorf("writing string for field t.Method: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -130,7 +130,6 @@ func (t *Request) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.URL)); err != nil {
 		return fmt.Errorf("writing string for field t.URL: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -280,7 +279,7 @@ func (t *VerificationKey) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Data ([]uint8) (slice)
 	if len("data") > 8192 {
@@ -300,8 +299,8 @@ func (t *VerificationKey) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing bytes for field t.Data: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -323,7 +322,6 @@ func (t *VerificationKey) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteString(string(t.Kind)); err != nil {
 		return fmt.Errorf("writing string for field t.Kind: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

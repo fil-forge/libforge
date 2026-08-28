@@ -74,6 +74,7 @@ func TestAuthorizeOKRoundTrip(t *testing.T) {
 
 	in := &request.AuthorizeOK{
 		Bucket: ptr(did.MustParse("did:key:z6MkmNBgCewjYfEDTdKLpHkbMWUogJk29CxmiVdLeW4Kz3UG")),
+		Tenant: did.MustParse("did:plc:ewvi7nxzyoun6zhxrhs64oiz"),
 		Permissions: s3.PermissionSet{Entries: map[did.DID][]string{
 			access: {"s3:GetObject", "s3:PutObject"},
 		}},

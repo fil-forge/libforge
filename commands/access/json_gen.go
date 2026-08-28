@@ -29,7 +29,7 @@ func (t *RequestArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Attenuations ([]access.CapabilityRequest) (slice)
 	if len("att") > 8192 {
@@ -62,8 +62,8 @@ func (t *RequestArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Attenuations: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -82,7 +82,6 @@ func (t *RequestArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Issuer.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Issuer: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -293,7 +292,7 @@ func (t *RequestOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Confirm (promise.AwaitOK) (struct)
 	if len("confirm") > 8192 {
@@ -308,8 +307,8 @@ func (t *RequestOK) MarshalDagJSON(w io.Writer) error {
 	if err := t.Confirm.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Confirm: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -330,8 +329,8 @@ func (t *RequestOK) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing int64 for field t.Expiration: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -352,7 +351,6 @@ func (t *RequestOK) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Request: %w", err)
 	}
 
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -602,7 +600,7 @@ func (t *ConfirmArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Attenuations ([]access.CapabilityRequest) (slice)
 	if len("att") > 8192 {
@@ -635,8 +633,8 @@ func (t *ConfirmArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Attenuations: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -655,8 +653,8 @@ func (t *ConfirmArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Audience.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Audience: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -677,8 +675,8 @@ func (t *ConfirmArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Cause: %w", err)
 	}
 
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -697,7 +695,6 @@ func (t *ConfirmArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Issuer.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Issuer: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -985,7 +982,7 @@ func (t *GrantArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Attenuations ([]access.CapabilityRequest) (slice)
 	if len("att") > 8192 {
@@ -1018,9 +1015,9 @@ func (t *GrantArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing array close for field t.Attenuations: %w", err)
 	}
 
-	written++
+	written = true
 	if t.Cause != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -1049,7 +1046,6 @@ func (t *GrantArguments) MarshalDagJSON(w io.Writer) error {
 			}
 		}
 
-		written++
 	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err

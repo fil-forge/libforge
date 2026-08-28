@@ -29,7 +29,7 @@ func (t *PutArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Body (blob.Blob) (struct)
 	if len("body") > 8192 {
@@ -44,8 +44,8 @@ func (t *PutArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Body.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Body: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -64,7 +64,6 @@ func (t *PutArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Destination.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Destination: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

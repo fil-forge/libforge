@@ -121,7 +121,7 @@ func (t *AuthorizeOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Bucket (did.DID) (struct)
 	if t.Bucket != nil {
@@ -137,9 +137,9 @@ func (t *AuthorizeOK) MarshalDagJSON(w io.Writer) error {
 		if err := t.Bucket.MarshalDagJSON(jw); err != nil {
 			return fmt.Errorf("marshaling field t.Bucket: %w", err)
 		}
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -158,8 +158,8 @@ func (t *AuthorizeOK) MarshalDagJSON(w io.Writer) error {
 	if err := t.Delegations.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Delegations: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -178,8 +178,8 @@ func (t *AuthorizeOK) MarshalDagJSON(w io.Writer) error {
 	if err := t.Keys.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Keys: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -198,7 +198,26 @@ func (t *AuthorizeOK) MarshalDagJSON(w io.Writer) error {
 	if err := t.Permissions.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Permissions: %w", err)
 	}
-	written++
+	written = true
+	if written {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Tenant (did.DID) (struct)
+	if len("tenant") > 8192 {
+		return fmt.Errorf("string in field \"tenant\" was too long")
+	}
+	if err := jw.WriteString(string("tenant")); err != nil {
+		return fmt.Errorf("writing string for field \"tenant\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.Tenant.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Tenant: %w", err)
+	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -277,6 +296,13 @@ func (t *AuthorizeOK) UnmarshalDagJSON(r io.Reader) (err error) {
 
 				if err := t.Permissions.UnmarshalDagJSON(jr); err != nil {
 					return fmt.Errorf("unmarshaling t.Permissions: %w", err)
+				}
+
+				// t.Tenant (did.DID) (struct)
+			case "tenant":
+
+				if err := t.Tenant.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Tenant: %w", err)
 				}
 
 			default:

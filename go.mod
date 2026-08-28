@@ -1,11 +1,11 @@
 module github.com/fil-forge/libforge
 
-go 1.25.3
+go 1.27.0
 
 require (
-	github.com/alanshaw/dag-json-gen v0.0.8
+	github.com/alanshaw/dag-json-gen v0.0.9
 	github.com/fil-forge/automobile v0.0.1
-	github.com/fil-forge/ucantone v0.0.0-20260619013642-7985ec010b88
+	github.com/fil-forge/ucantone v0.0.0-20260827134420-25cf8340b9a1
 	github.com/filecoin-project/go-data-segment v0.0.1
 	github.com/filecoin-project/go-fil-commcid v0.3.1
 	github.com/filecoin-project/go-fil-commp-hashhash v0.4.0
@@ -22,8 +22,8 @@ require (
 
 require (
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
-	github.com/mattn/go-isatty v0.0.22 // indirect
+	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
+	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/mr-tron/base58 v1.3.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
@@ -32,9 +32,9 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.53.0 // indirect
-	golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 // indirect
-	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 	pitr.ca/jsontokenizer v0.3.2 // indirect
 )

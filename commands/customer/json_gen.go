@@ -29,7 +29,7 @@ func (t *AddArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := 0
+	written := false
 
 	// t.Customer (did.DID) (struct)
 	if len("customer") > 8192 {
@@ -44,8 +44,8 @@ func (t *AddArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Customer.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Customer: %w", err)
 	}
-	written++
-	if written > 0 {
+	written = true
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -104,9 +104,9 @@ func (t *AddArguments) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	written++
+	written = true
 	if t.ExternalAccount != nil {
-		if written > 0 {
+		if written {
 			if err := jw.WriteComma(); err != nil {
 				return err
 			}
@@ -136,9 +136,9 @@ func (t *AddArguments) MarshalDagJSON(w io.Writer) error {
 				return fmt.Errorf("writing string for field t.ExternalAccount: %w", err)
 			}
 		}
-		written++
+		written = true
 	}
-	if written > 0 {
+	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
 		}
@@ -157,7 +157,6 @@ func (t *AddArguments) MarshalDagJSON(w io.Writer) error {
 	if err := t.Product.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Product: %w", err)
 	}
-	written++
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}

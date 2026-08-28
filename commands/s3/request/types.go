@@ -12,9 +12,9 @@ type AuthorizeArguments struct {
 }
 
 // AuthorizeOK is the successful result of `/s3/request/authorize`. It carries
-// the resolved bucket DID, the S3 permission set for the access key, the
-// derived signing key(s) and the (24-hour TTL) delegations re-delegated to the
-// invocation issuer.
+// the resolved bucket DID, the tenant DID, the S3 permission set for the access
+// key, the derived signing key(s) and the (24-hour TTL) delegations
+// re-delegated to the invocation issuer.
 //
 // Its Permissions, Keys and Delegations fields are slice-valued maps that
 // cbor-gen / dag-json-gen cannot generate inline, but they are wrapped in
@@ -25,6 +25,10 @@ type AuthorizeOK struct {
 	// requests are bucket-scoped, so this field may be nil. e.g. CreateBucket,
 	// ListAllMyBuckets, etc.
 	Bucket *did.DID `cborgen:"bucket,omitempty" dagjsongen:"bucket,omitempty"`
+	// Tenant is the DID of the tenant the access key belongs to (the tenant's
+	// did:plc). The gateway resolves its DID document to obtain the tenant's
+	// wrap key — the FEE tenant recipient every stored object is encrypted to.
+	Tenant did.DID `cborgen:"tenant" dagjsongen:"tenant"`
 	// Permissions maps the access key DID to its assigned S3 permissions.
 	Permissions s3.PermissionSet `cborgen:"permissions" dagjsongen:"permissions"`
 	// Keys maps the access key DID to its derived signing key(s).
