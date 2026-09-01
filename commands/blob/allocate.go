@@ -16,11 +16,7 @@ import (
 // sharding uploads at this constant is safe against every conforming node.
 //
 // This measures the stored artifact. An encrypting client must choose its
-// plaintext split below this, leaving room for its envelope framing — see
-// ingot's bucket.DefaultMaxBlobSize.
-//
-// (Was 268_435_456 — 256 MiB raw — which no default-configured node
-// accepts: it pads to a 2^29 piece, over the 2^28 default ceiling.)
+// plaintext split below this, leaving room for its envelope framing.
 const MaxBlobSize = (256 << 20) * 127 / 128
 
 var Allocate = binding.Bind[*AllocateArguments, *AllocateOK](command.MustParse("/blob/allocate"))
