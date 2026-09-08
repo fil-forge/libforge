@@ -144,7 +144,7 @@ func ReadJSONObject(jr *jsg.DagJsonReader, fn func(name string) error) (err erro
 	if close {
 		return jr.ReadObjectClose()
 	}
-	for {
+	for i := 0; i < MaxString; i++ {
 		name, err := jr.ReadString(MaxString)
 		if err != nil {
 			return err
@@ -163,6 +163,7 @@ func ReadJSONObject(jr *jsg.DagJsonReader, fn func(name string) error) (err erro
 			return nil
 		}
 	}
+	return fmt.Errorf("map too large")
 }
 
 // ReadJSONArray reads a DAG-JSON array, invoking read for each element.
