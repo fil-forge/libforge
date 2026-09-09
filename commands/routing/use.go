@@ -16,9 +16,10 @@ type UseOK = commands.Unit
 // CandidateUnavailable when none can serve it. Without a policy the reference
 // is cleared and the space returns to default routing.
 //
-// The space MUST be provisioned with a provider (InsufficientStorage, see the
-// access package) and the policy MUST be known to the upload service, i.e. have
-// a stored candidate set (UnknownPolicy).
+// The space MUST be provisioned with a provider; otherwise the invocation fails
+// with InsufficientStorage (see access.InsufficientStorageErrorName). The policy
+// MUST be known to the upload service, i.e. have a stored candidate set
+// (UnknownPolicy).
 //
 // The receipt carries no payload (Unit).
 var Use = binding.Bind[*UseArguments, *UseOK](command.MustParse("/routing/use"))
