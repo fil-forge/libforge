@@ -171,3 +171,119 @@ func TestInfoOKRoundTrip(t *testing.T) {
 		t.Fatalf("DAG-JSON round-trip mismatch:\n got %#v\nwant %#v", outJSON, *in)
 	}
 }
+
+// A nil Principal must not appear on the wire at all, and a set one must
+// survive both codecs. Ingot reads the field to bind an access key to the
+// principal it belongs to, so an absent field and an empty string have to stay
+// distinguishable.
+func TestAuthorizeOKPrincipal(t *testing.T) {
+	base := func() *request.AuthorizeOK {
+		return &request.AuthorizeOK{
+			Tenant:      did.MustParse("did:plc:ewvi7nxzyoun6zhxrhs64oiz"),
+			Permissions: s3.PermissionSet{},
+			Keys:        s3.KeySet{},
+			Delegations: s3.ProofSet{},
+		}
+	}
+
+	t.Run("nil omits the key", func(t *testing.T) {
+		in := base()
+
+		var cb bytes.Buffer
+		require.NoError(t, in.MarshalCBOR(&cb))
+		require.False(t, bytes.Contains(cb.Bytes(), []byte("principal")), "CBOR carries the principal key: %x", cb.Bytes())
+		var outCBOR request.AuthorizeOK
+		require.NoError(t, outCBOR.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
+		require.Nil(t, outCBOR.Principal)
+
+		var jb bytes.Buffer
+		require.NoError(t, in.MarshalDagJSON(&jb))
+		require.NotContains(t, jb.String(), "principal")
+		var outJSON request.AuthorizeOK
+		require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())), "json: %s", jb.String())
+		require.Nil(t, outJSON.Principal)
+	})
+
+	t.Run("set value survives", func(t *testing.T) {
+		in := base()
+		in.Principal = ptr("8f2c9e14")
+
+		var cb bytes.Buffer
+		require.NoError(t, in.MarshalCBOR(&cb))
+		var outCBOR request.AuthorizeOK
+		require.NoError(t, outCBOR.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
+		require.Equal(t, in.Principal, outCBOR.Principal)
+
+		var jb bytes.Buffer
+		require.NoError(t, in.MarshalDagJSON(&jb))
+		require.Contains(t, jb.String(), `"principal":"8f2c9e14"`)
+		var outJSON request.AuthorizeOK
+		require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())), "json: %s", jb.String())
+		require.Equal(t, in.Principal, outJSON.Principal)
+	})
+
+	t.Run("empty string is not nil", func(t *testing.T) {
+		in := base()
+		in.Principal = ptr("")
+
+		var cb bytes.Buffer
+		require.NoError(t, in.MarshalCBOR(&cb))
+		var outCBOR request.AuthorizeOK
+		require.NoError(t, outCBOR.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
+		require.NotNil(t, outCBOR.Principal)
+		require.Equal(t, "", *outCBOR.Principal)
+
+		var jb bytes.Buffer
+		require.NoError(t, in.MarshalDagJSON(&jb))
+		var outJSON request.AuthorizeOK
+		require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())), "json: %s", jb.String())
+		require.NotNil(t, outJSON.Principal)
+		require.Equal(t, "", *outJSON.Principal)
+	})
+}
+
+func TestInfoOKPrincipal(t *testing.T) {
+	base := func() *bucket.InfoOK {
+		return &bucket.InfoOK{
+			ID:          did.MustParse("did:key:z6MkmNBgCewjYfEDTdKLpHkbMWUogJk29CxmiVdLeW4Kz3UG"),
+			Permissions: s3.PermissionSet{},
+			Delegations: s3.ProofSet{},
+		}
+	}
+
+	t.Run("nil omits the key", func(t *testing.T) {
+		in := base()
+
+		var cb bytes.Buffer
+		require.NoError(t, in.MarshalCBOR(&cb))
+		require.False(t, bytes.Contains(cb.Bytes(), []byte("principal")), "CBOR carries the principal key: %x", cb.Bytes())
+		var outCBOR bucket.InfoOK
+		require.NoError(t, outCBOR.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
+		require.Nil(t, outCBOR.Principal)
+
+		var jb bytes.Buffer
+		require.NoError(t, in.MarshalDagJSON(&jb))
+		require.NotContains(t, jb.String(), "principal")
+		var outJSON bucket.InfoOK
+		require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())), "json: %s", jb.String())
+		require.Nil(t, outJSON.Principal)
+	})
+
+	t.Run("set value survives", func(t *testing.T) {
+		in := base()
+		in.Principal = ptr("8f2c9e14")
+
+		var cb bytes.Buffer
+		require.NoError(t, in.MarshalCBOR(&cb))
+		var outCBOR bucket.InfoOK
+		require.NoError(t, outCBOR.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
+		require.Equal(t, in.Principal, outCBOR.Principal)
+
+		var jb bytes.Buffer
+		require.NoError(t, in.MarshalDagJSON(&jb))
+		require.Contains(t, jb.String(), `"principal":"8f2c9e14"`)
+		var outJSON bucket.InfoOK
+		require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())), "json: %s", jb.String())
+		require.Equal(t, in.Principal, outJSON.Principal)
+	})
+}

@@ -29,6 +29,10 @@ type AuthorizeOK struct {
 	// did:plc). The gateway resolves its DID document to obtain the tenant's
 	// wrap key — the FEE tenant recipient every stored object is encrypted to.
 	Tenant did.DID `cborgen:"tenant" dagjsongen:"tenant"`
+	// Principal is the identifier of the principal the access key is bound to,
+	// unique within the tenant. It is nil for a service key, which carries its
+	// own permissions and buckets and is bound to no principal.
+	Principal *string `cborgen:"principal,omitempty" dagjsongen:"principal,omitempty"`
 	// Permissions maps the access key DID to its assigned S3 permissions.
 	Permissions s3.PermissionSet `cborgen:"permissions" dagjsongen:"permissions"`
 	// Keys maps the access key DID to its derived signing key(s).

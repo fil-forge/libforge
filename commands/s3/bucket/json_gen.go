@@ -484,6 +484,39 @@ func (t *InfoOK) MarshalDagJSON(w io.Writer) error {
 	if err := t.Permissions.MarshalDagJSON(jw); err != nil {
 		return fmt.Errorf("marshaling field t.Permissions: %w", err)
 	}
+	written = true
+	if t.Principal != nil {
+		if written {
+			if err := jw.WriteComma(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// t.Principal (string) (string)
+	if t.Principal != nil {
+		if len("principal") > 8192 {
+			return fmt.Errorf("string in field \"principal\" was too long")
+		}
+		if err := jw.WriteString(string("principal")); err != nil {
+			return fmt.Errorf("writing string for field \"principal\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+		if t.Principal == nil {
+			if err := jw.WriteNull(); err != nil {
+				return fmt.Errorf("writing null for field t.Principal: %w", err)
+			}
+		} else {
+			if len(*t.Principal) > 8192 {
+				return fmt.Errorf("string in field t.Principal was too long")
+			}
+			if err := jw.WriteString(string(*t.Principal)); err != nil {
+				return fmt.Errorf("writing string for field t.Principal: %w", err)
+			}
+		}
+	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -544,6 +577,20 @@ func (t *InfoOK) UnmarshalDagJSON(r io.Reader) (err error) {
 					return fmt.Errorf("unmarshaling t.Permissions: %w", err)
 				}
 
+				// t.Principal (string) (string)
+			case "principal":
+				{
+					sval, err := jr.ReadStringOrNull(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading string or null for field t.Principal: string too long")
+						}
+						return fmt.Errorf("reading string or null for field t.Principal: %w", err)
+					}
+					if sval != nil {
+						t.Principal = (*string)(sval)
+					}
+				}
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {

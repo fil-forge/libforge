@@ -39,6 +39,10 @@ type InfoArguments struct {
 type InfoOK struct {
 	// ID is the DID of the bucket.
 	ID did.DID `cborgen:"id" dagjsongen:"id"`
+	// Principal is the identifier of the principal the access key is bound to,
+	// unique within the tenant. It is nil for a service key, which carries its
+	// own permissions and buckets and is bound to no principal.
+	Principal *string `cborgen:"principal,omitempty" dagjsongen:"principal,omitempty"`
 	// Permissions maps the access key DID to its assigned S3 permissions.
 	Permissions s3.PermissionSet `cborgen:"permissions" dagjsongen:"permissions"`
 	// Delegations maps the CID of a delegation whose audience is the access key

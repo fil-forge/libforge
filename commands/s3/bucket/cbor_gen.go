@@ -429,8 +429,13 @@ func (t *InfoOK) MarshalCBOR(w io.Writer) error {
 	}
 
 	cw := cbg.NewCborWriter(w)
+	fieldCount := 4
 
-	if _, err := cw.Write([]byte{163}); err != nil {
+	if t.Principal == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
 		return err
 	}
 
@@ -448,6 +453,38 @@ func (t *InfoOK) MarshalCBOR(w io.Writer) error {
 
 	if err := t.ID.MarshalCBOR(cw); err != nil {
 		return err
+	}
+
+	// t.Principal (string) (string)
+	if t.Principal != nil {
+
+		if len("principal") > 8192 {
+			return xerrors.Errorf("Value in field \"principal\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("principal"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("principal")); err != nil {
+			return err
+		}
+
+		if t.Principal == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if len(*t.Principal) > 8192 {
+				return xerrors.Errorf("Value in field t.Principal was too long")
+			}
+
+			if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(*t.Principal))); err != nil {
+				return err
+			}
+			if _, err := cw.WriteString(string(*t.Principal)); err != nil {
+				return err
+			}
+		}
 	}
 
 	// t.Delegations (s3.ProofSet) (struct)
@@ -534,6 +571,27 @@ func (t *InfoOK) UnmarshalCBOR(r io.Reader) (err error) {
 					return xerrors.Errorf("unmarshaling t.ID: %w", err)
 				}
 
+			}
+			// t.Principal (string) (string)
+		case "principal":
+
+			{
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					sval, err := cbg.ReadStringWithMax(cr, 8192)
+					if err != nil {
+						return err
+					}
+
+					t.Principal = (*string)(&sval)
+				}
 			}
 			// t.Delegations (s3.ProofSet) (struct)
 		case "delegations":
