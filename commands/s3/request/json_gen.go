@@ -199,6 +199,30 @@ func (t *AuthorizeOK) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("marshaling field t.Permissions: %w", err)
 	}
 	written = true
+	if t.SourceBucket != nil {
+		if written {
+			if err := jw.WriteComma(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// t.SourceBucket (did.DID) (struct)
+	if t.SourceBucket != nil {
+		if len("sourceBucket") > 8192 {
+			return fmt.Errorf("string in field \"sourceBucket\" was too long")
+		}
+		if err := jw.WriteString(string("sourceBucket")); err != nil {
+			return fmt.Errorf("writing string for field \"sourceBucket\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+		if err := t.SourceBucket.MarshalDagJSON(jw); err != nil {
+			return fmt.Errorf("marshaling field t.SourceBucket: %w", err)
+		}
+		written = true
+	}
 	if written {
 		if err := jw.WriteComma(); err != nil {
 			return err
@@ -296,6 +320,26 @@ func (t *AuthorizeOK) UnmarshalDagJSON(r io.Reader) (err error) {
 
 				if err := t.Permissions.UnmarshalDagJSON(jr); err != nil {
 					return fmt.Errorf("unmarshaling t.Permissions: %w", err)
+				}
+
+				// t.SourceBucket (did.DID) (struct)
+			case "sourceBucket":
+
+				{
+					null, err := jr.PeekNull()
+					if err != nil {
+						return fmt.Errorf("peeking null for field t.SourceBucket: %w", err)
+					}
+					if null {
+						if err := jr.ReadNull(); err != nil {
+							return fmt.Errorf("reading null for field t.SourceBucket: %w", err)
+						}
+					} else {
+						t.SourceBucket = new(did.DID)
+						if err := t.SourceBucket.UnmarshalDagJSON(jr); err != nil {
+							return fmt.Errorf("unmarshaling t.SourceBucket pointer: %w", err)
+						}
+					}
 				}
 
 				// t.Tenant (did.DID) (struct)

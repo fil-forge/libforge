@@ -120,9 +120,13 @@ func (t *AuthorizeOK) MarshalCBOR(w io.Writer) error {
 	}
 
 	cw := cbg.NewCborWriter(w)
-	fieldCount := 5
+	fieldCount := 6
 
 	if t.Bucket == nil {
+		fieldCount--
+	}
+
+	if t.SourceBucket == nil {
 		fieldCount--
 	}
 
@@ -212,6 +216,25 @@ func (t *AuthorizeOK) MarshalCBOR(w io.Writer) error {
 	if err := t.Permissions.MarshalCBOR(cw); err != nil {
 		return err
 	}
+
+	// t.SourceBucket (did.DID) (struct)
+	if t.SourceBucket != nil {
+
+		if len("sourceBucket") > 8192 {
+			return xerrors.Errorf("Value in field \"sourceBucket\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("sourceBucket"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("sourceBucket")); err != nil {
+			return err
+		}
+
+		if err := t.SourceBucket.MarshalCBOR(cw); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -240,7 +263,7 @@ func (t *AuthorizeOK) UnmarshalCBOR(r io.Reader) (err error) {
 
 	n := extra
 
-	nameBuf := make([]byte, 11)
+	nameBuf := make([]byte, 12)
 	for i := uint64(0); i < n; i++ {
 		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
 		if err != nil {
@@ -313,6 +336,26 @@ func (t *AuthorizeOK) UnmarshalCBOR(r io.Reader) (err error) {
 
 				if err := t.Permissions.UnmarshalCBOR(cr); err != nil {
 					return xerrors.Errorf("unmarshaling t.Permissions: %w", err)
+				}
+
+			}
+			// t.SourceBucket (did.DID) (struct)
+		case "sourceBucket":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					t.SourceBucket = new(did.DID)
+					if err := t.SourceBucket.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling t.SourceBucket pointer: %w", err)
+					}
 				}
 
 			}
