@@ -74,7 +74,10 @@ func TestAuthorizeOKRoundTrip(t *testing.T) {
 
 	in := &request.AuthorizeOK{
 		Bucket: ptr(did.MustParse("did:key:z6MkmNBgCewjYfEDTdKLpHkbMWUogJk29CxmiVdLeW4Kz3UG")),
-		Tenant: did.MustParse("did:plc:ewvi7nxzyoun6zhxrhs64oiz"),
+		// A copy across buckets: the source is a distinct DID, so a wrong key,
+		// map count or pointer decode for it cannot hide behind Bucket.
+		SourceBucket: ptr(did.MustParse("did:key:z6MkjFRxLLGdBqQSLkZbVnuwUFiomK8eGBkPtim9ETvP7vec")),
+		Tenant:       did.MustParse("did:plc:ewvi7nxzyoun6zhxrhs64oiz"),
 		Permissions: s3.PermissionSet{Entries: map[did.DID][]string{
 			access: {"s3:GetObject", "s3:PutObject"},
 		}},
@@ -109,6 +112,10 @@ func TestAuthorizeOKRoundTrip(t *testing.T) {
 	if !reflect.DeepEqual(*in, outJSON) {
 		t.Fatalf("DAG-JSON round-trip mismatch:\n got %#v\nwant %#v", outJSON, *in)
 	}
+	// The source travels under its own key, distinct from the addressed bucket.
+	if got := jb.String(); !strings.Contains(got, `"sourceBucket":"did:key:z6MkjFRxLLGdBqQSLkZbVnuwUFiomK8eGBkPtim9ETvP7vec"`) {
+		t.Fatalf("expected sourceBucket in DAG-JSON, got: %s", got)
+	}
 }
 
 func TestAuthorizeOKEmptyValuesRoundTrip(t *testing.T) {
@@ -127,6 +134,7 @@ func TestAuthorizeOKEmptyValuesRoundTrip(t *testing.T) {
 		t.Fatalf("UnmarshalDagJSON: %v\njson: %s", err, jb.String())
 	}
 	require.Nil(t, out.Bucket)
+	require.Nil(t, out.SourceBucket)
 	if len(out.Permissions.Entries) != 0 || len(out.Keys.Entries) != 0 || len(out.Delegations.Entries) != 0 {
 		t.Fatalf("expected empty maps, got %#v", out)
 	}
