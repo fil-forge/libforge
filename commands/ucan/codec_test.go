@@ -72,5 +72,8 @@ func TestConcludeArgumentsEmpty(t *testing.T) {
 
 	var jb bytes.Buffer
 	require.NoError(t, (&ucancmds.ConcludeArguments{}).MarshalDagJSON(&jb))
-	require.Equal(t, `{"receipts":[]}`, jb.String())
+
+	var outJSON ucancmds.ConcludeArguments
+	require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())))
+	require.Empty(t, outJSON.Receipts)
 }
