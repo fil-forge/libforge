@@ -27,7 +27,7 @@ on:
   workflow_call:
     inputs:
       go-version:
-        description: 'Go toolchain to install. Must be >= the max `go` directive across all workspace members (guppy pins 1.26.1).'
+        description: 'Go toolchain to install. Must be >= the highest `go` directive among the workspace members this run clones. The default tracks the latest release, which satisfies that; override only to pin a specific toolchain.'
         type: string
         default: 'stable'
 
