@@ -2,8 +2,12 @@ package ucan
 
 import "github.com/ipfs/go-cid"
 
+// ConcludeArguments delivers receipts to an audience awaiting them. It is
+// always a list, however many are delivered: a delivering agent often holds a
+// receipt per blob of a large upload, and a round trip per receipt costs more
+// than the work each one triggers. An empty list delivers nothing.
 type ConcludeArguments struct {
-	Receipt cid.Cid `cborgen:"receipt" dagjsongen:"receipt"`
+	Receipts []cid.Cid `cborgen:"receipts" dagjsongen:"receipts"`
 }
 
 type RevokeArguments struct {

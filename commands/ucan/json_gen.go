@@ -30,19 +30,37 @@ func (t *ConcludeArguments) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 
-	// t.Receipt (cid.Cid) (struct)
-	if len("receipt") > 8192 {
-		return fmt.Errorf("string in field \"receipt\" was too long")
+	// t.Receipts ([]cid.Cid) (slice)
+	if len("receipts") > 8192 {
+		return fmt.Errorf("string in field \"receipts\" was too long")
 	}
-	if err := jw.WriteString(string("receipt")); err != nil {
-		return fmt.Errorf("writing string for field \"receipt\": %w", err)
+	if err := jw.WriteString(string("receipts")); err != nil {
+		return fmt.Errorf("writing string for field \"receipts\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
+	if len(t.Receipts) > 8192 {
+		return fmt.Errorf("slice value in field t.Receipts was too long")
+	}
 
-	if err := jw.WriteCid(t.Receipt); err != nil {
-		return fmt.Errorf("writing CID for field t.Receipt: %w", err)
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("writing array open for field t.Receipts: %w", err)
+	}
+	for i, v := range t.Receipts {
+		if i > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return fmt.Errorf("writing comma for field t.Receipts: %w", err)
+			}
+		}
+
+		if err := jw.WriteCid(v); err != nil {
+			return fmt.Errorf("writing CID for field v: %w", err)
+		}
+
+	}
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("writing array close for field t.Receipts: %w", err)
 	}
 
 	if err := jw.WriteObjectClose(); err != nil {
@@ -84,15 +102,49 @@ func (t *ConcludeArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Receipt (cid.Cid) (struct)
-			case "receipt":
+			// t.Receipts ([]cid.Cid) (slice)
+			case "receipts":
 				{
 
-					c, err := jr.ReadCid()
-					if err != nil {
-						return fmt.Errorf("reading CID for field t.Receipt: %w", err)
+					if err := jr.ReadArrayOpen(); err != nil {
+						return fmt.Errorf("reading array open for field t.Receipts: %w", err)
 					}
-					t.Receipt = c
+
+					close, err := jr.PeekArrayClose()
+					if err != nil {
+						return fmt.Errorf("peeking array close for field t.Receipts: %w", err)
+					}
+					if close {
+						if err := jr.ReadArrayClose(); err != nil {
+							return fmt.Errorf("reading array close for field t.Receipts: %w", err)
+						}
+
+					} else {
+						for i := 0; i < 8192; i++ {
+							item := make([]cid.Cid, 1)
+							{
+
+								c, err := jr.ReadCid()
+								if err != nil {
+									return fmt.Errorf("reading CID for field item[0]: %w", err)
+								}
+								item[0] = c
+
+							}
+							t.Receipts = append(t.Receipts, item[0])
+
+							close, err := jr.ReadArrayCloseOrComma()
+							if err != nil {
+								return fmt.Errorf("reading array close or comma for field t.Receipts: %w", err)
+							}
+							if close {
+								break
+							}
+							if i == 8192-1 {
+								return fmt.Errorf("reading array for field t.Receipts: slice too large")
+							}
+						}
+					}
 
 				}
 			default:

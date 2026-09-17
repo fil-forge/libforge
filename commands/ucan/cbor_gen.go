@@ -32,22 +32,32 @@ func (t *ConcludeArguments) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Receipt (cid.Cid) (struct)
-	if len("receipt") > 8192 {
-		return xerrors.Errorf("Value in field \"receipt\" was too long")
+	// t.Receipts ([]cid.Cid) (slice)
+	if len("receipts") > 8192 {
+		return xerrors.Errorf("Value in field \"receipts\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("receipt"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("receipts"))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("receipt")); err != nil {
+	if _, err := cw.WriteString(string("receipts")); err != nil {
 		return err
 	}
 
-	if err := cbg.WriteCid(cw, t.Receipt); err != nil {
-		return xerrors.Errorf("failed to write cid field t.Receipt: %w", err)
+	if len(t.Receipts) > 8192 {
+		return xerrors.Errorf("Slice value in field t.Receipts was too long")
 	}
 
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Receipts))); err != nil {
+		return err
+	}
+	for _, v := range t.Receipts {
+
+		if err := cbg.WriteCid(cw, v); err != nil {
+			return xerrors.Errorf("failed to write cid field v: %w", err)
+		}
+
+	}
 	return nil
 }
 
@@ -76,7 +86,7 @@ func (t *ConcludeArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 	n := extra
 
-	nameBuf := make([]byte, 7)
+	nameBuf := make([]byte, 8)
 	for i := uint64(0); i < n; i++ {
 		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
 		if err != nil {
@@ -92,18 +102,47 @@ func (t *ConcludeArguments) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Receipt (cid.Cid) (struct)
-		case "receipt":
+		// t.Receipts ([]cid.Cid) (slice)
+		case "receipts":
 
-			{
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
 
-				c, err := cbg.ReadCid(cr)
-				if err != nil {
-					return xerrors.Errorf("failed to read cid field t.Receipt: %w", err)
+			if extra > 8192 {
+				return fmt.Errorf("t.Receipts: array too large (%d)", extra)
+			}
+
+			if maj != cbg.MajArray {
+				return fmt.Errorf("expected cbor array")
+			}
+
+			if extra > 0 {
+				t.Receipts = make([]cid.Cid, extra)
+			}
+
+			for i := 0; i < int(extra); i++ {
+				{
+					var maj byte
+					var extra uint64
+					var err error
+					_ = maj
+					_ = extra
+					_ = err
+
+					{
+
+						c, err := cbg.ReadCid(cr)
+						if err != nil {
+							return xerrors.Errorf("failed to read cid field t.Receipts[i]: %w", err)
+						}
+
+						t.Receipts[i] = c
+
+					}
+
 				}
-
-				t.Receipt = c
-
 			}
 
 		default:
