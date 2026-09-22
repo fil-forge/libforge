@@ -9,8 +9,9 @@ package metrics
 //
 // All three fields are required and are expressed in seconds: From and To are
 // Unix timestamps, From inclusive and To exclusive, and Window is a duration.
-// Window need not divide To-From evenly — the final bucket is then short and
-// ends at To.
+// Window need not divide the range evenly, and To may lie in the future; the
+// service shortens the range to end at the present and SampleOK reports the
+// range actually covered.
 //
 // The series the service returns is dense: a bucket in which nothing happened
 // still yields a sample. Consumers take an unweighted mean over the stored-bytes
@@ -30,9 +31,17 @@ type SampleArguments struct {
 //
 // From, To and Window restate the range the samples cover. From and Window
 // always equal the request's. To is the requested To clamped to the service's
-// current time: a bucket that has not closed has no value to report, and
-// padding one with the latest reading would bias a consumer's average. A
-// request whose range lies entirely in the future returns no samples.
+// current time, and never earlier than From: the service reports what has
+// already happened rather than padding out buckets that lie ahead. A request
+// whose range is entirely in the future therefore returns To equal to From and
+// no samples.
+//
+// The last bucket is short whenever Window does not divide To-From, which
+// includes the ordinary case of a range running up to the present. A short
+// bucket is still a bucket: it carries one sample, timestamped at To. Its
+// BytesStored is exact, being a reading taken at that instant, while its
+// BytesIngested covers only the part of the window that has elapsed and so
+// reads low against a full one.
 type SampleOK struct {
 	// From is the start of the range covered, inclusive, as a Unix timestamp in
 	// seconds.
