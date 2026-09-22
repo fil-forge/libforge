@@ -23,21 +23,37 @@ func tag(path string) {
 }
 
 func main() {
-	models := []any{
+	// SampleSet has a hand-written codec (see codec.go) because cbor-gen /
+	// dag-json-gen do not support DID-keyed maps.
+	mapModels := []any{
 		metrics.SampleArguments{},
 		metrics.SampleOK{},
+	}
+	// SampleItem is tuple encoded: it repeats once per bucket, and a map would
+	// repeat its three key names with it.
+	tupleModels := []any{
 		metrics.SampleItem{},
 	}
 	const (
-		cborFile = "../cbor_gen.go"
-		jsonFile = "../json_gen.go"
+		cborTuples = "../cbor_gen.tuples.go"
+		cborMaps   = "../cbor_gen.maps.go"
+		jsonTuples = "../json_gen.tuples.go"
+		jsonMaps   = "../json_gen.maps.go"
 	)
-	if err := cbg.WriteMapEncodersToFile(cborFile, "metrics", models...); err != nil {
+	if err := cbg.WriteTupleEncodersToFile(cborTuples, "metrics", tupleModels...); err != nil {
 		panic(err)
 	}
-	if err := jsg.WriteMapEncodersToFile(jsonFile, "metrics", models...); err != nil {
+	if err := cbg.WriteMapEncodersToFile(cborMaps, "metrics", mapModels...); err != nil {
 		panic(err)
 	}
-	tag(cborFile)
-	tag(jsonFile)
+	if err := jsg.WriteTupleEncodersToFile(jsonTuples, "metrics", tupleModels...); err != nil {
+		panic(err)
+	}
+	if err := jsg.WriteMapEncodersToFile(jsonMaps, "metrics", mapModels...); err != nil {
+		panic(err)
+	}
+	tag(cborTuples)
+	tag(cborMaps)
+	tag(jsonTuples)
+	tag(jsonMaps)
 }

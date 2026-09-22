@@ -309,7 +309,7 @@ func (t *SampleOK) MarshalCBOR(w io.Writer) error {
 		}
 	}
 
-	// t.Samples ([]metrics.SampleItem) (slice)
+	// t.Samples (metrics.SampleSet) (struct)
 	if len("samples") > 8192 {
 		return xerrors.Errorf("Value in field \"samples\" was too long")
 	}
@@ -321,18 +321,8 @@ func (t *SampleOK) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if len(t.Samples) > 8192 {
-		return xerrors.Errorf("Slice value in field t.Samples was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Samples))); err != nil {
+	if err := t.Samples.MarshalCBOR(cw); err != nil {
 		return err
-	}
-	for _, v := range t.Samples {
-		if err := v.MarshalCBOR(cw); err != nil {
-			return err
-		}
-
 	}
 	return nil
 }
@@ -456,220 +446,14 @@ func (t *SampleOK) UnmarshalCBOR(r io.Reader) (err error) {
 
 				t.Window = int64(extraI)
 			}
-			// t.Samples ([]metrics.SampleItem) (slice)
+			// t.Samples (metrics.SampleSet) (struct)
 		case "samples":
 
-			maj, extra, err = cr.ReadHeader()
-			if err != nil {
-				return err
-			}
-
-			if extra > 8192 {
-				return fmt.Errorf("t.Samples: array too large (%d)", extra)
-			}
-
-			if maj != cbg.MajArray {
-				return fmt.Errorf("expected cbor array")
-			}
-
-			if extra > 0 {
-				t.Samples = make([]SampleItem, extra)
-			}
-
-			for i := 0; i < int(extra); i++ {
-				{
-					var maj byte
-					var extra uint64
-					var err error
-					_ = maj
-					_ = extra
-					_ = err
-
-					{
-
-						if err := t.Samples[i].UnmarshalCBOR(cr); err != nil {
-							return xerrors.Errorf("unmarshaling t.Samples[i]: %w", err)
-						}
-
-					}
-
-				}
-			}
-
-		default:
-			// Field doesn't exist on this type, so ignore it
-			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-func (t *SampleItem) MarshalCBOR(w io.Writer) error {
-	if t == nil {
-		_, err := w.Write(cbg.CborNull)
-		return err
-	}
-
-	cw := cbg.NewCborWriter(w)
-
-	if _, err := cw.Write([]byte{163}); err != nil {
-		return err
-	}
-
-	// t.Timestamp (int64) (int64)
-	if len("timestamp") > 8192 {
-		return xerrors.Errorf("Value in field \"timestamp\" was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("timestamp"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("timestamp")); err != nil {
-		return err
-	}
-
-	if t.Timestamp >= 0 {
-		if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Timestamp)); err != nil {
-			return err
-		}
-	} else {
-		if err := cw.WriteMajorTypeHeader(cbg.MajNegativeInt, uint64(-t.Timestamp-1)); err != nil {
-			return err
-		}
-	}
-
-	// t.BytesStored (uint64) (uint64)
-	if len("bytesStored") > 8192 {
-		return xerrors.Errorf("Value in field \"bytesStored\" was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("bytesStored"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("bytesStored")); err != nil {
-		return err
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.BytesStored)); err != nil {
-		return err
-	}
-
-	// t.BytesIngested (uint64) (uint64)
-	if len("bytesIngested") > 8192 {
-		return xerrors.Errorf("Value in field \"bytesIngested\" was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("bytesIngested"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("bytesIngested")); err != nil {
-		return err
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.BytesIngested)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (t *SampleItem) UnmarshalCBOR(r io.Reader) (err error) {
-	*t = SampleItem{}
-
-	cr := cbg.NewCborReader(r)
-
-	maj, extra, err := cr.ReadHeader()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-	}()
-
-	if maj != cbg.MajMap {
-		return fmt.Errorf("cbor input should be of type map")
-	}
-
-	if extra > cbg.MaxLength {
-		return fmt.Errorf("SampleItem: map struct too large (%d)", extra)
-	}
-
-	n := extra
-
-	nameBuf := make([]byte, 13)
-	for i := uint64(0); i < n; i++ {
-		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
-		if err != nil {
-			return err
-		}
-
-		if !ok {
-			// Field doesn't exist on this type, so ignore it
-			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
-				return err
-			}
-			continue
-		}
-
-		switch string(nameBuf[:nameLen]) {
-		// t.Timestamp (int64) (int64)
-		case "timestamp":
-			{
-				maj, extra, err := cr.ReadHeader()
-				if err != nil {
-					return err
-				}
-				var extraI int64
-				switch maj {
-				case cbg.MajUnsignedInt:
-					extraI = int64(extra)
-					if extraI < 0 {
-						return fmt.Errorf("int64 positive overflow")
-					}
-				case cbg.MajNegativeInt:
-					extraI = int64(extra)
-					if extraI < 0 {
-						return fmt.Errorf("int64 negative overflow")
-					}
-					extraI = -1 - extraI
-				default:
-					return fmt.Errorf("wrong type for int64 field: %d", maj)
-				}
-
-				t.Timestamp = int64(extraI)
-			}
-			// t.BytesStored (uint64) (uint64)
-		case "bytesStored":
-
 			{
 
-				maj, extra, err = cr.ReadHeader()
-				if err != nil {
-					return err
+				if err := t.Samples.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Samples: %w", err)
 				}
-				if maj != cbg.MajUnsignedInt {
-					return fmt.Errorf("wrong type for uint64 field")
-				}
-				t.BytesStored = uint64(extra)
-
-			}
-			// t.BytesIngested (uint64) (uint64)
-		case "bytesIngested":
-
-			{
-
-				maj, extra, err = cr.ReadHeader()
-				if err != nil {
-					return err
-				}
-				if maj != cbg.MajUnsignedInt {
-					return fmt.Errorf("wrong type for uint64 field")
-				}
-				t.BytesIngested = uint64(extra)
 
 			}
 

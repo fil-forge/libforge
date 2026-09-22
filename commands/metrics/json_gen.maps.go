@@ -219,7 +219,7 @@ func (t *SampleOK) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Samples ([]metrics.SampleItem) (slice)
+	// t.Samples (metrics.SampleSet) (struct)
 	if len("samples") > 8192 {
 		return fmt.Errorf("string in field \"samples\" was too long")
 	}
@@ -229,27 +229,9 @@ func (t *SampleOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
-	if len(t.Samples) > 8192 {
-		return fmt.Errorf("slice value in field t.Samples was too long")
+	if err := t.Samples.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Samples: %w", err)
 	}
-
-	if err := jw.WriteArrayOpen(); err != nil {
-		return fmt.Errorf("writing array open for field t.Samples: %w", err)
-	}
-	for i, v := range t.Samples {
-		if i > 0 {
-			if err := jw.WriteComma(); err != nil {
-				return fmt.Errorf("writing comma for field t.Samples: %w", err)
-			}
-		}
-		if err := v.MarshalDagJSON(jw); err != nil {
-			return fmt.Errorf("marshaling field v: %w", err)
-		}
-	}
-	if err := jw.WriteArrayClose(); err != nil {
-		return fmt.Errorf("writing array close for field t.Samples: %w", err)
-	}
-
 	written = true
 	if written {
 		if err := jw.WriteComma(); err != nil {
@@ -345,46 +327,11 @@ func (t *SampleOK) UnmarshalDagJSON(r io.Reader) (err error) {
 
 				}
 
-				// t.Samples ([]metrics.SampleItem) (slice)
+				// t.Samples (metrics.SampleSet) (struct)
 			case "samples":
-				{
 
-					if err := jr.ReadArrayOpen(); err != nil {
-						return fmt.Errorf("reading array open for field t.Samples: %w", err)
-					}
-
-					close, err := jr.PeekArrayClose()
-					if err != nil {
-						return fmt.Errorf("peeking array close for field t.Samples: %w", err)
-					}
-					if close {
-						if err := jr.ReadArrayClose(); err != nil {
-							return fmt.Errorf("reading array close for field t.Samples: %w", err)
-						}
-
-					} else {
-						for i := 0; i < 8192; i++ {
-							item := make([]SampleItem, 1)
-
-							if err := item[0].UnmarshalDagJSON(jr); err != nil {
-								return fmt.Errorf("unmarshaling item[0]: %w", err)
-							}
-
-							t.Samples = append(t.Samples, item[0])
-
-							close, err := jr.ReadArrayCloseOrComma()
-							if err != nil {
-								return fmt.Errorf("reading array close or comma for field t.Samples: %w", err)
-							}
-							if close {
-								break
-							}
-							if i == 8192-1 {
-								return fmt.Errorf("reading array for field t.Samples: slice too large")
-							}
-						}
-					}
-
+				if err := t.Samples.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Samples: %w", err)
 				}
 
 				// t.To (int64) (int64)
@@ -426,172 +373,6 @@ func (t *SampleOK) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			if i == 8192-1 {
 				return fmt.Errorf("map too large for SampleOK")
-			}
-		}
-	}
-
-	return nil
-}
-func (t *SampleItem) MarshalDagJSON(w io.Writer) error {
-	jw := jsg.NewDagJsonWriter(w)
-	if t == nil {
-		err := jw.WriteNull()
-		return err
-	}
-	if err := jw.WriteObjectOpen(); err != nil {
-		return err
-	}
-	written := false
-
-	// t.BytesIngested (uint64) (uint64)
-	if len("bytesIngested") > 8192 {
-		return fmt.Errorf("string in field \"bytesIngested\" was too long")
-	}
-	if err := jw.WriteString(string("bytesIngested")); err != nil {
-		return fmt.Errorf("writing string for field \"bytesIngested\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-
-	if err := jw.WriteUint64(uint64(t.BytesIngested)); err != nil {
-		return fmt.Errorf("writing uint64 for field t.BytesIngested: %w", err)
-	}
-
-	written = true
-	if written {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.BytesStored (uint64) (uint64)
-	if len("bytesStored") > 8192 {
-		return fmt.Errorf("string in field \"bytesStored\" was too long")
-	}
-	if err := jw.WriteString(string("bytesStored")); err != nil {
-		return fmt.Errorf("writing string for field \"bytesStored\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-
-	if err := jw.WriteUint64(uint64(t.BytesStored)); err != nil {
-		return fmt.Errorf("writing uint64 for field t.BytesStored: %w", err)
-	}
-
-	written = true
-	if written {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Timestamp (int64) (int64)
-	if len("timestamp") > 8192 {
-		return fmt.Errorf("string in field \"timestamp\" was too long")
-	}
-	if err := jw.WriteString(string("timestamp")); err != nil {
-		return fmt.Errorf("writing string for field \"timestamp\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-
-	if err := jw.WriteInt64(int64(t.Timestamp)); err != nil {
-		return fmt.Errorf("writing int64 for field t.Timestamp: %w", err)
-	}
-
-	if err := jw.WriteObjectClose(); err != nil {
-		return err
-	}
-	return nil
-}
-func (t *SampleItem) UnmarshalDagJSON(r io.Reader) (err error) {
-	*t = SampleItem{}
-
-	jr := jsg.NewDagJsonReader(r)
-	defer func() {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-	}()
-	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("reading object open for SampleItem: %w", err)
-	}
-	close, err := jr.PeekObjectClose()
-	if err != nil {
-		return fmt.Errorf("peeking object close for SampleItem: %w", err)
-	}
-	if close {
-		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("reading object close for SampleItem: %w", err)
-		}
-	} else {
-		for i := uint64(0); i < 8192; i++ {
-			name, err := jr.ReadString(8192)
-			if err != nil {
-				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("reading string for field SampleItem: string too large")
-				}
-				return fmt.Errorf("reading string for field SampleItem: %w", err)
-			}
-			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("reading object colon for field SampleItem: %w", err)
-			}
-			switch name {
-
-			// t.BytesIngested (uint64) (uint64)
-			case "bytesIngested":
-				{
-
-					nval, err := jr.ReadNumberAsUint64()
-					if err != nil {
-						return fmt.Errorf("reading uint64 for field t.BytesIngested: %w", err)
-					}
-					t.BytesIngested = uint64(nval)
-
-				}
-
-				// t.BytesStored (uint64) (uint64)
-			case "bytesStored":
-				{
-
-					nval, err := jr.ReadNumberAsUint64()
-					if err != nil {
-						return fmt.Errorf("reading uint64 for field t.BytesStored: %w", err)
-					}
-					t.BytesStored = uint64(nval)
-
-				}
-
-				// t.Timestamp (int64) (int64)
-			case "timestamp":
-				{
-
-					nval, err := jr.ReadNumberAsInt64()
-					if err != nil {
-						return fmt.Errorf("reading int64 for field t.Timestamp: %w", err)
-					}
-					t.Timestamp = int64(nval)
-
-				}
-			default:
-				// Field doesn't exist on this type, so ignore it
-				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("ignoring field %s for SampleItem: %w", name, err)
-				}
-			}
-
-			close, err := jr.ReadObjectCloseOrComma()
-			if err != nil {
-				return fmt.Errorf("reading object close or comma for field SampleItem: %w", err)
-			}
-			if close {
-				break
-			}
-			if i == 8192-1 {
-				return fmt.Errorf("map too large for SampleItem")
 			}
 		}
 	}
