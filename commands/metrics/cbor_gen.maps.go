@@ -309,7 +309,7 @@ func (t *SampleOK) MarshalCBOR(w io.Writer) error {
 		}
 	}
 
-	// t.Samples (metrics.SampleSet) (struct)
+	// t.Samples ([]metrics.SampleItem) (slice)
 	if len("samples") > 8192 {
 		return xerrors.Errorf("Value in field \"samples\" was too long")
 	}
@@ -321,8 +321,18 @@ func (t *SampleOK) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := t.Samples.MarshalCBOR(cw); err != nil {
+	if len(t.Samples) > 8192 {
+		return xerrors.Errorf("Slice value in field t.Samples was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Samples))); err != nil {
 		return err
+	}
+	for _, v := range t.Samples {
+		if err := v.MarshalCBOR(cw); err != nil {
+			return err
+		}
+
 	}
 	return nil
 }
@@ -446,15 +456,44 @@ func (t *SampleOK) UnmarshalCBOR(r io.Reader) (err error) {
 
 				t.Window = int64(extraI)
 			}
-			// t.Samples (metrics.SampleSet) (struct)
+			// t.Samples ([]metrics.SampleItem) (slice)
 		case "samples":
 
-			{
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
 
-				if err := t.Samples.UnmarshalCBOR(cr); err != nil {
-					return xerrors.Errorf("unmarshaling t.Samples: %w", err)
+			if extra > 8192 {
+				return fmt.Errorf("t.Samples: array too large (%d)", extra)
+			}
+
+			if maj != cbg.MajArray {
+				return fmt.Errorf("expected cbor array")
+			}
+
+			if extra > 0 {
+				t.Samples = make([]SampleItem, extra)
+			}
+
+			for i := 0; i < int(extra); i++ {
+				{
+					var maj byte
+					var extra uint64
+					var err error
+					_ = maj
+					_ = extra
+					_ = err
+
+					{
+
+						if err := t.Samples[i].UnmarshalCBOR(cr); err != nil {
+							return xerrors.Errorf("unmarshaling t.Samples[i]: %w", err)
+						}
+
+					}
+
 				}
-
 			}
 
 		default:
