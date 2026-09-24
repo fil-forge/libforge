@@ -173,7 +173,56 @@ func TestClient(t *testing.T) {
 
 		require.Equal(t, 1, httpClient.Transport.(*countingTransport).count)
 	})
+
+	t.Run("the request carries the caller's context", func(t *testing.T) {
+		alice := testutil.RandomIssuer(t)
+		serviceURL, service := startTestServer(t, func(req execution.Request, res execution.Response) error {
+			return res.SetSuccess(datamodel.Map{})
+		})
+
+		type key struct{}
+		var got any
+		httpClient := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			got = r.Context().Value(key{})
+			return http.DefaultTransport.RoundTrip(r)
+		})}
+		client, err := retrieval.NewClient(serviceURL, retrieval.WithHTTPClient(httpClient))
+		require.NoError(t, err)
+
+		inv, err := contentRetrieve.Invoke(alice, alice.DID(), &datamodel.Map{}, invocation.WithAudience(service.DID()))
+		require.NoError(t, err)
+
+		ctx := context.WithValue(t.Context(), key{}, "caller")
+		res, err := client.Execute(execution.NewRequest(ctx, inv))
+		require.NoError(t, err)
+		if hc, ok := res.Metadata().(*retrieval.HTTPHeaderResponseContainer); ok && hc.Body != nil {
+			require.NoError(t, hc.Body.Close())
+		}
+		require.Equal(t, "caller", got)
+	})
+
+	t.Run("a canceled context aborts the request", func(t *testing.T) {
+		alice := testutil.RandomIssuer(t)
+		serviceURL, service := startTestServer(t, func(req execution.Request, res execution.Response) error {
+			t.Error("the request reached the server")
+			return res.SetSuccess(datamodel.Map{})
+		})
+		client, err := retrieval.NewClient(serviceURL)
+		require.NoError(t, err)
+
+		inv, err := contentRetrieve.Invoke(alice, alice.DID(), &datamodel.Map{}, invocation.WithAudience(service.DID()))
+		require.NoError(t, err)
+
+		ctx, cancel := context.WithCancel(t.Context())
+		cancel()
+		_, err = client.Execute(execution.NewRequest(ctx, inv))
+		require.ErrorIs(t, err, context.Canceled)
+	})
 }
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 type recordingListener struct {
 	encoded ucan.Container
