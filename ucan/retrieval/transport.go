@@ -1,6 +1,7 @@
 package retrieval
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -91,10 +92,10 @@ type HTTPHeaderOutboundCodec struct{}
 
 var _ transport.OutboundCodec[*http.Request, *http.Response] = (*HTTPHeaderOutboundCodec)(nil)
 
-func (h *HTTPHeaderOutboundCodec) Encode(c ucan.Container) (*http.Request, error) {
+func (h *HTTPHeaderOutboundCodec) Encode(ctx context.Context, c ucan.Container) (*http.Request, error) {
 	method := http.MethodGet
 	headers := http.Header{}
-	var body io.ReadCloser
+	var body io.Reader
 	if hc, ok := c.(*HTTPHeaderRequestContainer); ok {
 		if hc.Method != "" {
 			method = hc.Method
@@ -102,13 +103,16 @@ func (h *HTTPHeaderOutboundCodec) Encode(c ucan.Container) (*http.Request, error
 		if hc.Header != nil {
 			headers = hc.Header
 		}
-		body = hc.Body
+		if hc.Body != nil {
+			body = hc.Body
+		}
 	}
-	req := &http.Request{
-		Method: method,
-		Body:   body,
-		Header: headers,
+	// The URL is the transport's to set.
+	req, err := http.NewRequestWithContext(ctx, method, "", body)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
 	}
+	req.Header = headers
 	ctBytes, err := container.Encode(container.Base64Gzip, c)
 	if err != nil {
 		return nil, fmt.Errorf("encoding container: %w", err)
