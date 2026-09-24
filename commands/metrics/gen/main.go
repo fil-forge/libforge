@@ -23,8 +23,6 @@ func tag(path string) {
 }
 
 func main() {
-	// SampleSet has a hand-written codec (see codec.go) because cbor-gen /
-	// dag-json-gen do not support DID-keyed maps.
 	mapModels := []any{
 		metrics.SampleArguments{},
 		metrics.SampleOK{},

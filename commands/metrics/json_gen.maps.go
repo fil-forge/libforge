@@ -219,7 +219,7 @@ func (t *SampleOK) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Samples (metrics.SampleSet) (struct)
+	// t.Samples ([]metrics.SampleItem) (slice)
 	if len("samples") > 8192 {
 		return fmt.Errorf("string in field \"samples\" was too long")
 	}
@@ -229,9 +229,27 @@ func (t *SampleOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
-	if err := t.Samples.MarshalDagJSON(jw); err != nil {
-		return fmt.Errorf("marshaling field t.Samples: %w", err)
+	if len(t.Samples) > 8192 {
+		return fmt.Errorf("slice value in field t.Samples was too long")
 	}
+
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("writing array open for field t.Samples: %w", err)
+	}
+	for i, v := range t.Samples {
+		if i > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return fmt.Errorf("writing comma for field t.Samples: %w", err)
+			}
+		}
+		if err := v.MarshalDagJSON(jw); err != nil {
+			return fmt.Errorf("marshaling field v: %w", err)
+		}
+	}
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("writing array close for field t.Samples: %w", err)
+	}
+
 	written = true
 	if written {
 		if err := jw.WriteComma(); err != nil {
@@ -327,11 +345,46 @@ func (t *SampleOK) UnmarshalDagJSON(r io.Reader) (err error) {
 
 				}
 
-				// t.Samples (metrics.SampleSet) (struct)
+				// t.Samples ([]metrics.SampleItem) (slice)
 			case "samples":
+				{
 
-				if err := t.Samples.UnmarshalDagJSON(jr); err != nil {
-					return fmt.Errorf("unmarshaling t.Samples: %w", err)
+					if err := jr.ReadArrayOpen(); err != nil {
+						return fmt.Errorf("reading array open for field t.Samples: %w", err)
+					}
+
+					close, err := jr.PeekArrayClose()
+					if err != nil {
+						return fmt.Errorf("peeking array close for field t.Samples: %w", err)
+					}
+					if close {
+						if err := jr.ReadArrayClose(); err != nil {
+							return fmt.Errorf("reading array close for field t.Samples: %w", err)
+						}
+
+					} else {
+						for i := 0; i < 8192; i++ {
+							item := make([]SampleItem, 1)
+
+							if err := item[0].UnmarshalDagJSON(jr); err != nil {
+								return fmt.Errorf("unmarshaling item[0]: %w", err)
+							}
+
+							t.Samples = append(t.Samples, item[0])
+
+							close, err := jr.ReadArrayCloseOrComma()
+							if err != nil {
+								return fmt.Errorf("reading array close or comma for field t.Samples: %w", err)
+							}
+							if close {
+								break
+							}
+							if i == 8192-1 {
+								return fmt.Errorf("reading array for field t.Samples: slice too large")
+							}
+						}
+					}
+
 				}
 
 				// t.To (int64) (int64)
