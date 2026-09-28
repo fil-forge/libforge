@@ -61,9 +61,9 @@ type SampleOK struct {
 // because it repeats once per bucket and a map would carry its key names along
 // with it — a 32 day hourly series is about a third the size this way. The
 // fields, their order and their number are therefore all part of the wire
-// format: the decoder rejects any array of a different length, so changing the
-// shape breaks every reader on an older version and the readers have to move
-// with it.
+// format: both decoders refuse an array that is not exactly this long, so
+// changing the shape breaks every reader on an older version and the readers
+// have to move with it.
 //
 // Timestamp is the end of the bucket rather than its start. Consumers key a
 // sample to the instant its window closes, and a start-of-window timestamp
@@ -89,6 +89,6 @@ type SampleItem struct {
 	BytesStored uint64 `cborgen:"bytesStored" dagjsongen:"bytesStored"`
 	// BytesIngested is the bytes added to the space during the bucket.
 	BytesIngested uint64 `cborgen:"bytesIngested" dagjsongen:"bytesIngested"`
-	// UploadCount is the uploads the space holds at Timestamp.
+	// UploadCount is the number of uploads the space holds at Timestamp.
 	UploadCount uint64 `cborgen:"uploadCount" dagjsongen:"uploadCount"`
 }

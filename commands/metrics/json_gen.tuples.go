@@ -89,9 +89,7 @@ func (t *SampleItem) UnmarshalDagJSON(r io.Reader) (err error) {
 		return fmt.Errorf("peeking array close for field SampleItem: %w", err)
 	}
 	if close {
-		if err := jr.ReadArrayClose(); err != nil {
-			return fmt.Errorf("reading array close for field SampleItem: %w", err)
-		}
+		return fmt.Errorf("json input has too few fields 0 < 4")
 	} else {
 
 		// t.Timestamp (int64) (int64)

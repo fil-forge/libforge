@@ -85,6 +85,25 @@ func TestSampleOKEmptySeriesRoundTrip(t *testing.T) {
 	require.Empty(t, fromCBOR.Samples)
 }
 
+// A sample is a fixed-length tuple, so a decoder that accepted a shorter one
+// would read a truncated sample as a zero-valued one: a bucket reporting
+// nothing stored rather than a malformed message. Both codecs refuse it.
+func TestSampleItemRejectsAShortTuple(t *testing.T) {
+	for name, encoded := range map[string]string{
+		"empty":   `[]`,
+		"partial": `[1700003600,1024]`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			var out metrics.SampleItem
+			require.Error(t, out.UnmarshalDagJSON(bytes.NewReader([]byte(encoded))))
+		})
+	}
+
+	// The CBOR side states the same rule on the array header.
+	var out metrics.SampleItem
+	require.Error(t, out.UnmarshalCBOR(bytes.NewReader([]byte{0x80})))
+}
+
 // 768 samples is a 32 day range at hourly granularity, the largest series
 // consumers ask for. Both codecs cap arrays at 8192 elements, so this stays
 // well inside the limit — but the encoded size is worth knowing.

@@ -3,7 +3,7 @@ module github.com/fil-forge/libforge
 go 1.27.0
 
 require (
-	github.com/alanshaw/dag-json-gen v0.0.9
+	github.com/alanshaw/dag-json-gen v0.0.10
 	github.com/fil-forge/automobile v0.0.1
 	github.com/fil-forge/ucantone v0.0.0-20260924160040-c31dec73d9b3
 	github.com/filecoin-project/go-data-segment v0.0.1
