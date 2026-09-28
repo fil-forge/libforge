@@ -27,6 +27,8 @@ func main() {
 		bucket.CreateArguments{},
 		bucket.DeleteArguments{},
 		bucket.ListArguments{},
+		bucket.PolicyArguments{},
+		bucket.PolicyOK{},
 		bucket.InfoArguments{},
 		bucket.InfoOK{},
 		bucket.ListOK{},

@@ -296,6 +296,292 @@ func (t *ListArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *PolicyArguments) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{162}); err != nil {
+		return err
+	}
+
+	// t.Body ([]uint8) (slice)
+	if len("body") > 8192 {
+		return xerrors.Errorf("Value in field \"body\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("body"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("body")); err != nil {
+		return err
+	}
+
+	if len(t.Body) > 2097152 {
+		return xerrors.Errorf("Byte array in field t.Body was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Body))); err != nil {
+		return err
+	}
+
+	if _, err := cw.Write(t.Body); err != nil {
+		return err
+	}
+
+	// t.Request (s3.Request) (struct)
+	if len("request") > 8192 {
+		return xerrors.Errorf("Value in field \"request\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("request"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("request")); err != nil {
+		return err
+	}
+
+	if err := t.Request.MarshalCBOR(cw); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *PolicyArguments) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = PolicyArguments{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("PolicyArguments: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 7)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Body ([]uint8) (slice)
+		case "body":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 2097152 {
+				return fmt.Errorf("t.Body: byte array too large (%d)", extra)
+			}
+			if maj != cbg.MajByteString {
+				return fmt.Errorf("expected byte array")
+			}
+
+			if extra > 0 {
+				t.Body = make([]uint8, extra)
+			}
+
+			if _, err := io.ReadFull(cr, t.Body); err != nil {
+				return err
+			}
+
+			// t.Request (s3.Request) (struct)
+		case "request":
+
+			{
+
+				if err := t.Request.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Request: %w", err)
+				}
+
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+func (t *PolicyOK) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{162}); err != nil {
+		return err
+	}
+
+	// t.ETag (string) (string)
+	if len("etag") > 8192 {
+		return xerrors.Errorf("Value in field \"etag\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("etag"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("etag")); err != nil {
+		return err
+	}
+
+	if len(t.ETag) > 8192 {
+		return xerrors.Errorf("Value in field t.ETag was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.ETag))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string(t.ETag)); err != nil {
+		return err
+	}
+
+	// t.Policy ([]uint8) (slice)
+	if len("policy") > 8192 {
+		return xerrors.Errorf("Value in field \"policy\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("policy"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("policy")); err != nil {
+		return err
+	}
+
+	if len(t.Policy) > 2097152 {
+		return xerrors.Errorf("Byte array in field t.Policy was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Policy))); err != nil {
+		return err
+	}
+
+	if _, err := cw.Write(t.Policy); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *PolicyOK) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = PolicyOK{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("PolicyOK: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 6)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.ETag (string) (string)
+		case "etag":
+
+			{
+				sval, err := cbg.ReadStringWithMax(cr, 8192)
+				if err != nil {
+					return err
+				}
+
+				t.ETag = string(sval)
+			}
+			// t.Policy ([]uint8) (slice)
+		case "policy":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 2097152 {
+				return fmt.Errorf("t.Policy: byte array too large (%d)", extra)
+			}
+			if maj != cbg.MajByteString {
+				return fmt.Errorf("expected byte array")
+			}
+
+			if extra > 0 {
+				t.Policy = make([]uint8, extra)
+			}
+
+			if _, err := io.ReadFull(cr, t.Policy); err != nil {
+				return err
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
 func (t *InfoArguments) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
