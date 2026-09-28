@@ -51,15 +51,15 @@ func TestSampleOKRoundTrip(t *testing.T) {
 		To:     1700007200,
 		Window: 3600,
 		Samples: []metrics.SampleItem{
-			{Timestamp: 1700003600, BytesStored: 1024, BytesIngested: 1024},
-			{Timestamp: 1700007200, BytesStored: 512, BytesIngested: 0},
+			{Timestamp: 1700003600, BytesStored: 1024, BytesIngested: 1024, UploadCount: 2},
+			{Timestamp: 1700007200, BytesStored: 512, BytesIngested: 0, UploadCount: 1},
 		},
 	}
-	// SampleItem is tuple encoded: [timestamp, bytesStored, bytesIngested].
+	// SampleItem is tuple encoded: [timestamp, bytesStored, bytesIngested, uploadCount].
 	require.Equal(t,
 		`{"from":1700000000,"samples":[`+
-			`[1700003600,1024,1024],`+
-			`[1700007200,512,0]`+
+			`[1700003600,1024,1024,2],`+
+			`[1700007200,512,0,1]`+
 			`],"to":1700007200,"window":3600}`,
 		roundTrip(t, in))
 }
@@ -100,6 +100,7 @@ func TestSampleOKLargeSeriesRoundTrip(t *testing.T) {
 			Timestamp:     in.From + int64(i+1)*hour,
 			BytesStored:   uint64(i) * 1 << 20,
 			BytesIngested: 1 << 20,
+			UploadCount:   uint64(i),
 		})
 	}
 	in.Samples = samples

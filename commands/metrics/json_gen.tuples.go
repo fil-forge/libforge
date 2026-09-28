@@ -56,6 +56,16 @@ func (t *SampleItem) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing uint64 for field t.BytesIngested: %w", err)
 	}
 
+	if err := jw.WriteComma(); err != nil {
+		return fmt.Errorf("writing comma for field UploadCount: %w", err)
+	}
+
+	// t.UploadCount (uint64) (uint64)
+
+	if err := jw.WriteUint64(uint64(t.UploadCount)); err != nil {
+		return fmt.Errorf("writing uint64 for field t.UploadCount: %w", err)
+	}
+
 	if err := jw.WriteArrayClose(); err != nil {
 		return fmt.Errorf("writing array close for field SampleItem: %w", err)
 	}
@@ -101,7 +111,7 @@ func (t *SampleItem) UnmarshalDagJSON(r io.Reader) (err error) {
 				return fmt.Errorf("reading array close or comma for field SampleItem: %w", err)
 			}
 			if close {
-				return fmt.Errorf("json input has too few fields 1 < 3")
+				return fmt.Errorf("json input has too few fields 1 < 4")
 			}
 		}
 
@@ -122,7 +132,7 @@ func (t *SampleItem) UnmarshalDagJSON(r io.Reader) (err error) {
 				return fmt.Errorf("reading array close or comma for field SampleItem: %w", err)
 			}
 			if close {
-				return fmt.Errorf("json input has too few fields 2 < 3")
+				return fmt.Errorf("json input has too few fields 2 < 4")
 			}
 		}
 
@@ -135,6 +145,27 @@ func (t *SampleItem) UnmarshalDagJSON(r io.Reader) (err error) {
 				return fmt.Errorf("reading uint64 for field t.BytesIngested: %w", err)
 			}
 			t.BytesIngested = uint64(nval)
+
+		}
+		{
+			close, err := jr.ReadArrayCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading array close or comma for field SampleItem: %w", err)
+			}
+			if close {
+				return fmt.Errorf("json input has too few fields 3 < 4")
+			}
+		}
+
+		// t.UploadCount (uint64) (uint64)
+
+		{
+
+			nval, err := jr.ReadNumberAsUint64()
+			if err != nil {
+				return fmt.Errorf("reading uint64 for field t.UploadCount: %w", err)
+			}
+			t.UploadCount = uint64(nval)
 
 		}
 		if err := jr.ReadArrayClose(); err != nil {
