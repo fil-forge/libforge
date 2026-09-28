@@ -67,9 +67,7 @@ func (t *RangeModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		return fmt.Errorf("peeking array close for field RangeModel: %w", err)
 	}
 	if close {
-		if err := jr.ReadArrayClose(); err != nil {
-			return fmt.Errorf("reading array close for field RangeModel: %w", err)
-		}
+		return fmt.Errorf("json input has too few fields 0 < 2")
 	} else {
 
 		// t.Start (int64) (int64)
@@ -161,9 +159,7 @@ func (t *BlobSliceModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		return fmt.Errorf("peeking array close for field BlobSliceModel: %w", err)
 	}
 	if close {
-		if err := jr.ReadArrayClose(); err != nil {
-			return fmt.Errorf("reading array close for field BlobSliceModel: %w", err)
-		}
+		return fmt.Errorf("json input has too few fields 0 < 2")
 	} else {
 
 		// t.Digest (multihash.Multihash) (slice)
@@ -272,9 +268,7 @@ func (t *BlobIndexModel) UnmarshalDagJSON(r io.Reader) (err error) {
 		return fmt.Errorf("peeking array close for field BlobIndexModel: %w", err)
 	}
 	if close {
-		if err := jr.ReadArrayClose(); err != nil {
-			return fmt.Errorf("reading array close for field BlobIndexModel: %w", err)
-		}
+		return fmt.Errorf("json input has too few fields 0 < 2")
 	} else {
 
 		// t.Digest (multihash.Multihash) (slice)

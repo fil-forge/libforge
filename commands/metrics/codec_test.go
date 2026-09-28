@@ -51,15 +51,15 @@ func TestSampleOKRoundTrip(t *testing.T) {
 		To:     1700007200,
 		Window: 3600,
 		Samples: []metrics.SampleItem{
-			{Timestamp: 1700003600, BytesStored: 1024, BytesIngested: 1024},
-			{Timestamp: 1700007200, BytesStored: 512, BytesIngested: 0},
+			{Timestamp: 1700003600, BytesStored: 1024, BytesIngested: 1024, UploadCount: 2},
+			{Timestamp: 1700007200, BytesStored: 512, BytesIngested: 0, UploadCount: 1},
 		},
 	}
-	// SampleItem is tuple encoded: [timestamp, bytesStored, bytesIngested].
+	// SampleItem is tuple encoded: [timestamp, bytesStored, bytesIngested, uploadCount].
 	require.Equal(t,
 		`{"from":1700000000,"samples":[`+
-			`[1700003600,1024,1024],`+
-			`[1700007200,512,0]`+
+			`[1700003600,1024,1024,2],`+
+			`[1700007200,512,0,1]`+
 			`],"to":1700007200,"window":3600}`,
 		roundTrip(t, in))
 }
@@ -85,6 +85,25 @@ func TestSampleOKEmptySeriesRoundTrip(t *testing.T) {
 	require.Empty(t, fromCBOR.Samples)
 }
 
+// A sample is a fixed-length tuple, so a decoder that accepted a shorter one
+// would read a truncated sample as a zero-valued one: a bucket reporting
+// nothing stored rather than a malformed message. Both codecs refuse it.
+func TestSampleItemRejectsAShortTuple(t *testing.T) {
+	for name, encoded := range map[string]string{
+		"empty":   `[]`,
+		"partial": `[1700003600,1024]`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			var out metrics.SampleItem
+			require.Error(t, out.UnmarshalDagJSON(bytes.NewReader([]byte(encoded))))
+		})
+	}
+
+	// The CBOR side states the same rule on the array header.
+	var out metrics.SampleItem
+	require.Error(t, out.UnmarshalCBOR(bytes.NewReader([]byte{0x80})))
+}
+
 // 768 samples is a 32 day range at hourly granularity, the largest series
 // consumers ask for. Both codecs cap arrays at 8192 elements, so this stays
 // well inside the limit — but the encoded size is worth knowing.
@@ -100,6 +119,7 @@ func TestSampleOKLargeSeriesRoundTrip(t *testing.T) {
 			Timestamp:     in.From + int64(i+1)*hour,
 			BytesStored:   uint64(i) * 1 << 20,
 			BytesIngested: 1 << 20,
+			UploadCount:   uint64(i),
 		})
 	}
 	in.Samples = samples

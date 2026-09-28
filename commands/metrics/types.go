@@ -57,11 +57,13 @@ type SampleOK struct {
 
 // SampleItem is one bucket of the series.
 //
-// It is tuple encoded, as [Timestamp, BytesStored, BytesIngested], because it
-// repeats once per bucket and a map would carry its three key names along with
-// it — a 32 day hourly series is about a third the size this way. The order of
-// the fields is therefore part of the wire format: a field may be appended,
-// but none may be reordered or removed.
+// It is tuple encoded, as [Timestamp, BytesStored, BytesIngested, UploadCount],
+// because it repeats once per bucket and a map would carry its key names along
+// with it — a 32 day hourly series is about a third the size this way. The
+// fields, their order and their number are therefore all part of the wire
+// format: both decoders refuse an array that is not exactly this long, so
+// changing the shape breaks every reader on an older version and the readers
+// have to move with it.
 //
 // Timestamp is the end of the bucket rather than its start. Consumers key a
 // sample to the instant its window closes, and a start-of-window timestamp
@@ -69,9 +71,14 @@ type SampleOK struct {
 // onto one grid.
 //
 // BytesStored is a gauge: the bytes the space holds as of Timestamp, counting
-// everything stored and not yet removed before that instant. BytesIngested is a
-// flow: the bytes added during the bucket. Removals do not reduce BytesIngested;
-// they show up in the next BytesStored.
+// everything stored and not yet removed before that instant. UploadCount is the
+// matching gauge for uploads, counting those added and not yet removed before
+// that instant. BytesIngested is a flow: the bytes added during the bucket.
+// Removals do not reduce BytesIngested; they show up in the next BytesStored.
+//
+// UploadCount counts uploads, which is not the same as counting objects: it is
+// the objects a client stored only where the client records one upload per
+// object.
 //
 // There is no egress here. Egress is accounted for by the egress tracking
 // service, which sees retrieval receipts this service never handles.
@@ -82,4 +89,6 @@ type SampleItem struct {
 	BytesStored uint64 `cborgen:"bytesStored" dagjsongen:"bytesStored"`
 	// BytesIngested is the bytes added to the space during the bucket.
 	BytesIngested uint64 `cborgen:"bytesIngested" dagjsongen:"bytesIngested"`
+	// UploadCount is the number of uploads the space holds at Timestamp.
+	UploadCount uint64 `cborgen:"uploadCount" dagjsongen:"uploadCount"`
 }
