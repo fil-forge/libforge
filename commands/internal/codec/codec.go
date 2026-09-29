@@ -5,12 +5,15 @@
 package codec
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 
 	jsg "github.com/alanshaw/dag-json-gen"
 	"github.com/fil-forge/ucantone/did"
+	"github.com/fil-forge/ucantone/ipld/datamodel"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
@@ -193,4 +196,58 @@ func ReadJSONArray[T any](jr *jsg.DagJsonReader, read func() (T, error)) ([]T, e
 			return out, nil
 		}
 	}
+}
+
+// ReadCborVariant reads one CBOR map from r for a union whose variants are
+// told apart by which of keys the map holds. It returns that key, and the map
+// re-encoded for the variant's own decoder. It fails unless exactly one of
+// keys is present.
+func ReadCborVariant(r io.Reader, keys ...string) (string, []byte, error) {
+	var m datamodel.Map
+	if err := m.UnmarshalCBOR(r); err != nil {
+		return "", nil, err
+	}
+	key, err := variantKey(m, keys)
+	if err != nil {
+		return "", nil, err
+	}
+	var buf bytes.Buffer
+	if err := m.MarshalCBOR(&buf); err != nil {
+		return "", nil, err
+	}
+	return key, buf.Bytes(), nil
+}
+
+// ReadDagJSONVariant is [ReadCborVariant] for DAG-JSON.
+func ReadDagJSONVariant(r io.Reader, keys ...string) (string, []byte, error) {
+	var m datamodel.Map
+	if err := m.UnmarshalDagJSON(r); err != nil {
+		return "", nil, err
+	}
+	key, err := variantKey(m, keys)
+	if err != nil {
+		return "", nil, err
+	}
+	var buf bytes.Buffer
+	if err := m.MarshalDagJSON(&buf); err != nil {
+		return "", nil, err
+	}
+	return key, buf.Bytes(), nil
+}
+
+func variantKey(m datamodel.Map, keys []string) (string, error) {
+	found := ""
+	for _, k := range keys {
+		if _, ok := m[k]; !ok {
+			continue
+		}
+		if found != "" {
+			return "", fmt.Errorf("exactly one of %s must be set, got %q and %q", strings.Join(keys, " or "), found, k)
+		}
+		found = k
+	}
+	if found == "" {
+		return "", fmt.Errorf("exactly one of %s must be set, got neither", strings.Join(keys, " or "))
+	}
+	return found, nil
 }

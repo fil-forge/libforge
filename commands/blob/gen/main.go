@@ -26,6 +26,7 @@ func main() {
 	models := []any{
 		blob.AllocateArguments{},
 		blob.Blob{},
+		blob.BlobDigestCode{},
 		blob.AllocateOK{},
 		blob.BlobAddress{},
 		blob.AcceptArguments{},
@@ -35,7 +36,8 @@ func main() {
 		blob.RemoveArguments{},
 		blob.ReleaseArguments{},
 		blob.AbortArguments{},
-		blob.RejectArguments{},
+		blob.RejectDigestArguments{},
+		blob.RejectAllocationArguments{},
 		blob.ReplicateArguments{},
 		blob.ReplicateOK{},
 		blob.ListArguments{},

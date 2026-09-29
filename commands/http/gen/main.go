@@ -25,6 +25,8 @@ func tag(path string) {
 func main() {
 	models := []any{
 		http.PutArguments{},
+		http.PutOK{},
+		http.PutBlob{},
 	}
 	const (
 		cborFile = "../cbor_gen.go"
