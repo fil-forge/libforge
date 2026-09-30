@@ -133,3 +133,55 @@ func TestAbortArgumentsWithoutDigest(t *testing.T) {
 	require.Empty(t, out.Digest)
 	require.Equal(t, in.Cause, out.Cause)
 }
+
+// A union decodes through its model, which holds the fields of both variants:
+// exactly one variant's field must be set, whichever codec carries it.
+func TestUnionModelsRejectInvalidCBOR(t *testing.T) {
+	digest := testutil.RandomMultihash(t)
+	code := uint64(multicodec.Sha2_256)
+	alloc := testutil.RandomCID(t)
+	space := testutil.RandomDID(t)
+
+	for name, m := range map[string]blob.BlobSpecModel{
+		"neither": {Size: 1},
+		"both":    {Digest: digest, DigestCode: &code, Size: 1},
+	} {
+		t.Run("spec "+name, func(t *testing.T) {
+			var buf bytes.Buffer
+			require.NoError(t, m.MarshalCBOR(&buf))
+			var out blob.BlobSpec
+			require.Error(t, out.UnmarshalCBOR(&buf))
+		})
+	}
+	for name, m := range map[string]blob.RejectArgumentsModel{
+		"neither": {Space: space},
+		"both":    {Space: space, Digest: digest, Allocation: &alloc},
+	} {
+		t.Run("reject "+name, func(t *testing.T) {
+			var buf bytes.Buffer
+			require.NoError(t, m.MarshalCBOR(&buf))
+			var out blob.RejectArguments
+			require.Error(t, out.UnmarshalCBOR(&buf))
+
+			var js bytes.Buffer
+			require.NoError(t, m.MarshalDagJSON(&js))
+			require.Error(t, out.UnmarshalDagJSON(&js))
+		})
+	}
+}
+
+// The model's generated decoder bounds each field as it reads it, so a spec
+// decodes in one pass with no intermediate copy of its fields.
+func TestBlobSpecRefusesOversizedDigest(t *testing.T) {
+	// {"digest": <3 MiB of bytes>, "size": 1}, written by hand: the generated
+	// encoder refuses a digest this large too.
+	n := 3 << 20
+	var buf bytes.Buffer
+	buf.WriteByte(0xa2)
+	buf.WriteString("\x66digest")
+	buf.Write([]byte{0x5a, byte(n >> 24), byte(n >> 16), byte(n >> 8), byte(n)})
+	buf.Write(bytes.Repeat([]byte{1}, n))
+	buf.WriteString("\x64size\x01")
+	var out blob.BlobSpec
+	require.ErrorContains(t, out.UnmarshalCBOR(&buf), "t.Digest: byte array too large")
+}

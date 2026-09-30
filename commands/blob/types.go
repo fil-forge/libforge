@@ -37,6 +37,15 @@ type BlobDigestCode struct {
 	Size       uint64 `cborgen:"size" dagjsongen:"size"`
 }
 
+// BlobSpecModel is the encoded form of a [BlobSpec]: the fields of both of its
+// variants, so a spec decodes in one bounded pass. Exactly one of Digest and
+// DigestCode is set in a valid spec.
+type BlobSpecModel struct {
+	Digest     multihash.Multihash `cborgen:"digest,omitempty" dagjsongen:"digest,omitempty"`
+	DigestCode *uint64             `cborgen:"digestCode,omitempty" dagjsongen:"digestCode,omitempty"`
+	Size       uint64              `cborgen:"size" dagjsongen:"size"`
+}
+
 type AddArguments struct {
 	Blob BlobSpec `cborgen:"blob" dagjsongen:"blob"`
 }
@@ -145,6 +154,15 @@ type AbortArguments struct {
 type RejectArguments struct {
 	byDigest     *RejectDigestArguments
 	byAllocation *RejectAllocationArguments
+}
+
+// RejectArgumentsModel is the encoded form of [RejectArguments]: the fields of
+// both of its variants, so the arguments decode in one bounded pass. Exactly
+// one of Digest and Allocation is set in valid arguments.
+type RejectArgumentsModel struct {
+	Space      did.DID             `cborgen:"space" dagjsongen:"space"`
+	Digest     multihash.Multihash `cborgen:"digest,omitempty" dagjsongen:"digest,omitempty"`
+	Allocation *cid.Cid            `cborgen:"allocation,omitempty" dagjsongen:"allocation,omitempty"`
 }
 
 // RejectDigestArguments rejects Space's allocation for the blob identified by

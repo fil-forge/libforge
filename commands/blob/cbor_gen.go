@@ -441,6 +441,214 @@ func (t *BlobDigestCode) UnmarshalCBOR(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *BlobSpecModel) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+	fieldCount := 3
+
+	if t.Digest == nil {
+		fieldCount--
+	}
+
+	if t.DigestCode == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
+		return err
+	}
+
+	// t.Size (uint64) (uint64)
+	if len("size") > 8192 {
+		return xerrors.Errorf("Value in field \"size\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("size"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("size")); err != nil {
+		return err
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Size)); err != nil {
+		return err
+	}
+
+	// t.Digest (multihash.Multihash) (slice)
+	if t.Digest != nil {
+
+		if len("digest") > 8192 {
+			return xerrors.Errorf("Value in field \"digest\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("digest"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("digest")); err != nil {
+			return err
+		}
+
+		if len(t.Digest) > 2097152 {
+			return xerrors.Errorf("Byte array in field t.Digest was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Digest))); err != nil {
+			return err
+		}
+
+		if _, err := cw.Write(t.Digest); err != nil {
+			return err
+		}
+
+	}
+
+	// t.DigestCode (uint64) (uint64)
+	if t.DigestCode != nil {
+
+		if len("digestCode") > 8192 {
+			return xerrors.Errorf("Value in field \"digestCode\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("digestCode"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("digestCode")); err != nil {
+			return err
+		}
+
+		if t.DigestCode == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(*t.DigestCode)); err != nil {
+				return err
+			}
+		}
+
+	}
+	return nil
+}
+
+func (t *BlobSpecModel) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = BlobSpecModel{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("BlobSpecModel: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 10)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Size (uint64) (uint64)
+		case "size":
+
+			{
+
+				maj, extra, err = cr.ReadHeader()
+				if err != nil {
+					return err
+				}
+				if maj != cbg.MajUnsignedInt {
+					return fmt.Errorf("wrong type for uint64 field")
+				}
+				t.Size = uint64(extra)
+
+			}
+			// t.Digest (multihash.Multihash) (slice)
+		case "digest":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 2097152 {
+				return fmt.Errorf("t.Digest: byte array too large (%d)", extra)
+			}
+			if maj != cbg.MajByteString {
+				return fmt.Errorf("expected byte array")
+			}
+
+			if extra > 0 {
+				t.Digest = make([]uint8, extra)
+			}
+
+			if _, err := io.ReadFull(cr, t.Digest); err != nil {
+				return err
+			}
+
+			// t.DigestCode (uint64) (uint64)
+		case "digestCode":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+					maj, extra, err = cr.ReadHeader()
+					if err != nil {
+						return err
+					}
+					if maj != cbg.MajUnsignedInt {
+						return fmt.Errorf("wrong type for uint64 field")
+					}
+					typed := uint64(extra)
+					t.DigestCode = &typed
+				}
+
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
 func (t *AllocateOK) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
@@ -1948,6 +2156,207 @@ func (t *RejectAllocationArguments) UnmarshalCBOR(r io.Reader) (err error) {
 				}
 
 				t.Allocation = c
+
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+func (t *RejectArgumentsModel) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+	fieldCount := 3
+
+	if t.Digest == nil {
+		fieldCount--
+	}
+
+	if t.Allocation == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
+		return err
+	}
+
+	// t.Space (did.DID) (struct)
+	if len("space") > 8192 {
+		return xerrors.Errorf("Value in field \"space\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("space"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("space")); err != nil {
+		return err
+	}
+
+	if err := t.Space.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Digest (multihash.Multihash) (slice)
+	if t.Digest != nil {
+
+		if len("digest") > 8192 {
+			return xerrors.Errorf("Value in field \"digest\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("digest"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("digest")); err != nil {
+			return err
+		}
+
+		if len(t.Digest) > 2097152 {
+			return xerrors.Errorf("Byte array in field t.Digest was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Digest))); err != nil {
+			return err
+		}
+
+		if _, err := cw.Write(t.Digest); err != nil {
+			return err
+		}
+
+	}
+
+	// t.Allocation (cid.Cid) (struct)
+	if t.Allocation != nil {
+
+		if len("allocation") > 8192 {
+			return xerrors.Errorf("Value in field \"allocation\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("allocation"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("allocation")); err != nil {
+			return err
+		}
+
+		if t.Allocation == nil {
+			if _, err := cw.Write(cbg.CborNull); err != nil {
+				return err
+			}
+		} else {
+			if err := cbg.WriteCid(cw, *t.Allocation); err != nil {
+				return xerrors.Errorf("failed to write cid field t.Allocation: %w", err)
+			}
+		}
+
+	}
+	return nil
+}
+
+func (t *RejectArgumentsModel) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = RejectArgumentsModel{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("RejectArgumentsModel: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
+	nameBuf := make([]byte, 10)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Space (did.DID) (struct)
+		case "space":
+
+			{
+
+				if err := t.Space.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Space: %w", err)
+				}
+
+			}
+			// t.Digest (multihash.Multihash) (slice)
+		case "digest":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 2097152 {
+				return fmt.Errorf("t.Digest: byte array too large (%d)", extra)
+			}
+			if maj != cbg.MajByteString {
+				return fmt.Errorf("expected byte array")
+			}
+
+			if extra > 0 {
+				t.Digest = make([]uint8, extra)
+			}
+
+			if _, err := io.ReadFull(cr, t.Digest); err != nil {
+				return err
+			}
+
+			// t.Allocation (cid.Cid) (struct)
+		case "allocation":
+
+			{
+
+				b, err := cr.ReadByte()
+				if err != nil {
+					return err
+				}
+				if b != cbg.CborNull[0] {
+					if err := cr.UnreadByte(); err != nil {
+						return err
+					}
+
+					c, err := cbg.ReadCid(cr)
+					if err != nil {
+						return xerrors.Errorf("failed to read cid field t.Allocation: %w", err)
+					}
+
+					t.Allocation = &c
+				}
 
 			}
 

@@ -3,10 +3,8 @@
 package blob
 
 import (
-	"bytes"
 	"io"
 
-	"github.com/fil-forge/libforge/commands/internal/codec"
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/errors"
 	"github.com/ipfs/go-cid"
@@ -23,7 +21,10 @@ const UnsupportedDigestCodeErrorName = "UnsupportedDigestCode"
 // ErrUnsupportedDigestCode is the failure for an unsupported digest code.
 var ErrUnsupportedDigestCode = errors.New(UnsupportedDigestCodeErrorName, "adding a blob by digest code is supported only for sha2-256")
 
-var errNoVariant = errors.New("InvalidUnion", "union holds no variant")
+var (
+	errNoVariant    = errors.New("InvalidUnion", "union holds no variant")
+	errBothVariants = errors.New("InvalidUnion", "union holds both variants")
+)
 
 // SpecFromBlob returns the spec of a blob whose digest is known.
 func SpecFromBlob(b Blob) BlobSpec {
@@ -75,11 +76,11 @@ func (s BlobSpec) MarshalCBOR(w io.Writer) error {
 }
 
 func (s *BlobSpec) UnmarshalCBOR(r io.Reader) error {
-	key, raw, err := codec.ReadCborVariant(r, "digest", "digestCode")
-	if err != nil {
+	var m BlobSpecModel
+	if err := m.UnmarshalCBOR(r); err != nil {
 		return err
 	}
-	return s.decode(key, raw, false)
+	return s.fromModel(m)
 }
 
 func (s BlobSpec) MarshalDagJSON(w io.Writer) error {
@@ -93,28 +94,25 @@ func (s BlobSpec) MarshalDagJSON(w io.Writer) error {
 }
 
 func (s *BlobSpec) UnmarshalDagJSON(r io.Reader) error {
-	key, raw, err := codec.ReadDagJSONVariant(r, "digest", "digestCode")
-	if err != nil {
+	var m BlobSpecModel
+	if err := m.UnmarshalDagJSON(r); err != nil {
 		return err
 	}
-	return s.decode(key, raw, true)
+	return s.fromModel(m)
 }
 
-func (s *BlobSpec) decode(key string, raw []byte, json bool) error {
+func (s *BlobSpec) fromModel(m BlobSpecModel) error {
 	*s = BlobSpec{}
-	if key == "digest" {
-		var b Blob
-		if err := unmarshalVariant(&b, raw, json); err != nil {
-			return err
-		}
-		s.blob = &b
-		return nil
+	switch hasDigest := len(m.Digest) > 0; {
+	case hasDigest && m.DigestCode == nil:
+		s.blob = &Blob{Digest: m.Digest, Size: m.Size}
+	case !hasDigest && m.DigestCode != nil:
+		s.code = &BlobDigestCode{DigestCode: *m.DigestCode, Size: m.Size}
+	case hasDigest:
+		return errBothVariants
+	default:
+		return errNoVariant
 	}
-	var c BlobDigestCode
-	if err := unmarshalVariant(&c, raw, json); err != nil {
-		return err
-	}
-	s.code = &c
 	return nil
 }
 
@@ -169,11 +167,11 @@ func (a RejectArguments) MarshalCBOR(w io.Writer) error {
 }
 
 func (a *RejectArguments) UnmarshalCBOR(r io.Reader) error {
-	key, raw, err := codec.ReadCborVariant(r, "digest", "allocation")
-	if err != nil {
+	var m RejectArgumentsModel
+	if err := m.UnmarshalCBOR(r); err != nil {
 		return err
 	}
-	return a.decode(key, raw, false)
+	return a.fromModel(m)
 }
 
 func (a RejectArguments) MarshalDagJSON(w io.Writer) error {
@@ -187,39 +185,24 @@ func (a RejectArguments) MarshalDagJSON(w io.Writer) error {
 }
 
 func (a *RejectArguments) UnmarshalDagJSON(r io.Reader) error {
-	key, raw, err := codec.ReadDagJSONVariant(r, "digest", "allocation")
-	if err != nil {
+	var m RejectArgumentsModel
+	if err := m.UnmarshalDagJSON(r); err != nil {
 		return err
 	}
-	return a.decode(key, raw, true)
+	return a.fromModel(m)
 }
 
-func (a *RejectArguments) decode(key string, raw []byte, json bool) error {
+func (a *RejectArguments) fromModel(m RejectArgumentsModel) error {
 	*a = RejectArguments{}
-	if key == "digest" {
-		var d RejectDigestArguments
-		if err := unmarshalVariant(&d, raw, json); err != nil {
-			return err
-		}
-		a.byDigest = &d
-		return nil
+	switch hasDigest := len(m.Digest) > 0; {
+	case hasDigest && m.Allocation == nil:
+		a.byDigest = &RejectDigestArguments{Space: m.Space, Digest: m.Digest}
+	case !hasDigest && m.Allocation != nil:
+		a.byAllocation = &RejectAllocationArguments{Space: m.Space, Allocation: *m.Allocation}
+	case hasDigest:
+		return errBothVariants
+	default:
+		return errNoVariant
 	}
-	var al RejectAllocationArguments
-	if err := unmarshalVariant(&al, raw, json); err != nil {
-		return err
-	}
-	a.byAllocation = &al
 	return nil
-}
-
-type variant interface {
-	UnmarshalCBOR(io.Reader) error
-	UnmarshalDagJSON(io.Reader) error
-}
-
-func unmarshalVariant(v variant, raw []byte, json bool) error {
-	if json {
-		return v.UnmarshalDagJSON(bytes.NewReader(raw))
-	}
-	return v.UnmarshalCBOR(bytes.NewReader(raw))
 }
