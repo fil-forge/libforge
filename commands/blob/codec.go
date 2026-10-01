@@ -25,14 +25,20 @@ var (
 	errBothVariants = errors.New("InvalidUnion", "union holds both variants")
 )
 
-// SpecFromBlob returns the spec of a blob whose digest is known. Its digest
-// code is the digest's own; a digest that is not a multihash has code 0.
-func SpecFromBlob(b Blob) BlobSpec {
-	s := BlobSpec{digest: b.Digest, size: b.Size, valid: true}
-	if d, err := multihash.Decode(b.Digest); err == nil {
+// SpecFromDigest returns the spec of a blob of size bytes whose digest is
+// known. Its digest code is the digest's own; a digest that is not a multihash
+// has code 0.
+func SpecFromDigest(digest multihash.Multihash, size uint64) BlobSpec {
+	s := BlobSpec{digest: digest, size: size, valid: true}
+	if d, err := multihash.Decode(digest); err == nil {
 		s.code = d.Code
 	}
 	return s
+}
+
+// SpecFromBlob returns the spec of a blob whose digest is known.
+func SpecFromBlob(b Blob) BlobSpec {
+	return SpecFromDigest(b.Digest, b.Size)
 }
 
 // SpecFromDigestCode returns the spec of a blob of size bytes whose digest is
