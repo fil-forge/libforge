@@ -52,13 +52,32 @@ func TestBlobSpecRoundTrip(t *testing.T) {
 		})
 	}
 
-	gotBlob, ok := blob.SpecFromBlob(b).Blob()
+}
+
+func TestBlobSpecAccessors(t *testing.T) {
+	digest := testutil.RandomMultihash(t)
+	byDigest := blob.SpecFromBlob(blob.Blob{Digest: digest, Size: 7})
+	got, ok := byDigest.Digest()
 	require.True(t, ok)
-	require.Equal(t, b, gotBlob)
-	gotCode, ok := blob.SpecFromDigestCode(code, 9).DigestCode()
-	require.True(t, ok)
-	require.Equal(t, blob.BlobDigestCode{DigestCode: code, Size: 9}, gotCode)
-	require.EqualValues(t, 9, blob.SpecFromDigestCode(code, 9).Size())
+	require.Equal(t, digest, got)
+	require.Equal(t, uint64(multicodec.Sha2_256), byDigest.DigestCode(), "a digest has its own code")
+	require.EqualValues(t, 7, byDigest.Size())
+
+	byCode := blob.SpecFromDigestCode(uint64(multicodec.Sha2_256), 9)
+	_, ok = byCode.Digest()
+	require.False(t, ok)
+	require.Equal(t, uint64(multicodec.Sha2_256), byCode.DigestCode())
+	require.EqualValues(t, 9, byCode.Size())
+}
+
+// A spec naming a digest decodes only when the digest is a multihash, since
+// its digest code comes from it.
+func TestBlobSpecRefusesMalformedDigest(t *testing.T) {
+	m := blob.BlobSpecModel{Digest: []byte{0xff}, Size: 1}
+	var buf bytes.Buffer
+	require.NoError(t, m.MarshalCBOR(&buf))
+	var out blob.BlobSpec
+	require.Error(t, out.UnmarshalCBOR(&buf))
 }
 
 // A spec travels inside the arguments' generated codecs: the nested union

@@ -3,6 +3,7 @@
 package blob
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/fil-forge/ucantone/did"
@@ -26,53 +27,57 @@ var (
 	errBothVariants = errors.New("InvalidUnion", "union holds both variants")
 )
 
-// SpecFromBlob returns the spec of a blob whose digest is known.
+// SpecFromBlob returns the spec of a blob whose digest is known. Its digest
+// code is the digest's own; a digest that is not a multihash has code 0.
 func SpecFromBlob(b Blob) BlobSpec {
-	return BlobSpec{blob: &b}
+	s := BlobSpec{digest: b.Digest, size: b.Size, valid: true}
+	if d, err := multihash.Decode(b.Digest); err == nil {
+		s.code = d.Code
+	}
+	return s
 }
 
 // SpecFromDigestCode returns the spec of a blob of size bytes whose digest is
 // to be computed with the multihash function code.
 func SpecFromDigestCode(code, size uint64) BlobSpec {
-	return BlobSpec{code: &BlobDigestCode{DigestCode: code, Size: size}}
+	return BlobSpec{code: code, size: size, valid: true}
 }
 
-// Blob returns the blob with its digest, when the spec names one.
-func (s BlobSpec) Blob() (Blob, bool) {
-	if s.blob == nil {
-		return Blob{}, false
-	}
-	return *s.blob, true
+// Digest returns the blob's digest, when the spec names one.
+func (s BlobSpec) Digest() (multihash.Multihash, bool) {
+	return s.digest, len(s.digest) > 0
 }
 
-// DigestCode returns the hash function and size, when the spec names a digest
-// code instead of a digest.
-func (s BlobSpec) DigestCode() (BlobDigestCode, bool) {
-	if s.code == nil {
-		return BlobDigestCode{}, false
-	}
-	return *s.code, true
+// DigestCode returns the code of the multihash function the blob's digest is
+// computed with: the one the spec names, or its digest's own.
+func (s BlobSpec) DigestCode() uint64 {
+	return s.code
 }
 
-// Size returns the size of the blob, whichever variant the spec holds.
+// Size returns the size of the blob.
 func (s BlobSpec) Size() uint64 {
-	switch {
-	case s.blob != nil:
-		return s.blob.Size
-	case s.code != nil:
-		return s.code.Size
+	return s.size
+}
+
+// model returns the spec's encoded form, which names the digest or the
+// digest code but never both.
+func (s BlobSpec) model() (BlobSpecModel, error) {
+	if !s.valid {
+		return BlobSpecModel{}, errNoVariant
 	}
-	return 0
+	if len(s.digest) > 0 {
+		return BlobSpecModel{Digest: s.digest, Size: s.size}, nil
+	}
+	code := s.code
+	return BlobSpecModel{DigestCode: &code, Size: s.size}, nil
 }
 
 func (s BlobSpec) MarshalCBOR(w io.Writer) error {
-	switch {
-	case s.blob != nil && s.code == nil:
-		return s.blob.MarshalCBOR(w)
-	case s.code != nil && s.blob == nil:
-		return s.code.MarshalCBOR(w)
+	m, err := s.model()
+	if err != nil {
+		return err
 	}
-	return errNoVariant
+	return m.MarshalCBOR(w)
 }
 
 func (s *BlobSpec) UnmarshalCBOR(r io.Reader) error {
@@ -84,13 +89,11 @@ func (s *BlobSpec) UnmarshalCBOR(r io.Reader) error {
 }
 
 func (s BlobSpec) MarshalDagJSON(w io.Writer) error {
-	switch {
-	case s.blob != nil && s.code == nil:
-		return s.blob.MarshalDagJSON(w)
-	case s.code != nil && s.blob == nil:
-		return s.code.MarshalDagJSON(w)
+	m, err := s.model()
+	if err != nil {
+		return err
 	}
-	return errNoVariant
+	return m.MarshalDagJSON(w)
 }
 
 func (s *BlobSpec) UnmarshalDagJSON(r io.Reader) error {
@@ -105,9 +108,13 @@ func (s *BlobSpec) fromModel(m BlobSpecModel) error {
 	*s = BlobSpec{}
 	switch hasDigest := len(m.Digest) > 0; {
 	case hasDigest && m.DigestCode == nil:
-		s.blob = &Blob{Digest: m.Digest, Size: m.Size}
+		d, err := multihash.Decode(m.Digest)
+		if err != nil {
+			return fmt.Errorf("decoding blob digest: %w", err)
+		}
+		*s = BlobSpec{digest: m.Digest, code: d.Code, size: m.Size, valid: true}
 	case !hasDigest && m.DigestCode != nil:
-		s.code = &BlobDigestCode{DigestCode: *m.DigestCode, Size: m.Size}
+		*s = SpecFromDigestCode(*m.DigestCode, m.Size)
 	case hasDigest:
 		return errBothVariants
 	default:

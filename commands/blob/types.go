@@ -15,26 +15,21 @@ type Blob struct {
 
 // BlobSpec describes a blob in the arguments of the capabilities that can
 // add a blob before its digest is known: `/blob/add`, `/blob/allocate`,
-// `/blob/accept` and the body of `/http/put`. It is a union of exactly one
-// of:
+// `/blob/accept` and the body of `/http/put`. It names the blob's size and
+// either its digest, when the digest is known in advance, or only the code of
+// the multihash function its digest is to be computed with, when both parties
+// compute it as the data streams. A spec naming a digest has the digest's
+// code too.
 //
-//   - [Blob]: the blob's digest and size, when the digest is known in advance;
-//   - [BlobDigestCode]: the code of the hash function and the size, when the
-//     digest is computed by both parties as the data streams.
-//
-// Encoding or decoding a spec that holds neither or both fails. The codec is
-// hand-written (codec.go); the variants' codecs are generated.
+// Construct one with [SpecFromBlob] or [SpecFromDigestCode]. Encoding the zero
+// value fails, as does decoding a spec that names both a digest and a digest
+// code, or neither. The codec is hand-written (codec.go), over the generated
+// codec of [BlobSpecModel].
 type BlobSpec struct {
-	blob *Blob
-	code *BlobDigestCode
-}
-
-// BlobDigestCode describes a blob whose digest is not known in advance: the
-// multicodec code of the multihash function it is to be hashed with, and its
-// size.
-type BlobDigestCode struct {
-	DigestCode uint64 `cborgen:"digestCode" dagjsongen:"digestCode"`
-	Size       uint64 `cborgen:"size" dagjsongen:"size"`
+	digest multihash.Multihash
+	code   uint64
+	size   uint64
+	valid  bool
 }
 
 // BlobSpecModel is the encoded form of a [BlobSpec]: the fields of both of its
