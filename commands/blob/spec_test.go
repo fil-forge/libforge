@@ -116,50 +116,11 @@ func TestBlobSpecRejectsInvalidUnion(t *testing.T) {
 	}
 }
 
-func TestRejectArgumentsByAllocation(t *testing.T) {
-	space, alloc := testutil.RandomDID(t), testutil.RandomCID(t)
-	in := blob.RejectByAllocation(space, alloc)
-
-	var buf bytes.Buffer
-	require.NoError(t, in.MarshalCBOR(&buf))
-	var out blob.RejectArguments
-	require.NoError(t, out.UnmarshalCBOR(&buf))
-	require.Equal(t, space, out.Space())
-	_, hasDigest := out.Digest()
-	require.False(t, hasDigest)
-	got, ok := out.Allocation()
-	require.True(t, ok)
-	require.Equal(t, alloc, got)
-
-	var js bytes.Buffer
-	require.NoError(t, in.MarshalDagJSON(&js))
-	var outJS blob.RejectArguments
-	require.NoError(t, outJS.UnmarshalDagJSON(&js))
-	require.Equal(t, in, outJS)
-
-	require.Error(t, blob.RejectArguments{}.MarshalCBOR(&buf))
-	var bad blob.RejectArguments
-	require.Error(t, bad.UnmarshalDagJSON(strings.NewReader(`{"space":"did:key:z6Mk"}`)))
-}
-
-// An abort names only the cause when the add named only a digest code.
-func TestAbortArgumentsWithoutDigest(t *testing.T) {
-	in := blob.AbortArguments{Cause: testutil.RandomCID(t)}
-	var buf bytes.Buffer
-	require.NoError(t, in.MarshalCBOR(&buf))
-	var out blob.AbortArguments
-	require.NoError(t, out.UnmarshalCBOR(&buf))
-	require.Empty(t, out.Digest)
-	require.Equal(t, in.Cause, out.Cause)
-}
-
-// A union decodes through its model, which holds the fields of both variants:
-// exactly one variant's field must be set, whichever codec carries it.
-func TestUnionModelsRejectInvalidCBOR(t *testing.T) {
+// A spec decodes through its model, which holds the fields of both variants:
+// exactly one variant's field must be set.
+func TestBlobSpecModelRejectsInvalidCBOR(t *testing.T) {
 	digest := testutil.RandomMultihash(t)
 	code := uint64(multicodec.Sha2_256)
-	alloc := testutil.RandomCID(t)
-	space := testutil.RandomDID(t)
 
 	for name, m := range map[string]blob.BlobSpecModel{
 		"neither": {Size: 1},
@@ -170,21 +131,6 @@ func TestUnionModelsRejectInvalidCBOR(t *testing.T) {
 			require.NoError(t, m.MarshalCBOR(&buf))
 			var out blob.BlobSpec
 			require.Error(t, out.UnmarshalCBOR(&buf))
-		})
-	}
-	for name, m := range map[string]blob.RejectArgumentsModel{
-		"neither": {Space: space},
-		"both":    {Space: space, Digest: digest, Allocation: &alloc},
-	} {
-		t.Run("reject "+name, func(t *testing.T) {
-			var buf bytes.Buffer
-			require.NoError(t, m.MarshalCBOR(&buf))
-			var out blob.RejectArguments
-			require.Error(t, out.UnmarshalCBOR(&buf))
-
-			var js bytes.Buffer
-			require.NoError(t, m.MarshalDagJSON(&js))
-			require.Error(t, out.UnmarshalDagJSON(&js))
 		})
 	}
 }

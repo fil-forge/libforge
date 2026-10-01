@@ -123,55 +123,21 @@ type ReleaseArguments struct {
 	Cause cid.Cid `cborgen:"cause" dagjsongen:"cause"`
 }
 
-// AbortArguments abandons the invoking space's in-flight upload of the
-// parked (never-accepted) blob identified by Digest. The space is the
-// invocation subject. Cause is the `/blob/add` task link: the upload
-// service uses it to recover which storage node holds the parked blob — a
-// parked blob has no registration or acceptance to look the node up by.
-// Digest is omitted when the `/blob/add` named only a digest code: Cause then
-// identifies the upload on its own.
+// AbortArguments abandons the space's in-flight upload of a parked
+// (never-accepted) blob. The space is the invocation subject. Add is the
+// `/blob/add` task link: the upload service follows its receipt chain to the
+// storage node holding the upload and the allocation it made there. A parked
+// blob has no registration or acceptance to look the node up by.
 type AbortArguments struct {
-	Digest multihash.Multihash `cborgen:"digest,omitempty" dagjsongen:"digest,omitempty"`
-	Cause  cid.Cid             `cborgen:"cause" dagjsongen:"cause"`
+	Add cid.Cid `cborgen:"add" dagjsongen:"add"`
 }
 
-// RejectArguments drops Space's allocation for a parked (never-accepted)
-// blob on the storage node; the node deletes any received bytes once no space
-// holds an allocation or acceptance for the digest. It is a union of exactly
-// one of:
-//
-//   - [RejectDigestArguments]: the allocation of the blob with a digest;
-//   - [RejectAllocationArguments]: an allocation made without a digest,
-//     identified by the `/blob/allocate` task that created it.
-//
-// Encoding or decoding arguments that hold neither or both fails. The codec is
-// hand-written (codec.go); the variants' codecs are generated.
+// RejectArguments drops the allocation Allocation names, the link to the
+// `/blob/allocate` task that made it, for a parked (never-accepted) blob on
+// the storage node. The node knows the space and blob the allocation is for,
+// and deletes any received bytes once no space holds an allocation or
+// acceptance for them.
 type RejectArguments struct {
-	byDigest     *RejectDigestArguments
-	byAllocation *RejectAllocationArguments
-}
-
-// RejectArgumentsModel is the encoded form of [RejectArguments]: the fields of
-// both of its variants, so the arguments decode in one bounded pass. Exactly
-// one of Digest and Allocation is set in valid arguments.
-type RejectArgumentsModel struct {
-	Space      did.DID             `cborgen:"space" dagjsongen:"space"`
-	Digest     multihash.Multihash `cborgen:"digest,omitempty" dagjsongen:"digest,omitempty"`
-	Allocation *cid.Cid            `cborgen:"allocation,omitempty" dagjsongen:"allocation,omitempty"`
-}
-
-// RejectDigestArguments rejects Space's allocation for the blob identified by
-// Digest.
-type RejectDigestArguments struct {
-	Space  did.DID             `cborgen:"space" dagjsongen:"space"`
-	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
-}
-
-// RejectAllocationArguments rejects Space's allocation made without a digest,
-// identified by Allocation: the link to the `/blob/allocate` task that
-// created it.
-type RejectAllocationArguments struct {
-	Space      did.DID `cborgen:"space" dagjsongen:"space"`
 	Allocation cid.Cid `cborgen:"allocation" dagjsongen:"allocation"`
 }
 

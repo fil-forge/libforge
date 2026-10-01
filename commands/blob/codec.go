@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/errors"
-	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multihash"
 )
 
@@ -115,97 +113,6 @@ func (s *BlobSpec) fromModel(m BlobSpecModel) error {
 		*s = BlobSpec{digest: m.Digest, code: d.Code, size: m.Size, valid: true}
 	case !hasDigest && m.DigestCode != nil:
 		*s = SpecFromDigestCode(*m.DigestCode, m.Size)
-	case hasDigest:
-		return errBothVariants
-	default:
-		return errNoVariant
-	}
-	return nil
-}
-
-// RejectByDigest returns arguments rejecting space's allocation for the blob
-// with digest.
-func RejectByDigest(space did.DID, digest multihash.Multihash) RejectArguments {
-	return RejectArguments{byDigest: &RejectDigestArguments{Space: space, Digest: digest}}
-}
-
-// RejectByAllocation returns arguments rejecting space's allocation made
-// without a digest by the `/blob/allocate` task allocation.
-func RejectByAllocation(space did.DID, allocation cid.Cid) RejectArguments {
-	return RejectArguments{byAllocation: &RejectAllocationArguments{Space: space, Allocation: allocation}}
-}
-
-// Space returns the space whose allocation is rejected.
-func (a RejectArguments) Space() did.DID {
-	switch {
-	case a.byDigest != nil:
-		return a.byDigest.Space
-	case a.byAllocation != nil:
-		return a.byAllocation.Space
-	}
-	return did.DID{}
-}
-
-// Digest returns the digest of the rejected blob, when the arguments name one.
-func (a RejectArguments) Digest() (multihash.Multihash, bool) {
-	if a.byDigest == nil {
-		return nil, false
-	}
-	return a.byDigest.Digest, true
-}
-
-// Allocation returns the `/blob/allocate` task of the rejected allocation,
-// when the arguments name one instead of a digest.
-func (a RejectArguments) Allocation() (cid.Cid, bool) {
-	if a.byAllocation == nil {
-		return cid.Undef, false
-	}
-	return a.byAllocation.Allocation, true
-}
-
-func (a RejectArguments) MarshalCBOR(w io.Writer) error {
-	switch {
-	case a.byDigest != nil && a.byAllocation == nil:
-		return a.byDigest.MarshalCBOR(w)
-	case a.byAllocation != nil && a.byDigest == nil:
-		return a.byAllocation.MarshalCBOR(w)
-	}
-	return errNoVariant
-}
-
-func (a *RejectArguments) UnmarshalCBOR(r io.Reader) error {
-	var m RejectArgumentsModel
-	if err := m.UnmarshalCBOR(r); err != nil {
-		return err
-	}
-	return a.fromModel(m)
-}
-
-func (a RejectArguments) MarshalDagJSON(w io.Writer) error {
-	switch {
-	case a.byDigest != nil && a.byAllocation == nil:
-		return a.byDigest.MarshalDagJSON(w)
-	case a.byAllocation != nil && a.byDigest == nil:
-		return a.byAllocation.MarshalDagJSON(w)
-	}
-	return errNoVariant
-}
-
-func (a *RejectArguments) UnmarshalDagJSON(r io.Reader) error {
-	var m RejectArgumentsModel
-	if err := m.UnmarshalDagJSON(r); err != nil {
-		return err
-	}
-	return a.fromModel(m)
-}
-
-func (a *RejectArguments) fromModel(m RejectArgumentsModel) error {
-	*a = RejectArguments{}
-	switch hasDigest := len(m.Digest) > 0; {
-	case hasDigest && m.Allocation == nil:
-		a.byDigest = &RejectDigestArguments{Space: m.Space, Digest: m.Digest}
-	case !hasDigest && m.Allocation != nil:
-		a.byAllocation = &RejectAllocationArguments{Space: m.Space, Allocation: *m.Allocation}
 	case hasDigest:
 		return errBothVariants
 	default:

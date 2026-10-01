@@ -19,15 +19,16 @@ type RejectOK = commands.Unit
 //
 // Served by storage nodes (subject = the provider DID, invoked by the
 // upload service under its registration delegation, typically translating a
-// client `/blob/abort`). The node drops the space's allocation and deletes
-// any received bytes once no space holds an allocation or acceptance for
-// the digest.
+// client `/blob/abort`). The allocation is named by the `/blob/allocate` task
+// that made it, and the node knows which space and blob it is for. The node
+// drops the allocation and deletes any received bytes once no space holds an
+// allocation or acceptance for them.
 //
-// A blob that THE INVOKING SPACE has accepted is refused with BlobAccepted —
-// a space's accepted blobs are released via `/blob/remove`, never rejected.
-// The guard is scoped to the invoking space, not the digest: another space's
-// acceptance of the same bytes must not block the reject — the node simply
-// drops this space's allocation and retains the bytes for the space that
+// A blob that the allocation's space has accepted is refused with
+// BlobAccepted — a space's accepted blobs are released via `/blob/remove`,
+// never rejected. The guard is scoped to that space, not the digest: another
+// space's acceptance of the same bytes must not block the reject — the node
+// simply drops this allocation and retains the bytes for the space that
 // still claims them.
 //
 // Idempotent: rejecting an unknown or already-rejected blob succeeds.

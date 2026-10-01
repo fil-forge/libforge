@@ -1615,52 +1615,22 @@ func (t *AbortArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := false
 
-	// t.Cause (cid.Cid) (struct)
-	if len("cause") > 8192 {
-		return fmt.Errorf("string in field \"cause\" was too long")
+	// t.Add (cid.Cid) (struct)
+	if len("add") > 8192 {
+		return fmt.Errorf("string in field \"add\" was too long")
 	}
-	if err := jw.WriteString(string("cause")); err != nil {
-		return fmt.Errorf("writing string for field \"cause\": %w", err)
+	if err := jw.WriteString(string("add")); err != nil {
+		return fmt.Errorf("writing string for field \"add\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
 
-	if err := jw.WriteCid(t.Cause); err != nil {
-		return fmt.Errorf("writing CID for field t.Cause: %w", err)
+	if err := jw.WriteCid(t.Add); err != nil {
+		return fmt.Errorf("writing CID for field t.Add: %w", err)
 	}
 
-	written = true
-	if t.Digest != nil {
-		if written {
-			if err := jw.WriteComma(); err != nil {
-				return err
-			}
-		}
-	}
-
-	// t.Digest (multihash.Multihash) (slice)
-	if t.Digest != nil {
-		if len("digest") > 8192 {
-			return fmt.Errorf("string in field \"digest\" was too long")
-		}
-		if err := jw.WriteString(string("digest")); err != nil {
-			return fmt.Errorf("writing string for field \"digest\": %w", err)
-		}
-		if err := jw.WriteObjectColon(); err != nil {
-			return err
-		}
-		if len(t.Digest) > 2097152 {
-			return fmt.Errorf("byte array in field t.Digest was too long")
-		}
-
-		if err := jw.WriteBytes(t.Digest); err != nil {
-			return fmt.Errorf("writing bytes for field t.Digest: %w", err)
-		}
-
-	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1700,34 +1670,17 @@ func (t *AbortArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Cause (cid.Cid) (struct)
-			case "cause":
+			// t.Add (cid.Cid) (struct)
+			case "add":
 				{
 
 					c, err := jr.ReadCid()
 					if err != nil {
-						return fmt.Errorf("reading CID for field t.Cause: %w", err)
+						return fmt.Errorf("reading CID for field t.Add: %w", err)
 					}
-					t.Cause = c
+					t.Add = c
 
 				}
-
-				// t.Digest (multihash.Multihash) (slice)
-			case "digest":
-
-				{
-					bval, err := jr.ReadBytes(2097152)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("reading bytes for field t.Digest: byte array too large")
-						}
-						return fmt.Errorf("reading bytes for field t.Digest: %w", err)
-					}
-					if len(bval) > 0 {
-						t.Digest = []uint8(bval)
-					}
-				}
-
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
@@ -1750,7 +1703,7 @@ func (t *AbortArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 
 	return nil
 }
-func (t *RejectDigestArguments) MarshalDagJSON(w io.Writer) error {
+func (t *RejectArguments) MarshalDagJSON(w io.Writer) error {
 	jw := jsg.NewDagJsonWriter(w)
 	if t == nil {
 		err := jw.WriteNull()
@@ -1759,140 +1712,6 @@ func (t *RejectDigestArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := false
-
-	// t.Digest (multihash.Multihash) (slice)
-	if len("digest") > 8192 {
-		return fmt.Errorf("string in field \"digest\" was too long")
-	}
-	if err := jw.WriteString(string("digest")); err != nil {
-		return fmt.Errorf("writing string for field \"digest\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if len(t.Digest) > 2097152 {
-		return fmt.Errorf("byte array in field t.Digest was too long")
-	}
-
-	if err := jw.WriteBytes(t.Digest); err != nil {
-		return fmt.Errorf("writing bytes for field t.Digest: %w", err)
-	}
-
-	written = true
-	if written {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Space (did.DID) (struct)
-	if len("space") > 8192 {
-		return fmt.Errorf("string in field \"space\" was too long")
-	}
-	if err := jw.WriteString(string("space")); err != nil {
-		return fmt.Errorf("writing string for field \"space\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if err := t.Space.MarshalDagJSON(jw); err != nil {
-		return fmt.Errorf("marshaling field t.Space: %w", err)
-	}
-	if err := jw.WriteObjectClose(); err != nil {
-		return err
-	}
-	return nil
-}
-func (t *RejectDigestArguments) UnmarshalDagJSON(r io.Reader) (err error) {
-	*t = RejectDigestArguments{}
-
-	jr := jsg.NewDagJsonReader(r)
-	defer func() {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-	}()
-	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("reading object open for RejectDigestArguments: %w", err)
-	}
-	close, err := jr.PeekObjectClose()
-	if err != nil {
-		return fmt.Errorf("peeking object close for RejectDigestArguments: %w", err)
-	}
-	if close {
-		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("reading object close for RejectDigestArguments: %w", err)
-		}
-	} else {
-		for i := uint64(0); i < 8192; i++ {
-			name, err := jr.ReadString(8192)
-			if err != nil {
-				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("reading string for field RejectDigestArguments: string too large")
-				}
-				return fmt.Errorf("reading string for field RejectDigestArguments: %w", err)
-			}
-			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("reading object colon for field RejectDigestArguments: %w", err)
-			}
-			switch name {
-
-			// t.Digest (multihash.Multihash) (slice)
-			case "digest":
-
-				{
-					bval, err := jr.ReadBytes(2097152)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("reading bytes for field t.Digest: byte array too large")
-						}
-						return fmt.Errorf("reading bytes for field t.Digest: %w", err)
-					}
-					if len(bval) > 0 {
-						t.Digest = []uint8(bval)
-					}
-				}
-
-				// t.Space (did.DID) (struct)
-			case "space":
-
-				if err := t.Space.UnmarshalDagJSON(jr); err != nil {
-					return fmt.Errorf("unmarshaling t.Space: %w", err)
-				}
-
-			default:
-				// Field doesn't exist on this type, so ignore it
-				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("ignoring field %s for RejectDigestArguments: %w", name, err)
-				}
-			}
-
-			close, err := jr.ReadObjectCloseOrComma()
-			if err != nil {
-				return fmt.Errorf("reading object close or comma for field RejectDigestArguments: %w", err)
-			}
-			if close {
-				break
-			}
-			if i == 8192-1 {
-				return fmt.Errorf("map too large for RejectDigestArguments")
-			}
-		}
-	}
-
-	return nil
-}
-func (t *RejectAllocationArguments) MarshalDagJSON(w io.Writer) error {
-	jw := jsg.NewDagJsonWriter(w)
-	if t == nil {
-		err := jw.WriteNull()
-		return err
-	}
-	if err := jw.WriteObjectOpen(); err != nil {
-		return err
-	}
-	written := false
 
 	// t.Allocation (cid.Cid) (struct)
 	if len("allocation") > 8192 {
@@ -1909,33 +1728,13 @@ func (t *RejectAllocationArguments) MarshalDagJSON(w io.Writer) error {
 		return fmt.Errorf("writing CID for field t.Allocation: %w", err)
 	}
 
-	written = true
-	if written {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Space (did.DID) (struct)
-	if len("space") > 8192 {
-		return fmt.Errorf("string in field \"space\" was too long")
-	}
-	if err := jw.WriteString(string("space")); err != nil {
-		return fmt.Errorf("writing string for field \"space\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if err := t.Space.MarshalDagJSON(jw); err != nil {
-		return fmt.Errorf("marshaling field t.Space: %w", err)
-	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
 	return nil
 }
-func (t *RejectAllocationArguments) UnmarshalDagJSON(r io.Reader) (err error) {
-	*t = RejectAllocationArguments{}
+func (t *RejectArguments) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = RejectArguments{}
 
 	jr := jsg.NewDagJsonReader(r)
 	defer func() {
@@ -1944,27 +1743,27 @@ func (t *RejectAllocationArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 		}
 	}()
 	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("reading object open for RejectAllocationArguments: %w", err)
+		return fmt.Errorf("reading object open for RejectArguments: %w", err)
 	}
 	close, err := jr.PeekObjectClose()
 	if err != nil {
-		return fmt.Errorf("peeking object close for RejectAllocationArguments: %w", err)
+		return fmt.Errorf("peeking object close for RejectArguments: %w", err)
 	}
 	if close {
 		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("reading object close for RejectAllocationArguments: %w", err)
+			return fmt.Errorf("reading object close for RejectArguments: %w", err)
 		}
 	} else {
 		for i := uint64(0); i < 8192; i++ {
 			name, err := jr.ReadString(8192)
 			if err != nil {
 				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("reading string for field RejectAllocationArguments: string too large")
+					return fmt.Errorf("reading string for field RejectArguments: string too large")
 				}
-				return fmt.Errorf("reading string for field RejectAllocationArguments: %w", err)
+				return fmt.Errorf("reading string for field RejectArguments: %w", err)
 			}
 			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("reading object colon for field RejectAllocationArguments: %w", err)
+				return fmt.Errorf("reading object colon for field RejectArguments: %w", err)
 			}
 			switch name {
 
@@ -1979,209 +1778,22 @@ func (t *RejectAllocationArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 					t.Allocation = c
 
 				}
-
-				// t.Space (did.DID) (struct)
-			case "space":
-
-				if err := t.Space.UnmarshalDagJSON(jr); err != nil {
-					return fmt.Errorf("unmarshaling t.Space: %w", err)
-				}
-
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("ignoring field %s for RejectAllocationArguments: %w", name, err)
+					return fmt.Errorf("ignoring field %s for RejectArguments: %w", name, err)
 				}
 			}
 
 			close, err := jr.ReadObjectCloseOrComma()
 			if err != nil {
-				return fmt.Errorf("reading object close or comma for field RejectAllocationArguments: %w", err)
+				return fmt.Errorf("reading object close or comma for field RejectArguments: %w", err)
 			}
 			if close {
 				break
 			}
 			if i == 8192-1 {
-				return fmt.Errorf("map too large for RejectAllocationArguments")
-			}
-		}
-	}
-
-	return nil
-}
-func (t *RejectArgumentsModel) MarshalDagJSON(w io.Writer) error {
-	jw := jsg.NewDagJsonWriter(w)
-	if t == nil {
-		err := jw.WriteNull()
-		return err
-	}
-	if err := jw.WriteObjectOpen(); err != nil {
-		return err
-	}
-	written := false
-
-	// t.Allocation (cid.Cid) (struct)
-	if t.Allocation != nil {
-		if len("allocation") > 8192 {
-			return fmt.Errorf("string in field \"allocation\" was too long")
-		}
-		if err := jw.WriteString(string("allocation")); err != nil {
-			return fmt.Errorf("writing string for field \"allocation\": %w", err)
-		}
-		if err := jw.WriteObjectColon(); err != nil {
-			return err
-		}
-
-		if t.Allocation == nil {
-			if err := jw.WriteNull(); err != nil {
-				return fmt.Errorf("writing null for field t.Allocation: %w", err)
-			}
-		} else {
-			if err := jw.WriteCid(*t.Allocation); err != nil {
-				return fmt.Errorf("writing CID for field t.Allocation: %w", err)
-			}
-		}
-
-		written = true
-	}
-	if t.Digest != nil {
-		if written {
-			if err := jw.WriteComma(); err != nil {
-				return err
-			}
-		}
-	}
-
-	// t.Digest (multihash.Multihash) (slice)
-	if t.Digest != nil {
-		if len("digest") > 8192 {
-			return fmt.Errorf("string in field \"digest\" was too long")
-		}
-		if err := jw.WriteString(string("digest")); err != nil {
-			return fmt.Errorf("writing string for field \"digest\": %w", err)
-		}
-		if err := jw.WriteObjectColon(); err != nil {
-			return err
-		}
-		if len(t.Digest) > 2097152 {
-			return fmt.Errorf("byte array in field t.Digest was too long")
-		}
-
-		if err := jw.WriteBytes(t.Digest); err != nil {
-			return fmt.Errorf("writing bytes for field t.Digest: %w", err)
-		}
-
-		written = true
-	}
-	if written {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Space (did.DID) (struct)
-	if len("space") > 8192 {
-		return fmt.Errorf("string in field \"space\" was too long")
-	}
-	if err := jw.WriteString(string("space")); err != nil {
-		return fmt.Errorf("writing string for field \"space\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if err := t.Space.MarshalDagJSON(jw); err != nil {
-		return fmt.Errorf("marshaling field t.Space: %w", err)
-	}
-	if err := jw.WriteObjectClose(); err != nil {
-		return err
-	}
-	return nil
-}
-func (t *RejectArgumentsModel) UnmarshalDagJSON(r io.Reader) (err error) {
-	*t = RejectArgumentsModel{}
-
-	jr := jsg.NewDagJsonReader(r)
-	defer func() {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-	}()
-	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("reading object open for RejectArgumentsModel: %w", err)
-	}
-	close, err := jr.PeekObjectClose()
-	if err != nil {
-		return fmt.Errorf("peeking object close for RejectArgumentsModel: %w", err)
-	}
-	if close {
-		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("reading object close for RejectArgumentsModel: %w", err)
-		}
-	} else {
-		for i := uint64(0); i < 8192; i++ {
-			name, err := jr.ReadString(8192)
-			if err != nil {
-				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("reading string for field RejectArgumentsModel: string too large")
-				}
-				return fmt.Errorf("reading string for field RejectArgumentsModel: %w", err)
-			}
-			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("reading object colon for field RejectArgumentsModel: %w", err)
-			}
-			switch name {
-
-			// t.Allocation (cid.Cid) (struct)
-			case "allocation":
-				{
-
-					c, err := jr.ReadCidOrNull()
-					if err != nil {
-						return fmt.Errorf("reading CID or null for field t.Allocation: %w", err)
-					}
-					t.Allocation = c
-
-				}
-
-				// t.Digest (multihash.Multihash) (slice)
-			case "digest":
-
-				{
-					bval, err := jr.ReadBytes(2097152)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("reading bytes for field t.Digest: byte array too large")
-						}
-						return fmt.Errorf("reading bytes for field t.Digest: %w", err)
-					}
-					if len(bval) > 0 {
-						t.Digest = []uint8(bval)
-					}
-				}
-
-				// t.Space (did.DID) (struct)
-			case "space":
-
-				if err := t.Space.UnmarshalDagJSON(jr); err != nil {
-					return fmt.Errorf("unmarshaling t.Space: %w", err)
-				}
-
-			default:
-				// Field doesn't exist on this type, so ignore it
-				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("ignoring field %s for RejectArgumentsModel: %w", name, err)
-				}
-			}
-
-			close, err := jr.ReadObjectCloseOrComma()
-			if err != nil {
-				return fmt.Errorf("reading object close or comma for field RejectArgumentsModel: %w", err)
-			}
-			if close {
-				break
-			}
-			if i == 8192-1 {
-				return fmt.Errorf("map too large for RejectArgumentsModel")
+				return fmt.Errorf("map too large for RejectArguments")
 			}
 		}
 	}
