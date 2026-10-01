@@ -26,6 +26,7 @@ func main() {
 	models := []any{
 		blob.AllocateArguments{},
 		blob.Blob{},
+		blob.BlobSpecModel{},
 		blob.AllocateOK{},
 		blob.BlobAddress{},
 		blob.AcceptArguments{},

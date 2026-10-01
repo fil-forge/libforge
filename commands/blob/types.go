@@ -13,8 +13,36 @@ type Blob struct {
 	Size   uint64              `cborgen:"size" dagjsongen:"size"`
 }
 
+// BlobSpec describes a blob in the arguments of the capabilities that can
+// add a blob before its digest is known: `/blob/add`, `/blob/allocate`,
+// `/blob/accept` and the body of `/http/put`. It names the blob's size and
+// either its digest, when the digest is known in advance, or only the code of
+// the multihash function its digest is to be computed with, when both parties
+// compute it as the data streams. A spec naming a digest has the digest's
+// code too.
+//
+// Construct one with [SpecFromBlob] or [SpecFromDigestCode]. Encoding the zero
+// value fails, as does decoding a spec that names both a digest and a digest
+// code, or neither. The codec is hand-written (codec.go), over the generated
+// codec of [BlobSpecModel].
+type BlobSpec struct {
+	digest multihash.Multihash
+	code   uint64
+	size   uint64
+	valid  bool
+}
+
+// BlobSpecModel is the encoded form of a [BlobSpec]: the fields of both of its
+// variants, so a spec decodes in one bounded pass. Exactly one of Digest and
+// DigestCode is set in a valid spec.
+type BlobSpecModel struct {
+	Digest     multihash.Multihash `cborgen:"digest,omitempty" dagjsongen:"digest,omitempty"`
+	DigestCode *uint64             `cborgen:"digestCode,omitempty" dagjsongen:"digestCode,omitempty"`
+	Size       uint64              `cborgen:"size" dagjsongen:"size"`
+}
+
 type AddArguments struct {
-	Blob Blob `cborgen:"blob" dagjsongen:"blob"`
+	Blob BlobSpec `cborgen:"blob" dagjsongen:"blob"`
 }
 
 type AddOK struct {
@@ -25,7 +53,7 @@ type AddOK struct {
 
 type AcceptArguments struct {
 	Space did.DID         `cborgen:"space" dagjsongen:"space"`
-	Blob  Blob            `cborgen:"blob" dagjsongen:"blob"`
+	Blob  BlobSpec        `cborgen:"blob" dagjsongen:"blob"`
 	Put   promise.AwaitOK `cborgen:"_put" dagjsongen:"_put"`
 }
 
@@ -37,9 +65,9 @@ type AcceptOK struct {
 }
 
 type AllocateArguments struct {
-	Space did.DID `cborgen:"space" dagjsongen:"space"`
-	Blob  Blob    `cborgen:"blob" dagjsongen:"blob"`
-	Cause cid.Cid `cborgen:"cause" dagjsongen:"cause"`
+	Space did.DID  `cborgen:"space" dagjsongen:"space"`
+	Blob  BlobSpec `cborgen:"blob" dagjsongen:"blob"`
+	Cause cid.Cid  `cborgen:"cause" dagjsongen:"cause"`
 }
 
 type AllocateOK struct {
@@ -95,23 +123,22 @@ type ReleaseArguments struct {
 	Cause cid.Cid `cborgen:"cause" dagjsongen:"cause"`
 }
 
-// AbortArguments abandons the invoking space's in-flight upload of the
-// parked (never-accepted) blob identified by Digest. The space is the
-// invocation subject. Cause is the `/blob/add` task link: the upload
-// service uses it to recover which storage node holds the parked blob — a
-// parked blob has no registration or acceptance to look the node up by.
+// AbortArguments abandons the space's in-flight upload of a parked
+// (never-accepted) blob. The space is the invocation subject. Add is the
+// `/blob/add` task link: the upload service follows its receipt chain to the
+// storage node holding the upload and the allocation it made there. A parked
+// blob has no registration or acceptance to look the node up by.
 type AbortArguments struct {
-	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
-	Cause  cid.Cid             `cborgen:"cause" dagjsongen:"cause"`
+	Add cid.Cid `cborgen:"add" dagjsongen:"add"`
 }
 
-// RejectArguments drops Space's allocation for the parked (never-accepted)
-// blob identified by Digest on the storage node; the node deletes any
-// received bytes once no space holds an allocation or acceptance for the
-// digest.
+// RejectArguments drops the allocation Allocation names, the link to the
+// `/blob/allocate` task that made it, for a parked (never-accepted) blob on
+// the storage node. The node knows the space and blob the allocation is for,
+// and deletes any received bytes once no space holds an allocation or
+// acceptance for them.
 type RejectArguments struct {
-	Space  did.DID             `cborgen:"space" dagjsongen:"space"`
-	Digest multihash.Multihash `cborgen:"digest" dagjsongen:"digest"`
+	Allocation cid.Cid `cborgen:"allocation" dagjsongen:"allocation"`
 }
 
 type ReplicateArguments struct {

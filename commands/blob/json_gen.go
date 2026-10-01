@@ -32,7 +32,7 @@ func (t *AllocateArguments) MarshalDagJSON(w io.Writer) error {
 	}
 	written := false
 
-	// t.Blob (blob.Blob) (struct)
+	// t.Blob (blob.BlobSpec) (struct)
 	if len("blob") > 8192 {
 		return fmt.Errorf("string in field \"blob\" was too long")
 	}
@@ -126,7 +126,7 @@ func (t *AllocateArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Blob (blob.Blob) (struct)
+			// t.Blob (blob.BlobSpec) (struct)
 			case "blob":
 
 				if err := t.Blob.UnmarshalDagJSON(jr); err != nil {
@@ -307,6 +307,194 @@ func (t *Blob) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			if i == 8192-1 {
 				return fmt.Errorf("map too large for Blob")
+			}
+		}
+	}
+
+	return nil
+}
+func (t *BlobSpecModel) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+	written := false
+
+	// t.Digest (multihash.Multihash) (slice)
+	if t.Digest != nil {
+		if len("digest") > 8192 {
+			return fmt.Errorf("string in field \"digest\" was too long")
+		}
+		if err := jw.WriteString(string("digest")); err != nil {
+			return fmt.Errorf("writing string for field \"digest\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+		if len(t.Digest) > 2097152 {
+			return fmt.Errorf("byte array in field t.Digest was too long")
+		}
+
+		if err := jw.WriteBytes(t.Digest); err != nil {
+			return fmt.Errorf("writing bytes for field t.Digest: %w", err)
+		}
+
+		written = true
+	}
+	if t.DigestCode != nil {
+		if written {
+			if err := jw.WriteComma(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// t.DigestCode (uint64) (uint64)
+	if t.DigestCode != nil {
+		if len("digestCode") > 8192 {
+			return fmt.Errorf("string in field \"digestCode\" was too long")
+		}
+		if err := jw.WriteString(string("digestCode")); err != nil {
+			return fmt.Errorf("writing string for field \"digestCode\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+
+		if t.DigestCode == nil {
+			if err := jw.WriteNull(); err != nil {
+				return fmt.Errorf("writing null for field t.DigestCode: %w", err)
+			}
+		} else {
+			if err := jw.WriteUint64(uint64(*t.DigestCode)); err != nil {
+				return fmt.Errorf("writing uint64 for field t.DigestCode: %w", err)
+			}
+		}
+
+		written = true
+	}
+	if written {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Size (uint64) (uint64)
+	if len("size") > 8192 {
+		return fmt.Errorf("string in field \"size\" was too long")
+	}
+	if err := jw.WriteString(string("size")); err != nil {
+		return fmt.Errorf("writing string for field \"size\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+
+	if err := jw.WriteUint64(uint64(t.Size)); err != nil {
+		return fmt.Errorf("writing uint64 for field t.Size: %w", err)
+	}
+
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *BlobSpecModel) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = BlobSpecModel{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("reading object open for BlobSpecModel: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("peeking object close for BlobSpecModel: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("reading object close for BlobSpecModel: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("reading string for field BlobSpecModel: string too large")
+				}
+				return fmt.Errorf("reading string for field BlobSpecModel: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("reading object colon for field BlobSpecModel: %w", err)
+			}
+			switch name {
+
+			// t.Digest (multihash.Multihash) (slice)
+			case "digest":
+
+				{
+					bval, err := jr.ReadBytes(2097152)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading bytes for field t.Digest: byte array too large")
+						}
+						return fmt.Errorf("reading bytes for field t.Digest: %w", err)
+					}
+					if len(bval) > 0 {
+						t.Digest = []uint8(bval)
+					}
+				}
+
+				// t.DigestCode (uint64) (uint64)
+			case "digestCode":
+				{
+
+					nval, err := jr.ReadNumberAsUint64OrNull()
+					if err != nil {
+						return fmt.Errorf("reading uint64 or null for field t.DigestCode: %w", err)
+					}
+					if nval != nil {
+						typed := uint64(*nval)
+						t.DigestCode = &typed
+					}
+
+				}
+
+				// t.Size (uint64) (uint64)
+			case "size":
+				{
+
+					nval, err := jr.ReadNumberAsUint64()
+					if err != nil {
+						return fmt.Errorf("reading uint64 for field t.Size: %w", err)
+					}
+					t.Size = uint64(nval)
+
+				}
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("ignoring field %s for BlobSpecModel: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading object close or comma for field BlobSpecModel: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("map too large for BlobSpecModel")
 			}
 		}
 	}
@@ -724,7 +912,7 @@ func (t *AcceptArguments) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 
-	// t.Blob (blob.Blob) (struct)
+	// t.Blob (blob.BlobSpec) (struct)
 	if len("blob") > 8192 {
 		return fmt.Errorf("string in field \"blob\" was too long")
 	}
@@ -803,7 +991,7 @@ func (t *AcceptArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 					return fmt.Errorf("unmarshaling t.Put: %w", err)
 				}
 
-				// t.Blob (blob.Blob) (struct)
+				// t.Blob (blob.BlobSpec) (struct)
 			case "blob":
 
 				if err := t.Blob.UnmarshalDagJSON(jr); err != nil {
@@ -974,7 +1162,7 @@ func (t *AddArguments) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 
-	// t.Blob (blob.Blob) (struct)
+	// t.Blob (blob.BlobSpec) (struct)
 	if len("blob") > 8192 {
 		return fmt.Errorf("string in field \"blob\" was too long")
 	}
@@ -1026,7 +1214,7 @@ func (t *AddArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Blob (blob.Blob) (struct)
+			// t.Blob (blob.BlobSpec) (struct)
 			case "blob":
 
 				if err := t.Blob.UnmarshalDagJSON(jr); err != nil {
@@ -1427,46 +1615,20 @@ func (t *AbortArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := false
 
-	// t.Cause (cid.Cid) (struct)
-	if len("cause") > 8192 {
-		return fmt.Errorf("string in field \"cause\" was too long")
+	// t.Add (cid.Cid) (struct)
+	if len("add") > 8192 {
+		return fmt.Errorf("string in field \"add\" was too long")
 	}
-	if err := jw.WriteString(string("cause")); err != nil {
-		return fmt.Errorf("writing string for field \"cause\": %w", err)
+	if err := jw.WriteString(string("add")); err != nil {
+		return fmt.Errorf("writing string for field \"add\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
 
-	if err := jw.WriteCid(t.Cause); err != nil {
-		return fmt.Errorf("writing CID for field t.Cause: %w", err)
-	}
-
-	written = true
-	if written {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Digest (multihash.Multihash) (slice)
-	if len("digest") > 8192 {
-		return fmt.Errorf("string in field \"digest\" was too long")
-	}
-	if err := jw.WriteString(string("digest")); err != nil {
-		return fmt.Errorf("writing string for field \"digest\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if len(t.Digest) > 2097152 {
-		return fmt.Errorf("byte array in field t.Digest was too long")
-	}
-
-	if err := jw.WriteBytes(t.Digest); err != nil {
-		return fmt.Errorf("writing bytes for field t.Digest: %w", err)
+	if err := jw.WriteCid(t.Add); err != nil {
+		return fmt.Errorf("writing CID for field t.Add: %w", err)
 	}
 
 	if err := jw.WriteObjectClose(); err != nil {
@@ -1508,34 +1670,17 @@ func (t *AbortArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Cause (cid.Cid) (struct)
-			case "cause":
+			// t.Add (cid.Cid) (struct)
+			case "add":
 				{
 
 					c, err := jr.ReadCid()
 					if err != nil {
-						return fmt.Errorf("reading CID for field t.Cause: %w", err)
+						return fmt.Errorf("reading CID for field t.Add: %w", err)
 					}
-					t.Cause = c
+					t.Add = c
 
 				}
-
-				// t.Digest (multihash.Multihash) (slice)
-			case "digest":
-
-				{
-					bval, err := jr.ReadBytes(2097152)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("reading bytes for field t.Digest: byte array too large")
-						}
-						return fmt.Errorf("reading bytes for field t.Digest: %w", err)
-					}
-					if len(bval) > 0 {
-						t.Digest = []uint8(bval)
-					}
-				}
-
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
@@ -1567,46 +1712,22 @@ func (t *RejectArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := false
 
-	// t.Digest (multihash.Multihash) (slice)
-	if len("digest") > 8192 {
-		return fmt.Errorf("string in field \"digest\" was too long")
+	// t.Allocation (cid.Cid) (struct)
+	if len("allocation") > 8192 {
+		return fmt.Errorf("string in field \"allocation\" was too long")
 	}
-	if err := jw.WriteString(string("digest")); err != nil {
-		return fmt.Errorf("writing string for field \"digest\": %w", err)
+	if err := jw.WriteString(string("allocation")); err != nil {
+		return fmt.Errorf("writing string for field \"allocation\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
-	if len(t.Digest) > 2097152 {
-		return fmt.Errorf("byte array in field t.Digest was too long")
+
+	if err := jw.WriteCid(t.Allocation); err != nil {
+		return fmt.Errorf("writing CID for field t.Allocation: %w", err)
 	}
 
-	if err := jw.WriteBytes(t.Digest); err != nil {
-		return fmt.Errorf("writing bytes for field t.Digest: %w", err)
-	}
-
-	written = true
-	if written {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Space (did.DID) (struct)
-	if len("space") > 8192 {
-		return fmt.Errorf("string in field \"space\" was too long")
-	}
-	if err := jw.WriteString(string("space")); err != nil {
-		return fmt.Errorf("writing string for field \"space\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if err := t.Space.MarshalDagJSON(jw); err != nil {
-		return fmt.Errorf("marshaling field t.Space: %w", err)
-	}
 	if err := jw.WriteObjectClose(); err != nil {
 		return err
 	}
@@ -1646,29 +1767,17 @@ func (t *RejectArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Digest (multihash.Multihash) (slice)
-			case "digest":
-
+			// t.Allocation (cid.Cid) (struct)
+			case "allocation":
 				{
-					bval, err := jr.ReadBytes(2097152)
+
+					c, err := jr.ReadCid()
 					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("reading bytes for field t.Digest: byte array too large")
-						}
-						return fmt.Errorf("reading bytes for field t.Digest: %w", err)
+						return fmt.Errorf("reading CID for field t.Allocation: %w", err)
 					}
-					if len(bval) > 0 {
-						t.Digest = []uint8(bval)
-					}
+					t.Allocation = c
+
 				}
-
-				// t.Space (did.DID) (struct)
-			case "space":
-
-				if err := t.Space.UnmarshalDagJSON(jr); err != nil {
-					return fmt.Errorf("unmarshaling t.Space: %w", err)
-				}
-
 			default:
 				// Field doesn't exist on this type, so ignore it
 				if err := jr.DiscardType(); err != nil {
