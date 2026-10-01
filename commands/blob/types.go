@@ -21,10 +21,10 @@ type Blob struct {
 // compute it as the data streams. A spec naming a digest has the digest's
 // code too.
 //
-// Construct one with [SpecFromBlob] or [SpecFromDigestCode]. Encoding the zero
-// value fails, as does decoding a spec that names both a digest and a digest
-// code, or neither. The codec is hand-written (codec.go), over the generated
-// codec of [BlobSpecModel].
+// Construct one with [SpecFromBlob], [SpecFromDigest] or [SpecFromDigestCode].
+// Encoding the zero value fails, as does decoding a spec that names both a
+// digest and a digest code, or neither. The codec is hand-written (codec.go),
+// over the generated codec of [BlobSpecModel].
 type BlobSpec struct {
 	digest multihash.Multihash
 	code   uint64

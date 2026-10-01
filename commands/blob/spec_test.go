@@ -56,7 +56,8 @@ func TestBlobSpecRoundTrip(t *testing.T) {
 
 func TestBlobSpecAccessors(t *testing.T) {
 	digest := testutil.RandomMultihash(t)
-	byDigest := blob.SpecFromBlob(blob.Blob{Digest: digest, Size: 7})
+	byDigest := blob.SpecFromDigest(digest, 7)
+	require.Equal(t, blob.SpecFromBlob(blob.Blob{Digest: digest, Size: 7}), byDigest, "a Blob specifies the same blob")
 	got, ok := byDigest.Digest()
 	require.True(t, ok)
 	require.Equal(t, digest, got)
