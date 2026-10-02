@@ -23,6 +23,26 @@ type ListArguments struct {
 	Request s3.Request `cborgen:"request" dagjsongen:"request"`
 }
 
+// PolicyArguments are the arguments to `/s3/bucket/policy`.
+type PolicyArguments struct {
+	// Request is the AWS S3 GetBucketPolicy, PutBucketPolicy or
+	// DeleteBucketPolicy request.
+	Request s3.Request `cborgen:"request" dagjsongen:"request"`
+	// Body is the policy document a PutBucketPolicy request carries. It is
+	// empty for the other two operations.
+	Body []byte `cborgen:"body" dagjsongen:"body"`
+}
+
+// PolicyOK is the successful result of `/s3/bucket/policy`.
+type PolicyOK struct {
+	// ETag is the tag of the bucket's policy after the operation. It is empty
+	// after a DeleteBucketPolicy.
+	ETag string `cborgen:"etag" dagjsongen:"etag"`
+	// Policy is the stored policy document in its canonical JSON form. It is
+	// set only for a GetBucketPolicy.
+	Policy []byte `cborgen:"policy" dagjsongen:"policy"`
+}
+
 // InfoArguments are the arguments to `/s3/bucket/info`.
 type InfoArguments struct {
 	// Name is the global bucket name to look up.

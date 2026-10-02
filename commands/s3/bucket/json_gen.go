@@ -293,6 +293,281 @@ func (t *ListArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *PolicyArguments) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+	written := false
+
+	// t.Body ([]uint8) (slice)
+	if len("body") > 8192 {
+		return fmt.Errorf("string in field \"body\" was too long")
+	}
+	if err := jw.WriteString(string("body")); err != nil {
+		return fmt.Errorf("writing string for field \"body\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Body) > 2097152 {
+		return fmt.Errorf("byte array in field t.Body was too long")
+	}
+
+	if err := jw.WriteBytes(t.Body); err != nil {
+		return fmt.Errorf("writing bytes for field t.Body: %w", err)
+	}
+
+	written = true
+	if written {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Request (s3.Request) (struct)
+	if len("request") > 8192 {
+		return fmt.Errorf("string in field \"request\" was too long")
+	}
+	if err := jw.WriteString(string("request")); err != nil {
+		return fmt.Errorf("writing string for field \"request\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.Request.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Request: %w", err)
+	}
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *PolicyArguments) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = PolicyArguments{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("reading object open for PolicyArguments: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("peeking object close for PolicyArguments: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("reading object close for PolicyArguments: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("reading string for field PolicyArguments: string too large")
+				}
+				return fmt.Errorf("reading string for field PolicyArguments: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("reading object colon for field PolicyArguments: %w", err)
+			}
+			switch name {
+
+			// t.Body ([]uint8) (slice)
+			case "body":
+
+				{
+					bval, err := jr.ReadBytes(2097152)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading bytes for field t.Body: byte array too large")
+						}
+						return fmt.Errorf("reading bytes for field t.Body: %w", err)
+					}
+					if len(bval) > 0 {
+						t.Body = []uint8(bval)
+					}
+				}
+
+				// t.Request (s3.Request) (struct)
+			case "request":
+
+				if err := t.Request.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Request: %w", err)
+				}
+
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("ignoring field %s for PolicyArguments: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading object close or comma for field PolicyArguments: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("map too large for PolicyArguments")
+			}
+		}
+	}
+
+	return nil
+}
+func (t *PolicyOK) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+	written := false
+
+	// t.ETag (string) (string)
+	if len("etag") > 8192 {
+		return fmt.Errorf("string in field \"etag\" was too long")
+	}
+	if err := jw.WriteString(string("etag")); err != nil {
+		return fmt.Errorf("writing string for field \"etag\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.ETag) > 8192 {
+		return fmt.Errorf("string in field t.ETag was too long")
+	}
+	if err := jw.WriteString(string(t.ETag)); err != nil {
+		return fmt.Errorf("writing string for field t.ETag: %w", err)
+	}
+	written = true
+	if written {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Policy ([]uint8) (slice)
+	if len("policy") > 8192 {
+		return fmt.Errorf("string in field \"policy\" was too long")
+	}
+	if err := jw.WriteString(string("policy")); err != nil {
+		return fmt.Errorf("writing string for field \"policy\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Policy) > 2097152 {
+		return fmt.Errorf("byte array in field t.Policy was too long")
+	}
+
+	if err := jw.WriteBytes(t.Policy); err != nil {
+		return fmt.Errorf("writing bytes for field t.Policy: %w", err)
+	}
+
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *PolicyOK) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = PolicyOK{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("reading object open for PolicyOK: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("peeking object close for PolicyOK: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("reading object close for PolicyOK: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("reading string for field PolicyOK: string too large")
+				}
+				return fmt.Errorf("reading string for field PolicyOK: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("reading object colon for field PolicyOK: %w", err)
+			}
+			switch name {
+
+			// t.ETag (string) (string)
+			case "etag":
+				{
+					sval, err := jr.ReadString(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading string for field t.ETag: string too long")
+						}
+						return fmt.Errorf("reading string for field t.ETag: %w", err)
+					}
+					t.ETag = string(sval)
+				}
+
+				// t.Policy ([]uint8) (slice)
+			case "policy":
+
+				{
+					bval, err := jr.ReadBytes(2097152)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading bytes for field t.Policy: byte array too large")
+						}
+						return fmt.Errorf("reading bytes for field t.Policy: %w", err)
+					}
+					if len(bval) > 0 {
+						t.Policy = []uint8(bval)
+					}
+				}
+
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("ignoring field %s for PolicyOK: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading object close or comma for field PolicyOK: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("map too large for PolicyOK")
+			}
+		}
+	}
+
+	return nil
+}
 func (t *InfoArguments) MarshalDagJSON(w io.Writer) error {
 	jw := jsg.NewDagJsonWriter(w)
 	if t == nil {
