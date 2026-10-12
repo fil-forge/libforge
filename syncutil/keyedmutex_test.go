@@ -1,4 +1,4 @@
-package keylock
+package syncutil
 
 import (
 	"sync"
@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLocks(t *testing.T) {
-	var l Locks
+func TestKeyedMutex(t *testing.T) {
+	var l KeyedMutex
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	held := map[string]int{}
@@ -33,11 +33,11 @@ func TestLocks(t *testing.T) {
 	require.Empty(t, l.locks, "unused locks are dropped")
 }
 
-// TestLocksAreKeyed pins the per-key contract: while a is held, a second
+// TestKeyedMutexIsKeyed pins the per-key contract: while a is held, a second
 // a waits, b is free at once, and the waiting a proceeds only once a is
 // released.
-func TestLocksAreKeyed(t *testing.T) {
-	var l Locks
+func TestKeyedMutexIsKeyed(t *testing.T) {
+	var l KeyedMutex
 	unlockA := l.Lock("a")
 
 	acquiredA := make(chan struct{})
@@ -73,7 +73,7 @@ func TestLocksAreKeyed(t *testing.T) {
 // TestUnlockIsIdempotent: a second call of an unlock changes nothing, so the
 // key stays held by whoever holds it next and the records stay consistent.
 func TestUnlockIsIdempotent(t *testing.T) {
-	var l Locks
+	var l KeyedMutex
 	unlock := l.Lock("k")
 	unlock()
 	unlock2 := l.Lock("k")
