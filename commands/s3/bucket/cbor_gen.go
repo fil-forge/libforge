@@ -745,7 +745,7 @@ func (t *BucketPolicy) UnmarshalCBOR(r io.Reader) (err error) {
 
 	return nil
 }
-func (t *StatementModel) MarshalCBOR(w io.Writer) error {
+func (t *Statement) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
@@ -788,7 +788,7 @@ func (t *StatementModel) MarshalCBOR(w io.Writer) error {
 		}
 	}
 
-	// t.Action (map[string]commands.Unit) (map)
+	// t.Actions (bucket.StringSet) (map)
 	if len("action") > 8192 {
 		return xerrors.Errorf("Value in field \"action\" was too long")
 	}
@@ -801,21 +801,21 @@ func (t *StatementModel) MarshalCBOR(w io.Writer) error {
 	}
 
 	{
-		if len(t.Action) > 4096 {
-			return xerrors.Errorf("cannot marshal t.Action map too large")
+		if len(t.Actions) > 4096 {
+			return xerrors.Errorf("cannot marshal t.Actions map too large")
 		}
 
-		if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(t.Action))); err != nil {
+		if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(t.Actions))); err != nil {
 			return err
 		}
 
-		keys := make([]string, 0, len(t.Action))
-		for k := range t.Action {
+		keys := make([]string, 0, len(t.Actions))
+		for k := range t.Actions {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			v := t.Action[k]
+			v := t.Actions[k]
 
 			if len(k) > 8192 {
 				return xerrors.Errorf("Value in field k was too long")
@@ -858,7 +858,7 @@ func (t *StatementModel) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Resource (map[string]commands.Unit) (map)
+	// t.Resources (bucket.StringSet) (map)
 	if len("resource") > 8192 {
 		return xerrors.Errorf("Value in field \"resource\" was too long")
 	}
@@ -871,21 +871,21 @@ func (t *StatementModel) MarshalCBOR(w io.Writer) error {
 	}
 
 	{
-		if len(t.Resource) > 4096 {
-			return xerrors.Errorf("cannot marshal t.Resource map too large")
+		if len(t.Resources) > 4096 {
+			return xerrors.Errorf("cannot marshal t.Resources map too large")
 		}
 
-		if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(t.Resource))); err != nil {
+		if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(t.Resources))); err != nil {
 			return err
 		}
 
-		keys := make([]string, 0, len(t.Resource))
-		for k := range t.Resource {
+		keys := make([]string, 0, len(t.Resources))
+		for k := range t.Resources {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			v := t.Resource[k]
+			v := t.Resources[k]
 
 			if len(k) > 8192 {
 				return xerrors.Errorf("Value in field k was too long")
@@ -905,7 +905,7 @@ func (t *StatementModel) MarshalCBOR(w io.Writer) error {
 		}
 	}
 
-	// t.Principal (map[string]commands.Unit) (map)
+	// t.Principal (bucket.Principal) (map)
 	if len("principal") > 8192 {
 		return xerrors.Errorf("Value in field \"principal\" was too long")
 	}
@@ -954,8 +954,8 @@ func (t *StatementModel) MarshalCBOR(w io.Writer) error {
 	return nil
 }
 
-func (t *StatementModel) UnmarshalCBOR(r io.Reader) (err error) {
-	*t = StatementModel{}
+func (t *Statement) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = Statement{}
 
 	cr := cbg.NewCborReader(r)
 
@@ -974,7 +974,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) (err error) {
 	}
 
 	if extra > cbg.MaxLength {
-		return fmt.Errorf("StatementModel: map struct too large (%d)", extra)
+		return fmt.Errorf("Statement: map struct too large (%d)", extra)
 	}
 
 	n := extra
@@ -1006,7 +1006,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 				t.Sid = string(sval)
 			}
-			// t.Action (map[string]commands.Unit) (map)
+			// t.Actions (bucket.StringSet) (map)
 		case "action":
 
 			maj, extra, err = cr.ReadHeader()
@@ -1017,10 +1017,10 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) (err error) {
 				return fmt.Errorf("expected a map (major type 5)")
 			}
 			if extra > 4096 {
-				return fmt.Errorf("t.Action: map too large")
+				return fmt.Errorf("t.Actions: map too large")
 			}
 
-			t.Action = make(map[string]commands.Unit, extra)
+			t.Actions = make(map[string]commands.Unit, extra)
 
 			for i, l := 0, int(extra); i < l; i++ {
 
@@ -1045,7 +1045,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 				}
 
-				t.Action[k] = v
+				t.Actions[k] = v
 
 			}
 			// t.Effect (bucket.Effect) (string)
@@ -1059,7 +1059,7 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 				t.Effect = Effect(sval)
 			}
-			// t.Resource (map[string]commands.Unit) (map)
+			// t.Resources (bucket.StringSet) (map)
 		case "resource":
 
 			maj, extra, err = cr.ReadHeader()
@@ -1070,10 +1070,10 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) (err error) {
 				return fmt.Errorf("expected a map (major type 5)")
 			}
 			if extra > 4096 {
-				return fmt.Errorf("t.Resource: map too large")
+				return fmt.Errorf("t.Resources: map too large")
 			}
 
-			t.Resource = make(map[string]commands.Unit, extra)
+			t.Resources = make(map[string]commands.Unit, extra)
 
 			for i, l := 0, int(extra); i < l; i++ {
 
@@ -1098,10 +1098,10 @@ func (t *StatementModel) UnmarshalCBOR(r io.Reader) (err error) {
 
 				}
 
-				t.Resource[k] = v
+				t.Resources[k] = v
 
 			}
-			// t.Principal (map[string]commands.Unit) (map)
+			// t.Principal (bucket.Principal) (map)
 		case "principal":
 
 			maj, extra, err = cr.ReadHeader()

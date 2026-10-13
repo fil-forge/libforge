@@ -20,14 +20,14 @@ func TestPolicyOKRoundTrip(t *testing.T) {
 					Sid:       "readers",
 					Effect:    bucket.Allow,
 					Principal: bucket.Only("alice", "bob"),
-					Actions:   []string{"s3:GetObject"},
-					Resources: []string{"arn:aws:s3:::b/*"},
+					Actions:   bucket.NewStringSet("s3:GetObject"),
+					Resources: bucket.NewStringSet("arn:aws:s3:::b/*"),
 				},
 				{
 					Effect:    bucket.Deny,
 					Principal: bucket.Everyone(),
-					Actions:   []string{"s3:DeleteObject"},
-					Resources: []string{"arn:aws:s3:::b/*"},
+					Actions:   bucket.NewStringSet("s3:DeleteObject"),
+					Resources: bucket.NewStringSet("arn:aws:s3:::b/*"),
 				},
 			},
 		},
@@ -148,8 +148,8 @@ func TestBucketPolicyUnmarshalJSON(t *testing.T) {
 			`{"Effect": "Deny", "Principal": "*", "Action": "s3:PutObjectRetention", "Resource": "arn:aws:s3:::photos/*"}`,
 		)), &d))
 		require.Equal(t, bucket.BucketPolicy{Version: bucket.Version2012, Statements: []bucket.Statement{
-			{Sid: "owners", Effect: bucket.Allow, Principal: bucket.Only("bob", "alice"), Actions: []string{"s3:ListBucket", "s3:GetObject"}, Resources: []string{bucket.BucketARN("photos"), bucket.ObjectsARN("photos")}},
-			{Effect: bucket.Deny, Principal: bucket.Everyone(), Actions: []string{"s3:PutObjectRetention"}, Resources: []string{bucket.ObjectsARN("photos")}},
+			{Sid: "owners", Effect: bucket.Allow, Principal: bucket.Only("bob", "alice"), Actions: bucket.NewStringSet("s3:ListBucket", "s3:GetObject"), Resources: bucket.NewStringSet(bucket.BucketARN("photos"), bucket.ObjectsARN("photos"))},
+			{Effect: bucket.Deny, Principal: bucket.Everyone(), Actions: bucket.NewStringSet("s3:PutObjectRetention"), Resources: bucket.NewStringSet(bucket.ObjectsARN("photos"))},
 		}}, d)
 	})
 
@@ -235,12 +235,12 @@ func TestPolicyActions(t *testing.T) {
 	}
 }
 
-func TestStatementModel(t *testing.T) {
+func TestStatementIPLD(t *testing.T) {
 	st := bucket.Statement{
 		Effect:    bucket.Allow,
 		Principal: bucket.Only("bob", "alice", "bob"),
-		Actions:   []string{"s3:PutObject", "s3:GetObject", "s3:GetObject"},
-		Resources: []string{"arn:aws:s3:::b/*", "arn:aws:s3:::b"},
+		Actions:   bucket.NewStringSet("s3:PutObject", "s3:GetObject", "s3:GetObject"),
+		Resources: bucket.NewStringSet("arn:aws:s3:::b/*", "arn:aws:s3:::b"),
 	}
 
 	t.Run("DAG-JSON is the sets form with sorted keys", func(t *testing.T) {
@@ -255,35 +255,24 @@ func TestStatementModel(t *testing.T) {
 		require.Contains(t, buf.String(), `,"sid":"rw"}`)
 	})
 
-	t.Run("the wildcard principal is the single member * and drops stray ids", func(t *testing.T) {
+	t.Run("the wildcard principal is the single member *", func(t *testing.T) {
 		all := st
-		all.Principal = bucket.Principal{All: true, IDs: []string{"alice"}}
+		all.Principal = bucket.Everyone()
 		var buf bytes.Buffer
 		require.NoError(t, all.MarshalDagJSON(&buf))
 		require.Contains(t, buf.String(), `"principal":{"*":{}}`)
 	})
 
-	t.Run("decoding sorts and dedupes, never nil", func(t *testing.T) {
+	t.Run("decoding round-trips, sets never nil", func(t *testing.T) {
 		var buf bytes.Buffer
 		require.NoError(t, st.MarshalDagJSON(&buf))
 		var back bucket.Statement
 		require.NoError(t, back.UnmarshalDagJSON(bytes.NewReader(buf.Bytes())))
-		require.Equal(t, bucket.Statement{
-			Effect:    bucket.Allow,
-			Principal: bucket.Only("alice", "bob"),
-			Actions:   []string{"s3:GetObject", "s3:PutObject"},
-			Resources: []string{"arn:aws:s3:::b", "arn:aws:s3:::b/*"},
-		}, back)
+		require.Equal(t, st, back)
 
 		var empty bucket.Statement
 		require.NoError(t, empty.UnmarshalDagJSON(strings.NewReader(`{"action":{},"effect":"Deny","principal":{},"resource":{}}`)))
-		require.Equal(t, bucket.Statement{Effect: bucket.Deny, Principal: bucket.Principal{IDs: []string{}}, Actions: []string{}, Resources: []string{}}, empty)
-	})
-
-	t.Run("a decoded set holding * is everyone", func(t *testing.T) {
-		var back bucket.Statement
-		require.NoError(t, back.UnmarshalDagJSON(strings.NewReader(`{"action":{"s3:GetObject":{}},"effect":"Allow","principal":{"*":{},"alice":{}},"resource":{"arn:aws:s3:::b/*":{}}}`)))
-		require.Equal(t, bucket.Everyone(), back.Principal)
+		require.Equal(t, bucket.Statement{Effect: bucket.Deny, Principal: bucket.Principal{}, Actions: bucket.StringSet{}, Resources: bucket.StringSet{}}, empty)
 	})
 
 	t.Run("CBOR round trip", func(t *testing.T) {
@@ -291,7 +280,29 @@ func TestStatementModel(t *testing.T) {
 		require.NoError(t, st.MarshalCBOR(&buf))
 		var back bucket.Statement
 		require.NoError(t, back.UnmarshalCBOR(bytes.NewReader(buf.Bytes())))
-		require.Equal(t, bucket.Only("alice", "bob"), back.Principal)
-		require.Equal(t, []string{"s3:GetObject", "s3:PutObject"}, back.Actions)
+		require.Equal(t, st, back)
+	})
+}
+
+func TestStringSetJSON(t *testing.T) {
+	t.Run("marshals as the sorted list, nil as an empty list", func(t *testing.T) {
+		raw, err := json.Marshal(bucket.NewStringSet("b", "a", "b"))
+		require.NoError(t, err)
+		require.Equal(t, `["a","b"]`, string(raw))
+
+		raw, err = json.Marshal(bucket.Statement{})
+		require.NoError(t, err)
+		require.Equal(t, `{"Effect":"","Principal":{"AWS":[]},"Action":[],"Resource":[]}`, string(raw))
+	})
+
+	t.Run("unmarshals a string or a list", func(t *testing.T) {
+		var s bucket.StringSet
+		require.NoError(t, json.Unmarshal([]byte(`"x"`), &s))
+		require.Equal(t, bucket.NewStringSet("x"), s)
+		require.NoError(t, json.Unmarshal([]byte(`["y","x","y"]`), &s))
+		require.Equal(t, bucket.NewStringSet("x", "y"), s)
+		for _, bad := range []string{`1`, `{"x":1}`, `[1]`} {
+			require.ErrorIs(t, json.Unmarshal([]byte(bad), &s), bucket.ErrInvalidPolicy, bad)
+		}
 	})
 }

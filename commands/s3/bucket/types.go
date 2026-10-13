@@ -60,34 +60,27 @@ const (
 )
 
 // Statement grants (Allow) or withholds (Deny) actions on the bucket's
-// resources to principals. Sid is an optional label the caller chooses.
+// resources to principals. Sid is an optional label the caller chooses. On
+// the wire (CBOR and DAG-JSON) the three sets are maps from member to
+// [commands.Unit]; in the AWS JSON document they are lists (see
+// policy_json.go).
 type Statement struct {
-	Sid       string    `json:"Sid,omitempty"`
-	Effect    Effect    `json:"Effect"`
-	Principal Principal `json:"Principal"`
-	Actions   []string  `json:"Action"`
-	Resources []string  `json:"Resource"`
+	Sid       string    `cborgen:"sid,omitempty" dagjsongen:"sid,omitempty" json:"Sid,omitempty"`
+	Effect    Effect    `cborgen:"effect" dagjsongen:"effect" json:"Effect"`
+	Principal Principal `cborgen:"principal" dagjsongen:"principal" json:"Principal"`
+	Actions   StringSet `cborgen:"action" dagjsongen:"action" json:"Action"`
+	Resources StringSet `cborgen:"resource" dagjsongen:"resource" json:"Resource"`
 }
 
-// StatementModel is the IPLD form of a [Statement]: its principal, action
-// and resource lists as sets, a set being a map from its members to
-// [commands.Unit], and a wildcard principal the single member [Wildcard].
-// [Statement] encodes as it in CBOR and DAG-JSON (see policy_model.go).
-type StatementModel struct {
-	Sid       string                   `cborgen:"sid,omitempty" dagjsongen:"sid,omitempty"`
-	Effect    Effect                   `cborgen:"effect" dagjsongen:"effect"`
-	Principal map[string]commands.Unit `cborgen:"principal" dagjsongen:"principal"`
-	Action    map[string]commands.Unit `cborgen:"action" dagjsongen:"action"`
-	Resource  map[string]commands.Unit `cborgen:"resource" dagjsongen:"resource"`
-}
+// StringSet is a set of strings: a map from each member to [commands.Unit],
+// which the IPLD codecs write with sorted keys. Its JSON form is the sorted
+// list of its members.
+type StringSet map[string]commands.Unit
 
-// Principal is the set of principals a statement applies to: every principal
-// of the tenant (All), or the listed ids. Its JSON encoding is the string "*"
-// or {"AWS": [user ARNs]} (see policy_json.go).
-type Principal struct {
-	All bool
-	IDs []string
-}
+// Principal is the set of principal ids a statement applies to, or the
+// single member [Wildcard] for every principal of the tenant. Its JSON
+// encoding is the string "*" or {"AWS": [user ARNs]} (see policy_json.go).
+type Principal StringSet
 
 // InfoArguments are the arguments to `/s3/bucket/info`.
 type InfoArguments struct {

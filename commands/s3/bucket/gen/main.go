@@ -30,7 +30,7 @@ func main() {
 		bucket.PolicyArguments{},
 		bucket.PolicyOK{},
 		bucket.BucketPolicy{},
-		bucket.StatementModel{},
+		bucket.Statement{},
 		bucket.InfoArguments{},
 		bucket.InfoOK{},
 		bucket.ListOK{},

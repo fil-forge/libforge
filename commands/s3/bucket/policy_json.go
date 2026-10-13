@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/fil-forge/libforge/commands"
 	"github.com/fil-forge/ucantone/errors"
 )
 
@@ -140,20 +141,76 @@ func ParseS3ARN(arn string) (bucket string, objects bool, err error) {
 	return bucket, objects, nil
 }
 
+// NewStringSet returns the set of the given members.
+func NewStringSet(members ...string) StringSet {
+	s := make(StringSet, len(members))
+	for _, m := range members {
+		s[m] = commands.Unit{}
+	}
+	return s
+}
+
+// Members returns the set's members, sorted, never nil.
+func (s StringSet) Members() []string {
+	out := make([]string, 0, len(s))
+	for m := range s {
+		out = append(out, m)
+	}
+	slices.Sort(out)
+	return out
+}
+
+// MarshalJSON encodes the set as the sorted list of its members; nil encodes
+// as an empty list.
+func (s StringSet) MarshalJSON() ([]byte, error) { return json.Marshal(s.Members()) }
+
+// UnmarshalJSON accepts a string or a list of strings, as AWS allows for
+// Action and Resource, holding at most [MaxSetSize] entries; duplicates
+// collapse. Anything else is an error wrapping [ErrInvalidPolicy].
+func (s *StringSet) UnmarshalJSON(data []byte) error {
+	data = bytes.TrimSpace(data)
+	var members []string
+	if len(data) > 0 && data[0] == '"' {
+		var one string
+		if err := json.Unmarshal(data, &one); err != nil {
+			return fmt.Errorf("%v: %w", err, ErrInvalidPolicy)
+		}
+		members = []string{one}
+	} else if err := json.Unmarshal(data, &members); err != nil {
+		return fmt.Errorf("must be a string or a list of strings: %w", ErrInvalidPolicy)
+	}
+	if len(members) > MaxSetSize {
+		return fmt.Errorf("holds %d entries, at most %d are allowed: %w", len(members), MaxSetSize, ErrInvalidPolicy)
+	}
+	*s = NewStringSet(members...)
+	return nil
+}
+
 // Everyone returns the principal set naming every principal of the tenant.
-func Everyone() Principal { return Principal{All: true} }
+func Everyone() Principal { return Principal{Wildcard: {}} }
 
 // Only returns the principal set naming exactly the given ids.
-func Only(ids ...string) Principal { return Principal{IDs: ids} }
+func Only(ids ...string) Principal { return Principal(NewStringSet(ids...)) }
 
-// MarshalJSON encodes All as "*" and anything else as {"AWS": [user ARNs]},
-// nil encoding as an empty list.
+// All reports whether p names every principal of the tenant: it holds
+// [Wildcard].
+func (p Principal) All() bool {
+	_, ok := p[Wildcard]
+	return ok
+}
+
+// Members returns p's members, sorted, never nil.
+func (p Principal) Members() []string { return StringSet(p).Members() }
+
+// MarshalJSON encodes a set holding [Wildcard] as "*" and anything else as
+// {"AWS": [user ARNs]}, sorted, nil encoding as an empty list.
 func (p Principal) MarshalJSON() ([]byte, error) {
-	if p.All {
+	if p.All() {
 		return json.Marshal(Wildcard)
 	}
-	arns := make([]string, len(p.IDs))
-	for i, id := range p.IDs {
+	ids := p.Members()
+	arns := make([]string, len(ids))
+	for i, id := range ids {
 		arns[i] = UserARN(id)
 	}
 	return json.Marshal(struct {
@@ -162,8 +219,8 @@ func (p Principal) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON accepts "*", {"AWS": "*"}, {"AWS": "<user ARN>"} or
-// {"AWS": ["<user ARN>", ...]}, keeping each id once, in the order it first
-// appears. Anything else is an error wrapping [ErrInvalidPolicy].
+// {"AWS": ["<user ARN>", ...]}. Anything else is an error wrapping
+// [ErrInvalidPolicy].
 func (p *Principal) UnmarshalJSON(data []byte) error {
 	const shape = `must be "*" or {"AWS": user ARNs}`
 	data = bytes.TrimSpace(data)
@@ -196,12 +253,12 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 		*p = Everyone()
 		return nil
 	}
-	var arns stringOrList
+	var arns StringSet
 	if err := json.Unmarshal(aws, &arns); err != nil {
 		return fmt.Errorf("Principal: %s: %w", shape, ErrInvalidPolicy)
 	}
-	ids := make([]string, len(arns))
-	for i, arn := range arns {
+	ids := make(Principal, len(arns))
+	for _, arn := range arns.Members() {
 		if arn == Wildcard {
 			return fmt.Errorf("Principal %q must be the bare string or {\"AWS\": %q}, not a list entry: %w", Wildcard, Wildcard, ErrInvalidPolicy)
 		}
@@ -209,82 +266,36 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 		if err != nil {
 			return fmt.Errorf("Principal must be a user ARN: %v: %w", err, ErrInvalidPolicy)
 		}
-		ids[i] = id
+		ids[id] = commands.Unit{}
 	}
-	*p = Principal{IDs: dedupe(ids)}
+	*p = ids
 	return nil
-}
-
-// stringOrList is a JSON field AWS allows as a string or a list of strings.
-type stringOrList []string
-
-func (l *stringOrList) UnmarshalJSON(data []byte) error {
-	data = bytes.TrimSpace(data)
-	if len(data) > 0 && data[0] == '"' {
-		var s string
-		if err := json.Unmarshal(data, &s); err != nil {
-			return fmt.Errorf("%v: %w", err, ErrInvalidPolicy)
-		}
-		*l = stringOrList{s}
-		return nil
-	}
-	var ss []string
-	if err := json.Unmarshal(data, &ss); err != nil {
-		return fmt.Errorf("must be a string or a list of strings: %w", ErrInvalidPolicy)
-	}
-	*l = ss
-	return nil
-}
-
-// dedupe keeps the first occurrence of each id.
-func dedupe(ids []string) []string {
-	seen := make(map[string]bool, len(ids))
-	out := ids[:0]
-	for _, id := range ids {
-		if !seen[id] {
-			seen[id] = true
-			out = append(out, id)
-		}
-	}
-	return out
 }
 
 // UnmarshalJSON parses a policy document strictly and refuses one that is not
 // well formed, so an invalid policy never comes into existence: a field the
 // schema does not define, a property name that differs from the schema in
 // case, a malformed principal, or a document [WellFormed] rejects is an error
-// wrapping [ErrInvalidPolicy]. Lists keep the order the document gives them.
+// wrapping [ErrInvalidPolicy]. Action and Resource may each be a string or a
+// list; the lists are sets, so order and duplicates do not survive.
 func (p *BucketPolicy) UnmarshalJSON(data []byte) error {
 	if err := strictKeys(data); err != nil {
 		return err
 	}
-	// The wire form takes Action and Resource as a string or a list.
-	var w struct {
-		Version   string
-		Statement []struct {
-			Sid       string
-			Effect    Effect
-			Principal Principal
-			Action    stringOrList
-			Resource  stringOrList
-		}
-	}
+	type plain BucketPolicy // the struct without this method
+	var d plain
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
-	if err := dec.Decode(&w); err != nil {
+	if err := dec.Decode(&d); err != nil {
 		if errors.Is(err, ErrInvalidPolicy) {
 			return fmt.Errorf("decoding policy: %w", err)
 		}
 		return fmt.Errorf("decoding policy: %v: %w", err, ErrInvalidPolicy)
 	}
-	d := BucketPolicy{Version: w.Version, Statements: make([]Statement, len(w.Statement))}
-	for i, st := range w.Statement {
-		d.Statements[i] = Statement{Sid: st.Sid, Effect: st.Effect, Principal: st.Principal, Actions: st.Action, Resources: st.Resource}
-	}
-	if err := WellFormed(d); err != nil {
+	if err := WellFormed(BucketPolicy(d)); err != nil {
 		return err
 	}
-	*p = d
+	*p = BucketPolicy(d)
 	return nil
 }
 
@@ -349,21 +360,18 @@ func WellFormed(d BucketPolicy) error {
 		if st.Effect != Allow && st.Effect != Deny {
 			return fmt.Errorf("statement %d: Effect %q must be %q or %q: %w", i, st.Effect, Allow, Deny, ErrInvalidPolicy)
 		}
-		if !st.Principal.All {
-			if len(st.Principal.IDs) == 0 {
-				return fmt.Errorf("statement %d: Principal must not be empty: %w", i, ErrInvalidPolicy)
-			}
-			if len(st.Principal.IDs) > MaxSetSize {
-				return fmt.Errorf("statement %d: Principal names %d principals, at most %d are allowed: %w", i, len(st.Principal.IDs), MaxSetSize, ErrInvalidPolicy)
-			}
-			if slices.Contains(st.Principal.IDs, Wildcard) {
-				return fmt.Errorf("statement %d: Principal %q must be the bare string, not a list entry: %w", i, Wildcard, ErrInvalidPolicy)
-			}
+		switch {
+		case st.Principal.All() && len(st.Principal) > 1:
+			return fmt.Errorf("statement %d: Principal %q must be the bare string, not a list entry: %w", i, Wildcard, ErrInvalidPolicy)
+		case len(st.Principal) == 0:
+			return fmt.Errorf("statement %d: Principal must not be empty: %w", i, ErrInvalidPolicy)
+		case len(st.Principal) > MaxSetSize:
+			return fmt.Errorf("statement %d: Principal names %d principals, at most %d are allowed: %w", i, len(st.Principal), MaxSetSize, ErrInvalidPolicy)
 		}
 		if len(st.Actions) == 0 {
 			return fmt.Errorf("statement %d: Action must not be empty: %w", i, ErrInvalidPolicy)
 		}
-		for _, a := range st.Actions {
+		for _, a := range st.Actions.Members() {
 			if a != PolicyWildcard && !PolicyAction(a) {
 				return fmt.Errorf("statement %d: Action %q is not a policy action: %w", i, a, ErrInvalidPolicy)
 			}
@@ -372,7 +380,7 @@ func WellFormed(d BucketPolicy) error {
 			return fmt.Errorf("statement %d: Resource must not be empty: %w", i, ErrInvalidPolicy)
 		}
 		var hasBucket, hasObjects bool
-		for _, r := range st.Resources {
+		for _, r := range st.Resources.Members() {
 			b, objects, err := ParseS3ARN(r)
 			if err != nil {
 				return fmt.Errorf("statement %d: Resource %q must be %q or %q: %v: %w", i, r, BucketARN("<bucket>"), ObjectsARN("<bucket>"), err, ErrInvalidPolicy)
@@ -386,7 +394,7 @@ func WellFormed(d BucketPolicy) error {
 			hasBucket = hasBucket || !objects
 			hasObjects = hasObjects || objects
 		}
-		for _, a := range st.Actions {
+		for _, a := range st.Actions.Members() {
 			wildcard := a == PolicyWildcard
 			if (wildcard || objectAction(a)) && !hasObjects {
 				return fmt.Errorf("statement %d: Action %q needs Resource %q: %w", i, a, ObjectsARN(bucket), ErrInvalidPolicy)
