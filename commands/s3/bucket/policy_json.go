@@ -41,11 +41,12 @@ const (
 const MaxSetSize = 4096
 
 // policyActions is the allowlist of permissions a bucket policy statement may
-// carry, sorted. The rest of the S3 permission vocabulary stays out on
-// purpose: a key holding s3:CreateBucket or s3:DeleteBucket acts outside the
-// policy that granted it, a key holding a policy operation could rewrite the
-// policy that granted it, and every principal holds s3:ListAllMyBuckets.
-var policyActions = []string{
+// carry, sorted for [PolicyAction]'s binary search. The rest of the S3
+// permission vocabulary stays out on purpose: a key holding s3:CreateBucket
+// or s3:DeleteBucket acts outside the policy that granted it, a key holding a
+// policy operation could rewrite the policy that granted it, and every
+// principal holds s3:ListAllMyBuckets.
+var policyActions = sorted([]string{
 	"s3:AbortMultipartUpload",
 	"s3:DeleteObject",
 	"s3:DeleteObjectVersion",
@@ -60,6 +61,11 @@ var policyActions = []string{
 	"s3:PutObject",
 	"s3:PutObjectLegalHold",
 	"s3:PutObjectRetention",
+})
+
+func sorted(s []string) []string {
+	slices.Sort(s)
+	return s
 }
 
 // bucketActions are the policy actions that act on the bucket rather than on
@@ -96,6 +102,19 @@ var ErrInvalidPolicy = errors.New(InvalidPolicyErrorName, "invalid bucket policy
 // UserARN returns the ARN a document names principal id by.
 func UserARN(id string) string { return UserARNPrefix + id }
 
+// ParseUserARN returns the principal id a user ARN names. The id is whatever
+// follows [UserARNPrefix]; which ids exist is the tenant's business.
+func ParseUserARN(arn string) (id string, err error) {
+	id, ok := strings.CutPrefix(arn, UserARNPrefix)
+	if !ok {
+		return "", fmt.Errorf("%q is not a user ARN %q", arn, UserARN("<id>"))
+	}
+	if id == "" {
+		return "", fmt.Errorf("%q has an empty principal id", arn)
+	}
+	return id, nil
+}
+
 // BucketARN returns the ARN of bucket itself, which bucket actions need.
 func BucketARN(bucket string) string { return s3ARNPrefix + bucket }
 
@@ -105,17 +124,20 @@ func ObjectsARN(bucket string) string { return s3ARNPrefix + bucket + objectsSuf
 
 // ParseS3ARN splits arn:aws:s3:::<bucket> or arn:aws:s3:::<bucket>/* into the
 // bucket and whether it names the bucket's objects. Any other shape, a key
-// prefix or a wildcard in the bucket name included, is not ok.
-func ParseS3ARN(arn string) (bucket string, objects bool, ok bool) {
+// prefix or a wildcard in the bucket name included, is an error saying why.
+func ParseS3ARN(arn string) (bucket string, objects bool, err error) {
 	rest, ok := strings.CutPrefix(arn, s3ARNPrefix)
 	if !ok {
-		return "", false, false
+		return "", false, fmt.Errorf("%q is not an S3 ARN", arn)
 	}
 	bucket, objects = strings.CutSuffix(rest, objectsSuffix)
-	if bucket == "" || strings.ContainsAny(bucket, "/*?") {
-		return "", false, false
+	if bucket == "" {
+		return "", false, fmt.Errorf("%q has an empty bucket name", arn)
 	}
-	return bucket, objects, true
+	if strings.ContainsAny(bucket, "/*?") {
+		return "", false, fmt.Errorf("%q: a bucket name must not hold /, * or ?", arn)
+	}
+	return bucket, objects, nil
 }
 
 // Everyone returns the principal set naming every principal of the tenant.
@@ -183,9 +205,9 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 		if arn == Wildcard {
 			return fmt.Errorf("Principal %q must be the bare string or {\"AWS\": %q}, not a list entry: %w", Wildcard, Wildcard, ErrInvalidPolicy)
 		}
-		id, ok := strings.CutPrefix(arn, UserARNPrefix)
-		if !ok || id == "" {
-			return fmt.Errorf("Principal %q: must be a user ARN %q: %w", arn, UserARN("<id>"), ErrInvalidPolicy)
+		id, err := ParseUserARN(arn)
+		if err != nil {
+			return fmt.Errorf("Principal must be a user ARN: %v: %w", err, ErrInvalidPolicy)
 		}
 		ids[i] = id
 	}
@@ -351,9 +373,9 @@ func WellFormed(d BucketPolicy) error {
 		}
 		var hasBucket, hasObjects bool
 		for _, r := range st.Resources {
-			b, objects, ok := ParseS3ARN(r)
-			if !ok {
-				return fmt.Errorf("statement %d: Resource %q must be %q or %q: %w", i, r, BucketARN("<bucket>"), ObjectsARN("<bucket>"), ErrInvalidPolicy)
+			b, objects, err := ParseS3ARN(r)
+			if err != nil {
+				return fmt.Errorf("statement %d: Resource %q must be %q or %q: %v: %w", i, r, BucketARN("<bucket>"), ObjectsARN("<bucket>"), err, ErrInvalidPolicy)
 			}
 			if bucket == "" {
 				bucket = b

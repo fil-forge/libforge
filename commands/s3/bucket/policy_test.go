@@ -79,6 +79,57 @@ func TestPrincipalJSON(t *testing.T) {
 		var p bucket.Principal
 		require.Error(t, json.Unmarshal([]byte(bad), &p), bad)
 	}
+
+	t.Run("an id round-trips byte for byte, nothing is escaped", func(t *testing.T) {
+		in := bucket.Only(`a/b:c"d`)
+		raw, err := json.Marshal(in)
+		require.NoError(t, err)
+		var back bucket.Principal
+		require.NoError(t, json.Unmarshal(raw, &back))
+		require.Equal(t, in, back)
+	})
+}
+
+func TestParseS3ARN(t *testing.T) {
+	b, objects, err := bucket.ParseS3ARN("arn:aws:s3:::photos")
+	require.NoError(t, err)
+	require.Equal(t, "photos", b)
+	require.False(t, objects)
+
+	b, objects, err = bucket.ParseS3ARN("arn:aws:s3:::photos/*")
+	require.NoError(t, err)
+	require.Equal(t, "photos", b)
+	require.True(t, objects)
+
+	for _, tc := range []struct{ arn, want string }{
+		{"photos", "not an S3 ARN"},
+		{"arn:aws:iam:::user/alice", "not an S3 ARN"},
+		{"arn:aws:s3:::", "empty bucket name"},
+		{"arn:aws:s3:::/*", "empty bucket name"},
+		{"arn:aws:s3:::photos/2024/*", "bucket name must not hold"},
+		{"arn:aws:s3:::photos/cat.jpg", "bucket name must not hold"},
+		{"arn:aws:s3:::*/*", "bucket name must not hold"},
+		{"arn:aws:s3:::ph?tos", "bucket name must not hold"},
+	} {
+		_, _, err := bucket.ParseS3ARN(tc.arn)
+		require.ErrorContains(t, err, tc.want, tc.arn)
+	}
+}
+
+func TestParseUserARN(t *testing.T) {
+	id, err := bucket.ParseUserARN(bucket.UserARN("alice"))
+	require.NoError(t, err)
+	require.Equal(t, "alice", id)
+
+	for _, tc := range []struct{ arn, want string }{
+		{"alice", "not a user ARN"},
+		{"arn:aws:iam::123456789012:user/alice", "not a user ARN"},
+		{"arn:aws:iam:::role/alice", "not a user ARN"},
+		{"arn:aws:iam:::user/", "empty principal id"},
+	} {
+		_, err := bucket.ParseUserARN(tc.arn)
+		require.ErrorContains(t, err, tc.want, tc.arn)
+	}
 }
 
 // policyJSON wraps statements, given as JSON, in a 2012-10-17 document.
