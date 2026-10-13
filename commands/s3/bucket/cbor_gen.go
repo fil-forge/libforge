@@ -10,6 +10,7 @@ import (
 	"math"
 	"sort"
 
+	commands "github.com/fil-forge/libforge/commands"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
@@ -744,7 +745,7 @@ func (t *BucketPolicy) UnmarshalCBOR(r io.Reader) (err error) {
 
 	return nil
 }
-func (t *Statement) MarshalCBOR(w io.Writer) error {
+func (t *StatementModel) MarshalCBOR(w io.Writer) error {
 	if t == nil {
 		_, err := w.Write(cbg.CborNull)
 		return err
@@ -787,7 +788,7 @@ func (t *Statement) MarshalCBOR(w io.Writer) error {
 		}
 	}
 
-	// t.Actions ([]string) (slice)
+	// t.Action (map[string]commands.Unit) (map)
 	if len("action") > 8192 {
 		return xerrors.Errorf("Value in field \"action\" was too long")
 	}
@@ -799,25 +800,39 @@ func (t *Statement) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if len(t.Actions) > 8192 {
-		return xerrors.Errorf("Slice value in field t.Actions was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Actions))); err != nil {
-		return err
-	}
-	for _, v := range t.Actions {
-		if len(v) > 8192 {
-			return xerrors.Errorf("Value in field v was too long")
+	{
+		if len(t.Action) > 4096 {
+			return xerrors.Errorf("cannot marshal t.Action map too large")
 		}
 
-		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(v))); err != nil {
-			return err
-		}
-		if _, err := cw.WriteString(string(v)); err != nil {
+		if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(t.Action))); err != nil {
 			return err
 		}
 
+		keys := make([]string, 0, len(t.Action))
+		for k := range t.Action {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			v := t.Action[k]
+
+			if len(k) > 8192 {
+				return xerrors.Errorf("Value in field k was too long")
+			}
+
+			if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(k))); err != nil {
+				return err
+			}
+			if _, err := cw.WriteString(string(k)); err != nil {
+				return err
+			}
+
+			if err := v.MarshalCBOR(cw); err != nil {
+				return err
+			}
+
+		}
 	}
 
 	// t.Effect (bucket.Effect) (string)
@@ -843,7 +858,7 @@ func (t *Statement) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Resources ([]string) (slice)
+	// t.Resource (map[string]commands.Unit) (map)
 	if len("resource") > 8192 {
 		return xerrors.Errorf("Value in field \"resource\" was too long")
 	}
@@ -855,28 +870,42 @@ func (t *Statement) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if len(t.Resources) > 8192 {
-		return xerrors.Errorf("Slice value in field t.Resources was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Resources))); err != nil {
-		return err
-	}
-	for _, v := range t.Resources {
-		if len(v) > 8192 {
-			return xerrors.Errorf("Value in field v was too long")
+	{
+		if len(t.Resource) > 4096 {
+			return xerrors.Errorf("cannot marshal t.Resource map too large")
 		}
 
-		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(v))); err != nil {
-			return err
-		}
-		if _, err := cw.WriteString(string(v)); err != nil {
+		if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(t.Resource))); err != nil {
 			return err
 		}
 
+		keys := make([]string, 0, len(t.Resource))
+		for k := range t.Resource {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			v := t.Resource[k]
+
+			if len(k) > 8192 {
+				return xerrors.Errorf("Value in field k was too long")
+			}
+
+			if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(k))); err != nil {
+				return err
+			}
+			if _, err := cw.WriteString(string(k)); err != nil {
+				return err
+			}
+
+			if err := v.MarshalCBOR(cw); err != nil {
+				return err
+			}
+
+		}
 	}
 
-	// t.Principal (bucket.Principal) (struct)
+	// t.Principal (map[string]commands.Unit) (map)
 	if len("principal") > 8192 {
 		return xerrors.Errorf("Value in field \"principal\" was too long")
 	}
@@ -888,14 +917,45 @@ func (t *Statement) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := t.Principal.MarshalCBOR(cw); err != nil {
-		return err
+	{
+		if len(t.Principal) > 4096 {
+			return xerrors.Errorf("cannot marshal t.Principal map too large")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajMap, uint64(len(t.Principal))); err != nil {
+			return err
+		}
+
+		keys := make([]string, 0, len(t.Principal))
+		for k := range t.Principal {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			v := t.Principal[k]
+
+			if len(k) > 8192 {
+				return xerrors.Errorf("Value in field k was too long")
+			}
+
+			if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(k))); err != nil {
+				return err
+			}
+			if _, err := cw.WriteString(string(k)); err != nil {
+				return err
+			}
+
+			if err := v.MarshalCBOR(cw); err != nil {
+				return err
+			}
+
+		}
 	}
 	return nil
 }
 
-func (t *Statement) UnmarshalCBOR(r io.Reader) (err error) {
-	*t = Statement{}
+func (t *StatementModel) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = StatementModel{}
 
 	cr := cbg.NewCborReader(r)
 
@@ -914,7 +974,7 @@ func (t *Statement) UnmarshalCBOR(r io.Reader) (err error) {
 	}
 
 	if extra > cbg.MaxLength {
-		return fmt.Errorf("Statement: map struct too large (%d)", extra)
+		return fmt.Errorf("StatementModel: map struct too large (%d)", extra)
 	}
 
 	n := extra
@@ -946,45 +1006,47 @@ func (t *Statement) UnmarshalCBOR(r io.Reader) (err error) {
 
 				t.Sid = string(sval)
 			}
-			// t.Actions ([]string) (slice)
+			// t.Action (map[string]commands.Unit) (map)
 		case "action":
 
 			maj, extra, err = cr.ReadHeader()
 			if err != nil {
 				return err
 			}
-
-			if extra > 8192 {
-				return fmt.Errorf("t.Actions: array too large (%d)", extra)
+			if maj != cbg.MajMap {
+				return fmt.Errorf("expected a map (major type 5)")
+			}
+			if extra > 4096 {
+				return fmt.Errorf("t.Action: map too large")
 			}
 
-			if maj != cbg.MajArray {
-				return fmt.Errorf("expected cbor array")
-			}
+			t.Action = make(map[string]commands.Unit, extra)
 
-			if extra > 0 {
-				t.Actions = make([]string, extra)
-			}
+			for i, l := 0, int(extra); i < l; i++ {
 
-			for i := 0; i < int(extra); i++ {
+				var k string
+
 				{
-					var maj byte
-					var extra uint64
-					var err error
-					_ = maj
-					_ = extra
-					_ = err
+					sval, err := cbg.ReadStringWithMax(cr, 8192)
+					if err != nil {
+						return err
+					}
 
-					{
-						sval, err := cbg.ReadStringWithMax(cr, 8192)
-						if err != nil {
-							return err
-						}
+					k = string(sval)
+				}
 
-						t.Actions[i] = string(sval)
+				var v commands.Unit
+
+				{
+
+					if err := v.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling v: %w", err)
 					}
 
 				}
+
+				t.Action[k] = v
+
 			}
 			// t.Effect (bucket.Effect) (string)
 		case "effect":
@@ -997,228 +1059,89 @@ func (t *Statement) UnmarshalCBOR(r io.Reader) (err error) {
 
 				t.Effect = Effect(sval)
 			}
-			// t.Resources ([]string) (slice)
+			// t.Resource (map[string]commands.Unit) (map)
 		case "resource":
 
 			maj, extra, err = cr.ReadHeader()
 			if err != nil {
 				return err
 			}
-
-			if extra > 8192 {
-				return fmt.Errorf("t.Resources: array too large (%d)", extra)
+			if maj != cbg.MajMap {
+				return fmt.Errorf("expected a map (major type 5)")
+			}
+			if extra > 4096 {
+				return fmt.Errorf("t.Resource: map too large")
 			}
 
-			if maj != cbg.MajArray {
-				return fmt.Errorf("expected cbor array")
-			}
+			t.Resource = make(map[string]commands.Unit, extra)
 
-			if extra > 0 {
-				t.Resources = make([]string, extra)
-			}
+			for i, l := 0, int(extra); i < l; i++ {
 
-			for i := 0; i < int(extra); i++ {
+				var k string
+
 				{
-					var maj byte
-					var extra uint64
-					var err error
-					_ = maj
-					_ = extra
-					_ = err
+					sval, err := cbg.ReadStringWithMax(cr, 8192)
+					if err != nil {
+						return err
+					}
 
-					{
-						sval, err := cbg.ReadStringWithMax(cr, 8192)
-						if err != nil {
-							return err
-						}
+					k = string(sval)
+				}
 
-						t.Resources[i] = string(sval)
+				var v commands.Unit
+
+				{
+
+					if err := v.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling v: %w", err)
 					}
 
 				}
+
+				t.Resource[k] = v
+
 			}
-			// t.Principal (bucket.Principal) (struct)
+			// t.Principal (map[string]commands.Unit) (map)
 		case "principal":
 
-			{
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+			if maj != cbg.MajMap {
+				return fmt.Errorf("expected a map (major type 5)")
+			}
+			if extra > 4096 {
+				return fmt.Errorf("t.Principal: map too large")
+			}
 
-				if err := t.Principal.UnmarshalCBOR(cr); err != nil {
-					return xerrors.Errorf("unmarshaling t.Principal: %w", err)
+			t.Principal = make(map[string]commands.Unit, extra)
+
+			for i, l := 0, int(extra); i < l; i++ {
+
+				var k string
+
+				{
+					sval, err := cbg.ReadStringWithMax(cr, 8192)
+					if err != nil {
+						return err
+					}
+
+					k = string(sval)
 				}
 
-			}
+				var v commands.Unit
 
-		default:
-			// Field doesn't exist on this type, so ignore it
-			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-func (t *Principal) MarshalCBOR(w io.Writer) error {
-	if t == nil {
-		_, err := w.Write(cbg.CborNull)
-		return err
-	}
-
-	cw := cbg.NewCborWriter(w)
-
-	if _, err := cw.Write([]byte{162}); err != nil {
-		return err
-	}
-
-	// t.All (bool) (bool)
-	if len("all") > 8192 {
-		return xerrors.Errorf("Value in field \"all\" was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("all"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("all")); err != nil {
-		return err
-	}
-
-	if err := cbg.WriteBool(w, t.All); err != nil {
-		return err
-	}
-
-	// t.IDs ([]string) (slice)
-	if len("ids") > 8192 {
-		return xerrors.Errorf("Value in field \"ids\" was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("ids"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("ids")); err != nil {
-		return err
-	}
-
-	if len(t.IDs) > 8192 {
-		return xerrors.Errorf("Slice value in field t.IDs was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.IDs))); err != nil {
-		return err
-	}
-	for _, v := range t.IDs {
-		if len(v) > 8192 {
-			return xerrors.Errorf("Value in field v was too long")
-		}
-
-		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(v))); err != nil {
-			return err
-		}
-		if _, err := cw.WriteString(string(v)); err != nil {
-			return err
-		}
-
-	}
-	return nil
-}
-
-func (t *Principal) UnmarshalCBOR(r io.Reader) (err error) {
-	*t = Principal{}
-
-	cr := cbg.NewCborReader(r)
-
-	maj, extra, err := cr.ReadHeader()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-	}()
-
-	if maj != cbg.MajMap {
-		return fmt.Errorf("cbor input should be of type map")
-	}
-
-	if extra > cbg.MaxLength {
-		return fmt.Errorf("Principal: map struct too large (%d)", extra)
-	}
-
-	n := extra
-
-	nameBuf := make([]byte, 3)
-	for i := uint64(0); i < n; i++ {
-		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
-		if err != nil {
-			return err
-		}
-
-		if !ok {
-			// Field doesn't exist on this type, so ignore it
-			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
-				return err
-			}
-			continue
-		}
-
-		switch string(nameBuf[:nameLen]) {
-		// t.All (bool) (bool)
-		case "all":
-
-			maj, extra, err = cr.ReadHeader()
-			if err != nil {
-				return err
-			}
-			if maj != cbg.MajOther {
-				return fmt.Errorf("booleans must be major type 7")
-			}
-			switch extra {
-			case 20:
-				t.All = false
-			case 21:
-				t.All = true
-			default:
-				return fmt.Errorf("booleans are either major type 7, value 20 or 21 (got %d)", extra)
-			}
-			// t.IDs ([]string) (slice)
-		case "ids":
-
-			maj, extra, err = cr.ReadHeader()
-			if err != nil {
-				return err
-			}
-
-			if extra > 8192 {
-				return fmt.Errorf("t.IDs: array too large (%d)", extra)
-			}
-
-			if maj != cbg.MajArray {
-				return fmt.Errorf("expected cbor array")
-			}
-
-			if extra > 0 {
-				t.IDs = make([]string, extra)
-			}
-
-			for i := 0; i < int(extra); i++ {
 				{
-					var maj byte
-					var extra uint64
-					var err error
-					_ = maj
-					_ = extra
-					_ = err
 
-					{
-						sval, err := cbg.ReadStringWithMax(cr, 8192)
-						if err != nil {
-							return err
-						}
-
-						t.IDs[i] = string(sval)
+					if err := v.UnmarshalCBOR(cr); err != nil {
+						return xerrors.Errorf("unmarshaling v: %w", err)
 					}
 
 				}
+
+				t.Principal[k] = v
+
 			}
 
 		default:

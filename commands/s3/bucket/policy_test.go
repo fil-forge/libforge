@@ -183,3 +183,64 @@ func TestPolicyActions(t *testing.T) {
 		require.False(t, bucket.PolicyAction(a), a)
 	}
 }
+
+func TestStatementModel(t *testing.T) {
+	st := bucket.Statement{
+		Effect:    bucket.Allow,
+		Principal: bucket.Only("bob", "alice", "bob"),
+		Actions:   []string{"s3:PutObject", "s3:GetObject", "s3:GetObject"},
+		Resources: []string{"arn:aws:s3:::b/*", "arn:aws:s3:::b"},
+	}
+
+	t.Run("DAG-JSON is the sets form with sorted keys", func(t *testing.T) {
+		var buf bytes.Buffer
+		require.NoError(t, st.MarshalDagJSON(&buf))
+		require.Equal(t, `{"action":{"s3:GetObject":{},"s3:PutObject":{}},"effect":"Allow","principal":{"alice":{},"bob":{}},"resource":{"arn:aws:s3:::b":{},"arn:aws:s3:::b/*":{}}}`, buf.String())
+
+		withSid := st
+		withSid.Sid = "rw"
+		buf.Reset()
+		require.NoError(t, withSid.MarshalDagJSON(&buf))
+		require.Contains(t, buf.String(), `,"sid":"rw"}`)
+	})
+
+	t.Run("the wildcard principal is the single member * and drops stray ids", func(t *testing.T) {
+		all := st
+		all.Principal = bucket.Principal{All: true, IDs: []string{"alice"}}
+		var buf bytes.Buffer
+		require.NoError(t, all.MarshalDagJSON(&buf))
+		require.Contains(t, buf.String(), `"principal":{"*":{}}`)
+	})
+
+	t.Run("decoding sorts and dedupes, never nil", func(t *testing.T) {
+		var buf bytes.Buffer
+		require.NoError(t, st.MarshalDagJSON(&buf))
+		var back bucket.Statement
+		require.NoError(t, back.UnmarshalDagJSON(bytes.NewReader(buf.Bytes())))
+		require.Equal(t, bucket.Statement{
+			Effect:    bucket.Allow,
+			Principal: bucket.Only("alice", "bob"),
+			Actions:   []string{"s3:GetObject", "s3:PutObject"},
+			Resources: []string{"arn:aws:s3:::b", "arn:aws:s3:::b/*"},
+		}, back)
+
+		var empty bucket.Statement
+		require.NoError(t, empty.UnmarshalDagJSON(strings.NewReader(`{"action":{},"effect":"Deny","principal":{},"resource":{}}`)))
+		require.Equal(t, bucket.Statement{Effect: bucket.Deny, Principal: bucket.Principal{IDs: []string{}}, Actions: []string{}, Resources: []string{}}, empty)
+	})
+
+	t.Run("a decoded set holding * is everyone", func(t *testing.T) {
+		var back bucket.Statement
+		require.NoError(t, back.UnmarshalDagJSON(strings.NewReader(`{"action":{"s3:GetObject":{}},"effect":"Allow","principal":{"*":{},"alice":{}},"resource":{"arn:aws:s3:::b/*":{}}}`)))
+		require.Equal(t, bucket.Everyone(), back.Principal)
+	})
+
+	t.Run("CBOR round trip", func(t *testing.T) {
+		var buf bytes.Buffer
+		require.NoError(t, st.MarshalCBOR(&buf))
+		var back bucket.Statement
+		require.NoError(t, back.UnmarshalCBOR(bytes.NewReader(buf.Bytes())))
+		require.Equal(t, bucket.Only("alice", "bob"), back.Principal)
+		require.Equal(t, []string{"s3:GetObject", "s3:PutObject"}, back.Actions)
+	})
+}

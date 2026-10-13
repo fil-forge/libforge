@@ -1,6 +1,7 @@
 package bucket
 
 import (
+	"github.com/fil-forge/libforge/commands"
 	"github.com/fil-forge/libforge/commands/s3"
 	"github.com/fil-forge/ucantone/did"
 )
@@ -61,19 +62,31 @@ const (
 // Statement grants (Allow) or withholds (Deny) actions on the bucket's
 // resources to principals. Sid is an optional label the caller chooses.
 type Statement struct {
-	Sid       string    `cborgen:"sid,omitempty" dagjsongen:"sid,omitempty" json:"Sid,omitempty"`
-	Effect    Effect    `cborgen:"effect" dagjsongen:"effect" json:"Effect"`
-	Principal Principal `cborgen:"principal" dagjsongen:"principal" json:"Principal"`
-	Actions   []string  `cborgen:"action" dagjsongen:"action" json:"Action"`
-	Resources []string  `cborgen:"resource" dagjsongen:"resource" json:"Resource"`
+	Sid       string    `json:"Sid,omitempty"`
+	Effect    Effect    `json:"Effect"`
+	Principal Principal `json:"Principal"`
+	Actions   []string  `json:"Action"`
+	Resources []string  `json:"Resource"`
+}
+
+// StatementModel is the IPLD form of a [Statement]: its principal, action
+// and resource lists as sets, a set being a map from its members to
+// [commands.Unit], and a wildcard principal the single member [Wildcard].
+// [Statement] encodes as it in CBOR and DAG-JSON (see policy_model.go).
+type StatementModel struct {
+	Sid       string                   `cborgen:"sid,omitempty" dagjsongen:"sid,omitempty"`
+	Effect    Effect                   `cborgen:"effect" dagjsongen:"effect"`
+	Principal map[string]commands.Unit `cborgen:"principal" dagjsongen:"principal"`
+	Action    map[string]commands.Unit `cborgen:"action" dagjsongen:"action"`
+	Resource  map[string]commands.Unit `cborgen:"resource" dagjsongen:"resource"`
 }
 
 // Principal is the set of principals a statement applies to: every principal
 // of the tenant (All), or the listed ids. Its JSON encoding is the string "*"
 // or {"AWS": [user ARNs]} (see policy_json.go).
 type Principal struct {
-	All bool     `cborgen:"all" dagjsongen:"all"`
-	IDs []string `cborgen:"ids" dagjsongen:"ids"`
+	All bool
+	IDs []string
 }
 
 // InfoArguments are the arguments to `/s3/bucket/info`.
