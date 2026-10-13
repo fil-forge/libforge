@@ -12,7 +12,6 @@ import (
 
 func TestPolicyOKRoundTrip(t *testing.T) {
 	in := &bucket.PolicyOK{
-		ETag: `"bafy"`,
 		Policy: &bucket.BucketPolicy{
 			Version: "2012-10-17",
 			Statements: []bucket.Statement{
@@ -53,7 +52,7 @@ func TestPolicyOKRoundTrip(t *testing.T) {
 }
 
 func TestPolicyOKWithoutPolicy(t *testing.T) {
-	in := &bucket.PolicyOK{ETag: `"bafy"`}
+	in := &bucket.PolicyOK{}
 	var cb bytes.Buffer
 	require.NoError(t, in.MarshalCBOR(&cb))
 	var out bucket.PolicyOK

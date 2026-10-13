@@ -436,32 +436,6 @@ func (t *PolicyOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
-	written := false
-
-	// t.ETag (string) (string)
-	if len("etag") > 8192 {
-		return fmt.Errorf("string in field \"etag\" was too long")
-	}
-	if err := jw.WriteString(string("etag")); err != nil {
-		return fmt.Errorf("writing string for field \"etag\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if len(t.ETag) > 8192 {
-		return fmt.Errorf("string in field t.ETag was too long")
-	}
-	if err := jw.WriteString(string(t.ETag)); err != nil {
-		return fmt.Errorf("writing string for field t.ETag: %w", err)
-	}
-	written = true
-	if t.Policy != nil {
-		if written {
-			if err := jw.WriteComma(); err != nil {
-				return err
-			}
-		}
-	}
 
 	// t.Policy (bucket.BucketPolicy) (struct)
 	if t.Policy != nil {
@@ -517,20 +491,7 @@ func (t *PolicyOK) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.ETag (string) (string)
-			case "etag":
-				{
-					sval, err := jr.ReadString(8192)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("reading string for field t.ETag: string too long")
-						}
-						return fmt.Errorf("reading string for field t.ETag: %w", err)
-					}
-					t.ETag = string(sval)
-				}
-
-				// t.Policy (bucket.BucketPolicy) (struct)
+			// t.Policy (bucket.BucketPolicy) (struct)
 			case "policy":
 
 				{

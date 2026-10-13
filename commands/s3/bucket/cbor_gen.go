@@ -443,36 +443,13 @@ func (t *PolicyOK) MarshalCBOR(w io.Writer) error {
 	}
 
 	cw := cbg.NewCborWriter(w)
-	fieldCount := 2
+	fieldCount := 1
 
 	if t.Policy == nil {
 		fieldCount--
 	}
 
 	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
-		return err
-	}
-
-	// t.ETag (string) (string)
-	if len("etag") > 8192 {
-		return xerrors.Errorf("Value in field \"etag\" was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("etag"))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string("etag")); err != nil {
-		return err
-	}
-
-	if len(t.ETag) > 8192 {
-		return xerrors.Errorf("Value in field t.ETag was too long")
-	}
-
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.ETag))); err != nil {
-		return err
-	}
-	if _, err := cw.WriteString(string(t.ETag)); err != nil {
 		return err
 	}
 
@@ -538,18 +515,7 @@ func (t *PolicyOK) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.ETag (string) (string)
-		case "etag":
-
-			{
-				sval, err := cbg.ReadStringWithMax(cr, 8192)
-				if err != nil {
-					return err
-				}
-
-				t.ETag = string(sval)
-			}
-			// t.Policy (bucket.BucketPolicy) (struct)
+		// t.Policy (bucket.BucketPolicy) (struct)
 		case "policy":
 
 			{
