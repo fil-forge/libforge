@@ -38,9 +38,42 @@ type PolicyOK struct {
 	// ETag is the tag of the bucket's policy after the operation. It is empty
 	// after a DeleteBucketPolicy.
 	ETag string `cborgen:"etag" dagjsongen:"etag"`
-	// Policy is the stored policy document in its canonical JSON form. It is
-	// set only for a GetBucketPolicy.
-	Policy []byte `cborgen:"policy" dagjsongen:"policy"`
+	// Policy is the stored policy document. It is set only for a
+	// GetBucketPolicy.
+	Policy *BucketPolicy `cborgen:"policy,omitempty" dagjsongen:"policy,omitempty"`
+}
+
+// BucketPolicy is a bucket policy document. Its JSON encoding is the AWS
+// bucket policy document.
+type BucketPolicy struct {
+	Version    string      `cborgen:"version" dagjsongen:"version" json:"Version"`
+	Statements []Statement `cborgen:"statement" dagjsongen:"statement" json:"Statement"`
+}
+
+// Effect is whether a [Statement] grants or withholds its actions.
+type Effect string
+
+const (
+	Allow Effect = "Allow"
+	Deny  Effect = "Deny"
+)
+
+// Statement grants (Allow) or withholds (Deny) actions on the bucket's
+// resources to principals. Sid is an optional label the caller chooses.
+type Statement struct {
+	Sid       string    `cborgen:"sid,omitempty" dagjsongen:"sid,omitempty" json:"Sid,omitempty"`
+	Effect    Effect    `cborgen:"effect" dagjsongen:"effect" json:"Effect"`
+	Principal Principal `cborgen:"principal" dagjsongen:"principal" json:"Principal"`
+	Actions   []string  `cborgen:"action" dagjsongen:"action" json:"Action"`
+	Resources []string  `cborgen:"resource" dagjsongen:"resource" json:"Resource"`
+}
+
+// Principal is the set of principals a statement applies to: every principal
+// of the tenant (All), or the listed ids. Its JSON encoding is the string "*"
+// or {"AWS": [user ARNs]} (see policy_json.go).
+type Principal struct {
+	All bool     `cborgen:"all" dagjsongen:"all"`
+	IDs []string `cborgen:"ids" dagjsongen:"ids"`
 }
 
 // InfoArguments are the arguments to `/s3/bucket/info`.
