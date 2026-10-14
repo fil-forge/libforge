@@ -278,11 +278,11 @@ func (p *Principal) UnmarshalJSON(data []byte) error {
 // case, a malformed principal, or a document [WellFormed] rejects is an error
 // wrapping [ErrInvalidPolicy]. Action and Resource may each be a string or a
 // list; the lists are sets, so order and duplicates do not survive.
-func (p *BucketPolicy) UnmarshalJSON(data []byte) error {
+func (p *PolicyDocument) UnmarshalJSON(data []byte) error {
 	if err := strictKeys(data); err != nil {
 		return err
 	}
-	type plain BucketPolicy // the struct without this method
+	type plain PolicyDocument // the struct without this method
 	var d plain
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
@@ -292,10 +292,10 @@ func (p *BucketPolicy) UnmarshalJSON(data []byte) error {
 		}
 		return fmt.Errorf("decoding policy: %v: %w", err, ErrInvalidPolicy)
 	}
-	if err := WellFormed(BucketPolicy(d)); err != nil {
+	if err := WellFormed(PolicyDocument(d)); err != nil {
 		return err
 	}
-	*p = BucketPolicy(d)
+	*p = PolicyDocument(d)
 	return nil
 }
 
@@ -345,7 +345,7 @@ func strictKeys(data []byte) error {
 // names, covering what its actions act on: an object action needs the objects
 // ARN in its statement, a bucket action the bucket ARN, and "s3:*" both. It
 // returns an error wrapping [ErrInvalidPolicy] otherwise.
-func WellFormed(d BucketPolicy) error {
+func WellFormed(d PolicyDocument) error {
 	if d.Version != Version2012 && d.Version != Version2008 {
 		return fmt.Errorf("policy Version %q must be %q or %q: %w", d.Version, Version2012, Version2008, ErrInvalidPolicy)
 	}

@@ -29,7 +29,6 @@ func main() {
 		bucket.ListArguments{},
 		bucket.PolicyArguments{},
 		bucket.PolicyOK{},
-		bucket.BucketPolicy{},
 		bucket.Statement{},
 		bucket.InfoArguments{},
 		bucket.InfoOK{},

@@ -437,7 +437,7 @@ func (t *PolicyOK) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 
-	// t.Policy (bucket.BucketPolicy) (struct)
+	// t.Policy (bucket.PolicyDocument) (struct)
 	if t.Policy != nil {
 		if len("policy") > 8192 {
 			return fmt.Errorf("string in field \"policy\" was too long")
@@ -491,7 +491,7 @@ func (t *PolicyOK) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Policy (bucket.BucketPolicy) (struct)
+			// t.Policy (bucket.PolicyDocument) (struct)
 			case "policy":
 
 				{
@@ -504,7 +504,7 @@ func (t *PolicyOK) UnmarshalDagJSON(r io.Reader) (err error) {
 							return fmt.Errorf("reading null for field t.Policy: %w", err)
 						}
 					} else {
-						t.Policy = new(BucketPolicy)
+						t.Policy = new(PolicyDocument)
 						if err := t.Policy.UnmarshalDagJSON(jr); err != nil {
 							return fmt.Errorf("unmarshaling t.Policy pointer: %w", err)
 						}
@@ -527,186 +527,6 @@ func (t *PolicyOK) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			if i == 8192-1 {
 				return fmt.Errorf("map too large for PolicyOK")
-			}
-		}
-	}
-
-	return nil
-}
-func (t *BucketPolicy) MarshalDagJSON(w io.Writer) error {
-	jw := jsg.NewDagJsonWriter(w)
-	if t == nil {
-		err := jw.WriteNull()
-		return err
-	}
-	if err := jw.WriteObjectOpen(); err != nil {
-		return err
-	}
-	written := false
-
-	// t.Statements ([]bucket.Statement) (slice)
-	if len("statement") > 8192 {
-		return fmt.Errorf("string in field \"statement\" was too long")
-	}
-	if err := jw.WriteString(string("statement")); err != nil {
-		return fmt.Errorf("writing string for field \"statement\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if len(t.Statements) > 8192 {
-		return fmt.Errorf("slice value in field t.Statements was too long")
-	}
-
-	if err := jw.WriteArrayOpen(); err != nil {
-		return fmt.Errorf("writing array open for field t.Statements: %w", err)
-	}
-	for i, v := range t.Statements {
-		if i > 0 {
-			if err := jw.WriteComma(); err != nil {
-				return fmt.Errorf("writing comma for field t.Statements: %w", err)
-			}
-		}
-		if err := v.MarshalDagJSON(jw); err != nil {
-			return fmt.Errorf("marshaling field v: %w", err)
-		}
-	}
-	if err := jw.WriteArrayClose(); err != nil {
-		return fmt.Errorf("writing array close for field t.Statements: %w", err)
-	}
-
-	written = true
-	if written {
-		if err := jw.WriteComma(); err != nil {
-			return err
-		}
-	}
-
-	// t.Version (string) (string)
-	if len("version") > 8192 {
-		return fmt.Errorf("string in field \"version\" was too long")
-	}
-	if err := jw.WriteString(string("version")); err != nil {
-		return fmt.Errorf("writing string for field \"version\": %w", err)
-	}
-	if err := jw.WriteObjectColon(); err != nil {
-		return err
-	}
-	if len(t.Version) > 8192 {
-		return fmt.Errorf("string in field t.Version was too long")
-	}
-	if err := jw.WriteString(string(t.Version)); err != nil {
-		return fmt.Errorf("writing string for field t.Version: %w", err)
-	}
-	if err := jw.WriteObjectClose(); err != nil {
-		return err
-	}
-	return nil
-}
-func (t *BucketPolicy) UnmarshalDagJSON(r io.Reader) (err error) {
-	*t = BucketPolicy{}
-
-	jr := jsg.NewDagJsonReader(r)
-	defer func() {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-	}()
-	if err := jr.ReadObjectOpen(); err != nil {
-		return fmt.Errorf("reading object open for BucketPolicy: %w", err)
-	}
-	close, err := jr.PeekObjectClose()
-	if err != nil {
-		return fmt.Errorf("peeking object close for BucketPolicy: %w", err)
-	}
-	if close {
-		if err := jr.ReadObjectClose(); err != nil {
-			return fmt.Errorf("reading object close for BucketPolicy: %w", err)
-		}
-	} else {
-		for i := uint64(0); i < 8192; i++ {
-			name, err := jr.ReadString(8192)
-			if err != nil {
-				if errors.Is(err, jsg.ErrLimitExceeded) {
-					return fmt.Errorf("reading string for field BucketPolicy: string too large")
-				}
-				return fmt.Errorf("reading string for field BucketPolicy: %w", err)
-			}
-			if err := jr.ReadObjectColon(); err != nil {
-				return fmt.Errorf("reading object colon for field BucketPolicy: %w", err)
-			}
-			switch name {
-
-			// t.Statements ([]bucket.Statement) (slice)
-			case "statement":
-				{
-
-					if err := jr.ReadArrayOpen(); err != nil {
-						return fmt.Errorf("reading array open for field t.Statements: %w", err)
-					}
-
-					close, err := jr.PeekArrayClose()
-					if err != nil {
-						return fmt.Errorf("peeking array close for field t.Statements: %w", err)
-					}
-					if close {
-						if err := jr.ReadArrayClose(); err != nil {
-							return fmt.Errorf("reading array close for field t.Statements: %w", err)
-						}
-
-					} else {
-						for i := 0; i < 8192; i++ {
-							item := make([]Statement, 1)
-
-							if err := item[0].UnmarshalDagJSON(jr); err != nil {
-								return fmt.Errorf("unmarshaling item[0]: %w", err)
-							}
-
-							t.Statements = append(t.Statements, item[0])
-
-							close, err := jr.ReadArrayCloseOrComma()
-							if err != nil {
-								return fmt.Errorf("reading array close or comma for field t.Statements: %w", err)
-							}
-							if close {
-								break
-							}
-							if i == 8192-1 {
-								return fmt.Errorf("reading array for field t.Statements: slice too large")
-							}
-						}
-					}
-
-				}
-
-				// t.Version (string) (string)
-			case "version":
-				{
-					sval, err := jr.ReadString(8192)
-					if err != nil {
-						if errors.Is(err, jsg.ErrLimitExceeded) {
-							return fmt.Errorf("reading string for field t.Version: string too long")
-						}
-						return fmt.Errorf("reading string for field t.Version: %w", err)
-					}
-					t.Version = string(sval)
-				}
-			default:
-				// Field doesn't exist on this type, so ignore it
-				if err := jr.DiscardType(); err != nil {
-					return fmt.Errorf("ignoring field %s for BucketPolicy: %w", name, err)
-				}
-			}
-
-			close, err := jr.ReadObjectCloseOrComma()
-			if err != nil {
-				return fmt.Errorf("reading object close or comma for field BucketPolicy: %w", err)
-			}
-			if close {
-				break
-			}
-			if i == 8192-1 {
-				return fmt.Errorf("map too large for BucketPolicy")
 			}
 		}
 	}

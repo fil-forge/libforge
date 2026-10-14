@@ -40,15 +40,22 @@ type PolicyArguments struct {
 type PolicyOK struct {
 	// Policy is the stored policy document. It is set only for a
 	// GetBucketPolicy.
-	Policy *BucketPolicy `cborgen:"policy,omitempty" dagjsongen:"policy,omitempty"`
+	Policy *PolicyDocument `cborgen:"policy,omitempty" dagjsongen:"policy,omitempty"`
 }
 
-// BucketPolicy is a bucket policy document. Its JSON encoding is the AWS
-// bucket policy document.
-type BucketPolicy struct {
-	Version    string      `cborgen:"version" dagjsongen:"version" json:"Version"`
-	Statements []Statement `cborgen:"statement" dagjsongen:"statement" json:"Statement"`
+// PolicyDocument is a bucket policy document. Its JSON encoding is the AWS
+// bucket policy document; its CBOR and DAG-JSON encodings are hand-written
+// (policy_codec.go) so that the statements go out in canonical order.
+type PolicyDocument struct {
+	Version    string       `json:"Version"`
+	Statements StatementSet `json:"Statement"`
 }
+
+// StatementSet is a policy's statements: any order in memory, canonical on
+// the wire. Every encoding (JSON, DAG-JSON, CBOR) writes them deduplicated
+// and ordered by [StatementCID], so two documents that differ only in
+// statement order or duplicates encode the same.
+type StatementSet []Statement
 
 // Effect is whether a [Statement] grants or withholds its actions.
 type Effect string

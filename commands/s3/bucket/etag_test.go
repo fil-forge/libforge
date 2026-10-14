@@ -1,6 +1,9 @@
 package bucket_test
 
 import (
+	"bytes"
+	"encoding/hex"
+	"encoding/json"
 	"slices"
 	"strings"
 	"testing"
@@ -31,32 +34,83 @@ func deny(p bucket.Principal, actions ...string) bucket.Statement {
 	return bucket.Statement{Effect: bucket.Deny, Principal: p, Actions: bucket.NewStringSet(actions...), Resources: both()}
 }
 
-func doc(statements ...bucket.Statement) bucket.BucketPolicy {
-	return bucket.BucketPolicy{Version: bucket.Version2012, Statements: statements}
+func doc(statements ...bucket.Statement) bucket.PolicyDocument {
+	return bucket.PolicyDocument{Version: bucket.Version2012, Statements: statements}
 }
 
-func TestNormalize(t *testing.T) {
-	t.Run("orders statements by CID and drops duplicates", func(t *testing.T) {
-		a := doc(allow(only("alice"), "s3:GetObject"), deny(everyone, "s3:DeleteObject"))
-		b := doc(deny(everyone, "s3:DeleteObject"), allow(only("alice"), "s3:GetObject"), deny(everyone, "s3:DeleteObject"))
-		require.Equal(t, bucket.Normalize(a), bucket.Normalize(b))
-		require.Len(t, bucket.Normalize(b).Statements, 2)
-		keys := []string{bucket.StatementCID(a.Statements[0]).String(), bucket.StatementCID(a.Statements[1]).String()}
-		require.True(t, slices.IsSorted(keys) || !slices.IsSorted(keys)) // either order is fine in a; the output is sorted:
-		n := bucket.Normalize(b)
-		require.True(t, bucket.StatementCID(n.Statements[0]).String() < bucket.StatementCID(n.Statements[1]).String())
+func TestStatementSet(t *testing.T) {
+	a := doc(allow(only("alice"), "s3:GetObject"), deny(everyone, "s3:DeleteObject"))
+	b := doc(deny(everyone, "s3:DeleteObject"), allow(only("alice"), "s3:GetObject"), deny(everyone, "s3:DeleteObject"))
+
+	t.Run("every encoding orders statements by CID and drops duplicates", func(t *testing.T) {
+		ja, err := json.Marshal(a)
+		require.NoError(t, err)
+		jb, err := json.Marshal(b)
+		require.NoError(t, err)
+		require.Equal(t, string(ja), string(jb))
+		require.Equal(t, 2, strings.Count(string(jb), `"Effect"`))
+
+		var da, db, ca, cb bytes.Buffer
+		require.NoError(t, a.MarshalDagJSON(&da))
+		require.NoError(t, b.MarshalDagJSON(&db))
+		require.Equal(t, da.String(), db.String())
+		require.NoError(t, a.MarshalCBOR(&ca))
+		require.NoError(t, b.MarshalCBOR(&cb))
+		require.Equal(t, ca.Bytes(), cb.Bytes())
+
+		// The in-memory order is the caller's.
+		require.Equal(t, bucket.Deny, b.Statements[0].Effect)
+		require.Len(t, b.Statements, 3)
 	})
 
-	t.Run("keeps the version and does not alias the input", func(t *testing.T) {
+	t.Run("decoding keeps the wire order, which is canonical", func(t *testing.T) {
+		var cb bytes.Buffer
+		require.NoError(t, b.MarshalCBOR(&cb))
+		var back bucket.PolicyDocument
+		require.NoError(t, back.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
+		require.Len(t, back.Statements, 2)
+		require.True(t, bucket.StatementCID(back.Statements[0]).String() < bucket.StatementCID(back.Statements[1]).String())
+		require.Equal(t, a.Version, back.Version)
+
+		var jb bytes.Buffer
+		require.NoError(t, b.MarshalDagJSON(&jb))
+		var backJSON bucket.PolicyDocument
+		require.NoError(t, backJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())))
+		require.Equal(t, back, backJSON)
+	})
+
+	t.Run("nil and empty encode the same", func(t *testing.T) {
+		var n1, n2 bytes.Buffer
+		require.NoError(t, (&bucket.PolicyDocument{}).MarshalDagJSON(&n1))
+		require.NoError(t, (&bucket.PolicyDocument{Statements: bucket.StatementSet{}}).MarshalDagJSON(&n2))
+		require.Equal(t, `{"statement":[],"version":""}`, n1.String())
+		require.Equal(t, n1.String(), n2.String())
+		raw, err := json.Marshal(bucket.PolicyDocument{})
+		require.NoError(t, err)
+		require.Equal(t, `{"Version":"","Statement":[]}`, string(raw))
+	})
+
+	t.Run("CBOR and DAG-JSON match the generated layout", func(t *testing.T) {
+		// Captured from the generated encoders before the codec was hand-written:
+		// CBOR keys shortest first (version, statement), DAG-JSON keys sorted.
+		const cborHex = "a26776657273696f6e6a323031322d31302d31376973746174656d656e7481a466616374696f6ea16c73333a4765744f626a656374a06665666665637465416c6c6f77687265736f75726365a27361726e3a6177733a73333a3a3a70686f746f73a07561726e3a6177733a73333a3a3a70686f746f732f2aa0697072696e636970616ca165616c696365a0"
+		const okCBORHex = "a166706f6c696379" + cborHex
 		d := doc(allow(only("alice"), "s3:GetObject"))
-		n := bucket.Normalize(d)
-		require.Equal(t, bucket.Version2012, n.Version)
-		n.Statements[0] = deny(everyone, "s3:GetObject")
-		require.Equal(t, bucket.Allow, d.Statements[0].Effect)
-	})
+		var cb bytes.Buffer
+		require.NoError(t, d.MarshalCBOR(&cb))
+		require.Equal(t, cborHex, hex.EncodeToString(cb.Bytes()))
+		var back bucket.PolicyDocument
+		require.NoError(t, back.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
+		require.Equal(t, d, back)
 
-	t.Run("nil and empty statement lists normalize the same", func(t *testing.T) {
-		require.Equal(t, bucket.Normalize(bucket.BucketPolicy{}), bucket.Normalize(bucket.BucketPolicy{Statements: []bucket.Statement{}}))
+		ok := bucket.PolicyOK{Policy: &d}
+		cb.Reset()
+		require.NoError(t, ok.MarshalCBOR(&cb))
+		require.Equal(t, okCBORHex, hex.EncodeToString(cb.Bytes()))
+
+		var jb bytes.Buffer
+		require.NoError(t, d.MarshalDagJSON(&jb))
+		require.Equal(t, `{"statement":[{"action":{"s3:GetObject":{}},"effect":"Allow","principal":{"alice":{}},"resource":{"arn:aws:s3:::photos":{},"arn:aws:s3:::photos/*":{}}}],"version":"2012-10-17"}`, jb.String())
 	})
 }
 
@@ -71,7 +125,6 @@ func TestETag(t *testing.T) {
 		require.EqualValues(t, cid.DagJSON, c.Type())
 		statement := `{"action":{"s3:GetObject":{}},"effect":"Allow","principal":{"alice":{}},"resource":{"arn:aws:s3:::photos":{},"arn:aws:s3:::photos/*":{}}}`
 		require.Equal(t, dagJSONCID(t, dagJSONPolicy(t, "2012-10-17", statement)), c)
-		require.Equal(t, bucket.ETag(bucket.Normalize(d)), tag)
 	})
 
 	t.Run("encodes a sid, a wildcard principal and several statements", func(t *testing.T) {
@@ -119,10 +172,10 @@ func TestETag(t *testing.T) {
 		// from hand-assembled DAG-JSON bytes:
 		// {"statement":[],"version":""} and
 		// {"statement":[<the statement above>],"version":"2012-10-17"}.
-		require.Equal(t, `"baguqeerapfhqlt74verbk25awofci4fsi4dewjbihdbnexfwphaywy4srd2q"`, bucket.ETag(bucket.BucketPolicy{}))
+		require.Equal(t, `"baguqeerapfhqlt74verbk25awofci4fsi4dewjbihdbnexfwphaywy4srd2q"`, bucket.ETag(bucket.PolicyDocument{}))
 		require.Equal(t, `"baguqeeramb7bdvrj6whijwstk5ktmw3z3wrwg64cf4xfj6qb2xxgsxsj7emq"`, bucket.ETag(d))
-		require.Equal(t, bucket.ETag(bucket.BucketPolicy{}), bucket.ETag(bucket.BucketPolicy{Statements: []bucket.Statement{}}))
-		require.Equal(t, `"`+dagJSONCID(t, `{"statement":[],"version":""}`).String()+`"`, bucket.ETag(bucket.BucketPolicy{}))
+		require.Equal(t, bucket.ETag(bucket.PolicyDocument{}), bucket.ETag(bucket.PolicyDocument{Statements: []bucket.Statement{}}))
+		require.Equal(t, `"`+dagJSONCID(t, `{"statement":[],"version":""}`).String()+`"`, bucket.ETag(bucket.PolicyDocument{}))
 	})
 }
 

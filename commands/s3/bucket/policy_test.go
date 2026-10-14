@@ -12,7 +12,7 @@ import (
 
 func TestPolicyOKRoundTrip(t *testing.T) {
 	in := &bucket.PolicyOK{
-		Policy: &bucket.BucketPolicy{
+		Policy: &bucket.PolicyDocument{
 			Version: "2012-10-17",
 			Statements: []bucket.Statement{
 				{
@@ -32,17 +32,20 @@ func TestPolicyOKRoundTrip(t *testing.T) {
 		},
 	}
 
+	// The wire carries the statements in canonical order, so a round trip
+	// keeps the set, not the order the fixture lists it in.
 	var cb bytes.Buffer
 	require.NoError(t, in.MarshalCBOR(&cb))
 	var out bucket.PolicyOK
 	require.NoError(t, out.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
-	require.Equal(t, *in, out)
+	require.Equal(t, in.Policy.Version, out.Policy.Version)
+	require.ElementsMatch(t, in.Policy.Statements, out.Policy.Statements)
 
 	var jb bytes.Buffer
 	require.NoError(t, in.MarshalDagJSON(&jb))
 	var outJSON bucket.PolicyOK
 	require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())))
-	require.Equal(t, *in, outJSON)
+	require.Equal(t, out, outJSON)
 
 	aws, err := json.Marshal(out.Policy)
 	require.NoError(t, err)
@@ -141,12 +144,12 @@ const res = `"Resource": ["arn:aws:s3:::photos", "arn:aws:s3:::photos/*"]`
 
 func TestBucketPolicyUnmarshalJSON(t *testing.T) {
 	t.Run("decodes the documented shape, keeping its order", func(t *testing.T) {
-		var d bucket.BucketPolicy
+		var d bucket.PolicyDocument
 		require.NoError(t, json.Unmarshal([]byte(policyJSON(
 			`{"Sid": "owners", "Effect": "Allow", "Principal": {"AWS": ["arn:aws:iam:::user/bob", "arn:aws:iam:::user/alice"]}, "Action": ["s3:ListBucket", "s3:GetObject"], `+res+`}`,
 			`{"Effect": "Deny", "Principal": "*", "Action": "s3:PutObjectRetention", "Resource": "arn:aws:s3:::photos/*"}`,
 		)), &d))
-		require.Equal(t, bucket.BucketPolicy{Version: bucket.Version2012, Statements: []bucket.Statement{
+		require.Equal(t, bucket.PolicyDocument{Version: bucket.Version2012, Statements: []bucket.Statement{
 			{Sid: "owners", Effect: bucket.Allow, Principal: bucket.Only("bob", "alice"), Actions: bucket.NewStringSet("s3:ListBucket", "s3:GetObject"), Resources: bucket.NewStringSet(bucket.BucketARN("photos"), bucket.ObjectsARN("photos"))},
 			{Effect: bucket.Deny, Principal: bucket.Everyone(), Actions: bucket.NewStringSet("s3:PutObjectRetention"), Resources: bucket.NewStringSet(bucket.ObjectsARN("photos"))},
 		}}, d)
@@ -215,7 +218,7 @@ func TestBucketPolicyUnmarshalJSON(t *testing.T) {
 	}
 	for _, tt := range rejects {
 		t.Run("rejects "+tt.name, func(t *testing.T) {
-			var d bucket.BucketPolicy
+			var d bucket.PolicyDocument
 			err := json.Unmarshal([]byte(tt.body), &d)
 			require.ErrorIs(t, err, bucket.ErrInvalidPolicy)
 			require.ErrorContains(t, err, tt.want)
