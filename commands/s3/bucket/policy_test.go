@@ -49,9 +49,10 @@ func TestPolicyOKRoundTrip(t *testing.T) {
 
 	aws, err := json.Marshal(out.Policy)
 	require.NoError(t, err)
+	// Statements come out in CID order: the deny's sorts before the readers'.
 	require.JSONEq(t, `{"Version":"2012-10-17","Statement":[`+
-		`{"Sid":"readers","Effect":"Allow","Principal":{"AWS":["arn:aws:iam:::user/alice","arn:aws:iam:::user/bob"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::b/*"]},`+
-		`{"Effect":"Deny","Principal":"*","Action":["s3:DeleteObject"],"Resource":["arn:aws:s3:::b/*"]}]}`, string(aws))
+		`{"Effect":"Deny","Principal":"*","Action":["s3:DeleteObject"],"Resource":["arn:aws:s3:::b/*"]},`+
+		`{"Sid":"readers","Effect":"Allow","Principal":{"AWS":["arn:aws:iam:::user/alice","arn:aws:iam:::user/bob"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::b/*"]}]}`, string(aws))
 }
 
 func TestPolicyOKWithoutPolicy(t *testing.T) {
