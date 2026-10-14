@@ -1,6 +1,7 @@
 package bucket
 
 import (
+	"github.com/fil-forge/libforge/commands"
 	"github.com/fil-forge/libforge/commands/s3"
 	"github.com/fil-forge/ucantone/did"
 )
@@ -22,6 +23,70 @@ type ListArguments struct {
 	// Request is the AWS S3 ListBuckets request.
 	Request s3.Request `cborgen:"request" dagjsongen:"request"`
 }
+
+// PolicyArguments are the arguments to `/s3/bucket/policy`.
+type PolicyArguments struct {
+	// Request is the AWS S3 GetBucketPolicy, PutBucketPolicy or
+	// DeleteBucketPolicy request.
+	Request s3.Request `cborgen:"request" dagjsongen:"request"`
+	// Body is the policy document a PutBucketPolicy request carries. It is
+	// empty for the other two operations.
+	Body []byte `cborgen:"body" dagjsongen:"body"`
+}
+
+// PolicyOK is the successful result of `/s3/bucket/policy`. The policy's
+// entity tag is not carried: both sides compute it from the document with
+// [ETag].
+type PolicyOK struct {
+	// Policy is the stored policy document. It is set only for a
+	// GetBucketPolicy.
+	Policy *PolicyDocument `cborgen:"policy,omitempty" dagjsongen:"policy,omitempty"`
+}
+
+// PolicyDocument is a bucket policy document. Its JSON encoding is the AWS
+// bucket policy document; its CBOR and DAG-JSON encodings are hand-written
+// (policy_codec.go) so that the statements go out in canonical order.
+type PolicyDocument struct {
+	Version    string       `json:"Version"`
+	Statements StatementSet `json:"Statement"`
+}
+
+// StatementSet is a policy's statements: any order in memory, canonical on
+// the wire. Every encoding (JSON, DAG-JSON, CBOR) writes them deduplicated
+// and ordered by [StatementCID], so two documents that differ only in
+// statement order or duplicates encode the same.
+type StatementSet []Statement
+
+// Effect is whether a [Statement] grants or withholds its actions.
+type Effect string
+
+const (
+	Allow Effect = "Allow"
+	Deny  Effect = "Deny"
+)
+
+// Statement grants (Allow) or withholds (Deny) actions on the bucket's
+// resources to principals. Sid is an optional label the caller chooses. On
+// the wire (CBOR and DAG-JSON) the three sets are maps from member to
+// [commands.Unit]; in the AWS JSON document they are lists (see
+// policy_json.go).
+type Statement struct {
+	Sid       string    `cborgen:"sid,omitempty" dagjsongen:"sid,omitempty" json:"Sid,omitempty"`
+	Effect    Effect    `cborgen:"effect" dagjsongen:"effect" json:"Effect"`
+	Principal Principal `cborgen:"principal" dagjsongen:"principal" json:"Principal"`
+	Actions   StringSet `cborgen:"action" dagjsongen:"action" json:"Action"`
+	Resources StringSet `cborgen:"resource" dagjsongen:"resource" json:"Resource"`
+}
+
+// StringSet is a set of strings: a map from each member to [commands.Unit],
+// which the IPLD codecs write with sorted keys. Its JSON form is the sorted
+// list of its members.
+type StringSet map[string]commands.Unit
+
+// Principal is the set of principal ids a statement applies to, or the
+// single member [Wildcard] for every principal of the tenant. Its JSON
+// encoding is the string "*" or {"AWS": [user ARNs]} (see policy_json.go).
+type Principal StringSet
 
 // InfoArguments are the arguments to `/s3/bucket/info`.
 type InfoArguments struct {
