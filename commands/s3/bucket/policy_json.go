@@ -45,15 +45,26 @@ const MaxSetSize = 4096
 // carry, sorted for [PolicyAction]'s binary search. The rest of the S3
 // permission vocabulary stays out on purpose: a key holding s3:CreateBucket
 // or s3:DeleteBucket acts outside the policy that granted it, a key holding a
-// policy operation could rewrite the policy that granted it, and every
-// principal holds s3:ListAllMyBuckets.
+// policy operation could rewrite the policy that granted it, a key that
+// rewrites the bucket's configuration (versioning, default object lock,
+// tags, encryption) changes it for every principal, and every principal
+// holds s3:ListAllMyBuckets. Reading that configuration is a policy action.
 var policyActions = sorted([]string{
 	"s3:AbortMultipartUpload",
 	"s3:DeleteObject",
+	"s3:DeleteObjectTagging",
 	"s3:DeleteObjectVersion",
+	"s3:GetBucketAcl",
+	"s3:GetBucketCORS",
+	"s3:GetBucketLocation",
+	"s3:GetBucketObjectLockConfiguration",
+	"s3:GetBucketTagging",
+	"s3:GetBucketVersioning",
 	"s3:GetObject",
+	"s3:GetObjectAttributes",
 	"s3:GetObjectLegalHold",
 	"s3:GetObjectRetention",
+	"s3:GetObjectTagging",
 	"s3:GetObjectVersion",
 	"s3:ListBucket",
 	"s3:ListBucketMultipartUploads",
@@ -62,6 +73,7 @@ var policyActions = sorted([]string{
 	"s3:PutObject",
 	"s3:PutObjectLegalHold",
 	"s3:PutObjectRetention",
+	"s3:PutObjectTagging",
 })
 
 func sorted(s []string) []string {
@@ -73,6 +85,12 @@ func sorted(s []string) []string {
 // its objects; every other policy action is an object action. The split is
 // versitygw's, which evaluates the policy against these ARNs.
 var bucketActions = []string{
+	"s3:GetBucketAcl",
+	"s3:GetBucketCORS",
+	"s3:GetBucketLocation",
+	"s3:GetBucketObjectLockConfiguration",
+	"s3:GetBucketTagging",
+	"s3:GetBucketVersioning",
 	"s3:ListBucket",
 	"s3:ListBucketMultipartUploads",
 	"s3:ListBucketVersions",

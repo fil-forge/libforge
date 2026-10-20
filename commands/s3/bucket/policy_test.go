@@ -214,6 +214,9 @@ func TestBucketPolicyUnmarshalJSON(t *testing.T) {
 		), `statement 1: Resource "arn:aws:s3:::videos" names bucket "videos"`},
 		{"an object action on the bucket ARN", policyJSON(`{"Effect": "Allow", "Principal": "*", "Action": ["s3:GetObject"], "Resource": "arn:aws:s3:::photos"}`), `Action "s3:GetObject" needs Resource "arn:aws:s3:::photos/*"`},
 		{"a bucket action on the objects ARN", policyJSON(`{"Effect": "Allow", "Principal": "*", "Action": ["s3:ListBucket"], "Resource": "arn:aws:s3:::photos/*"}`), `Action "s3:ListBucket" needs Resource "arn:aws:s3:::photos"`},
+		{"a bucket configuration read on the objects ARN", policyJSON(`{"Effect": "Allow", "Principal": "*", "Action": ["s3:GetBucketVersioning"], "Resource": "arn:aws:s3:::photos/*"}`), `Action "s3:GetBucketVersioning" needs Resource "arn:aws:s3:::photos"`},
+		{"an object tagging action on the bucket ARN", policyJSON(`{"Effect": "Allow", "Principal": "*", "Action": ["s3:PutObjectTagging"], "Resource": "arn:aws:s3:::photos"}`), `Action "s3:PutObjectTagging" needs Resource "arn:aws:s3:::photos/*"`},
+		{"a bucket configuration write", policyJSON(`{"Effect": "Allow", "Principal": "*", "Action": ["s3:PutBucketVersioning"], "Resource": "arn:aws:s3:::photos"}`), `s3:PutBucketVersioning`},
 		{"the action wildcard on the objects ARN alone", policyJSON(`{"Effect": "Allow", "Principal": "*", "Action": "s3:*", "Resource": "arn:aws:s3:::photos/*"}`), `Action "s3:*" needs Resource "arn:aws:s3:::photos"`},
 		{"the action wildcard on the bucket ARN alone", policyJSON(`{"Effect": "Allow", "Principal": "*", "Action": "s3:*", "Resource": "arn:aws:s3:::photos"}`), `Action "s3:*" needs Resource "arn:aws:s3:::photos/*"`},
 	}
@@ -233,7 +236,8 @@ func TestPolicyActions(t *testing.T) {
 	for _, a := range actions {
 		require.True(t, bucket.PolicyAction(a), a)
 	}
-	for _, a := range []string{bucket.PolicyWildcard, "*", "s3:CreateBucket", "s3:DeleteBucket", "s3:ListAllMyBuckets", "s3:PutBucketPolicy"} {
+	for _, a := range []string{bucket.PolicyWildcard, "*", "s3:CreateBucket", "s3:DeleteBucket", "s3:ListAllMyBuckets", "s3:PutBucketPolicy",
+		"s3:PutBucketVersioning", "s3:PutBucketObjectLockConfiguration", "s3:PutBucketTagging"} {
 		require.False(t, bucket.PolicyAction(a), a)
 	}
 }
