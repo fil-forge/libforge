@@ -2,6 +2,7 @@ package s3_test
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -90,6 +91,33 @@ func TestRequestBodyRoundTrip(t *testing.T) {
 	var outJSON s3.Request
 	require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())))
 	require.Equal(t, *in, outJSON)
+
+	// The limit holds the largest valid DeleteObjects document, which XML
+	// escaping takes well past the codecs' usual 2 MiB: a thousand distinct
+	// keys of 1021 ampersands and a three-digit suffix is over 5 MB.
+	var big strings.Builder
+	big.WriteString("<Delete>")
+	for i := range 1000 {
+		fmt.Fprintf(&big, "<Object><Key>%s%03d</Key><VersionId>v</VersionId></Object>", strings.Repeat("&amp;", 1021), i)
+	}
+	big.WriteString("</Delete>")
+	require.Greater(t, big.Len(), 5_000_000)
+	in.Body = []byte(big.String())
+	cb.Reset()
+	require.NoError(t, in.MarshalCBOR(&cb))
+	require.NoError(t, outCBOR.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
+	require.Equal(t, in.Body, outCBOR.Body)
+	jb.Reset()
+	require.NoError(t, in.MarshalDagJSON(&jb))
+	require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())))
+	require.Equal(t, in.Body, outJSON.Body)
+
+	// Over the limit, both encoders refuse.
+	in.Body = make([]byte, 8<<20+1)
+	cb.Reset()
+	require.Error(t, in.MarshalCBOR(&cb))
+	jb.Reset()
+	require.Error(t, in.MarshalDagJSON(&jb))
 
 	// Without a body neither encoding names the field.
 	bare := &s3.Request{Method: "GET", Headers: map[string]string{"host": "h"}, URL: "https://h/b/k"}

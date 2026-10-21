@@ -74,7 +74,7 @@ func (t *Request) MarshalCBOR(w io.Writer) error {
 			return err
 		}
 
-		if len(t.Body) > 2097152 {
+		if len(t.Body) > 8388608 {
 			return xerrors.Errorf("Byte array in field t.Body was too long")
 		}
 
@@ -227,7 +227,7 @@ func (t *Request) UnmarshalCBOR(r io.Reader) (err error) {
 				return err
 			}
 
-			if extra > 2097152 {
+			if extra > 8388608 {
 				return fmt.Errorf("t.Body: byte array too large (%d)", extra)
 			}
 			if maj != cbg.MajByteString {

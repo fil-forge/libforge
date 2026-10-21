@@ -31,8 +31,11 @@ type Request struct {
 	// Body is the request body, carried only for the operations whose body
 	// decides what the request needs authorized (Hilt names them); every
 	// other request is sent without one. It is bound to the signature by
-	// the authorizer before it is read.
-	Body []byte `cborgen:"body,omitempty" dagjsongen:"body,omitempty"`
+	// the authorizer before it is read. The limit holds the largest valid
+	// DeleteObjects document: a thousand entries of a kilobyte key expanded
+	// up to sixfold by XML escaping, a version id as long, and the
+	// conditional fields, about 7.3 MB.
+	Body []byte `cborgen:"body,omitempty,maxlen=8388608" dagjsongen:"body,omitempty,maxlen=8388608"`
 }
 
 // VerificationKey is a SigV4/SigV4a derived signing key returned by Hilt so

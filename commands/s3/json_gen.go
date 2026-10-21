@@ -42,7 +42,7 @@ func (t *Request) MarshalDagJSON(w io.Writer) error {
 		if err := jw.WriteObjectColon(); err != nil {
 			return err
 		}
-		if len(t.Body) > 2097152 {
+		if len(t.Body) > 8388608 {
 			return fmt.Errorf("byte array in field t.Body was too long")
 		}
 
@@ -200,7 +200,7 @@ func (t *Request) UnmarshalDagJSON(r io.Reader) (err error) {
 			case "body":
 
 				{
-					bval, err := jr.ReadBytes(2097152)
+					bval, err := jr.ReadBytes(8388608)
 					if err != nil {
 						if errors.Is(err, jsg.ErrLimitExceeded) {
 							return fmt.Errorf("reading bytes for field t.Body: byte array too large")
