@@ -27,8 +27,13 @@ func (t *Request) MarshalCBOR(w io.Writer) error {
 	}
 
 	cw := cbg.NewCborWriter(w)
+	fieldCount := 4
 
-	if _, err := cw.Write([]byte{163}); err != nil {
+	if t.Body == nil {
+		fieldCount--
+	}
+
+	if _, err := cw.Write(cbg.CborEncodeMajorType(cbg.MajMap, uint64(fieldCount))); err != nil {
 		return err
 	}
 
@@ -53,6 +58,34 @@ func (t *Request) MarshalCBOR(w io.Writer) error {
 	}
 	if _, err := cw.WriteString(string(t.URL)); err != nil {
 		return err
+	}
+
+	// t.Body ([]uint8) (slice)
+	if t.Body != nil {
+
+		if len("body") > 8192 {
+			return xerrors.Errorf("Value in field \"body\" was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("body"))); err != nil {
+			return err
+		}
+		if _, err := cw.WriteString(string("body")); err != nil {
+			return err
+		}
+
+		if len(t.Body) > 2097152 {
+			return xerrors.Errorf("Byte array in field t.Body was too long")
+		}
+
+		if err := cw.WriteMajorTypeHeader(cbg.MajByteString, uint64(len(t.Body))); err != nil {
+			return err
+		}
+
+		if _, err := cw.Write(t.Body); err != nil {
+			return err
+		}
+
 	}
 
 	// t.Method (string) (string)
@@ -186,6 +219,29 @@ func (t *Request) UnmarshalCBOR(r io.Reader) (err error) {
 
 				t.URL = string(sval)
 			}
+			// t.Body ([]uint8) (slice)
+		case "body":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 2097152 {
+				return fmt.Errorf("t.Body: byte array too large (%d)", extra)
+			}
+			if maj != cbg.MajByteString {
+				return fmt.Errorf("expected byte array")
+			}
+
+			if extra > 0 {
+				t.Body = make([]uint8, extra)
+			}
+
+			if _, err := io.ReadFull(cr, t.Body); err != nil {
+				return err
+			}
+
 			// t.Method (string) (string)
 		case "method":
 

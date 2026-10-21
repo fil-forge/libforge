@@ -68,6 +68,42 @@ func TestRequestRoundTrip(t *testing.T) {
 	}
 }
 
+// TestRequestBodyRoundTrip covers the optional body: carried when set, in
+// both codecs, and absent from the encoding when not, so a request without
+// one encodes exactly as it did before the field existed.
+func TestRequestBodyRoundTrip(t *testing.T) {
+	in := &s3.Request{
+		Method:  "POST",
+		Headers: map[string]string{"host": "region.s3.fil.one"},
+		URL:     "https://region.s3.fil.one/bucket?delete",
+		Body:    []byte("<Delete><Object><Key>k</Key><VersionId>v</VersionId></Object></Delete>"),
+	}
+
+	var cb bytes.Buffer
+	require.NoError(t, in.MarshalCBOR(&cb))
+	var outCBOR s3.Request
+	require.NoError(t, outCBOR.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
+	require.Equal(t, *in, outCBOR)
+
+	var jb bytes.Buffer
+	require.NoError(t, in.MarshalDagJSON(&jb))
+	var outJSON s3.Request
+	require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())))
+	require.Equal(t, *in, outJSON)
+
+	// Without a body neither encoding names the field.
+	bare := &s3.Request{Method: "GET", Headers: map[string]string{"host": "h"}, URL: "https://h/b/k"}
+	cb.Reset()
+	require.NoError(t, bare.MarshalCBOR(&cb))
+	require.NotContains(t, cb.String(), "body")
+	jb.Reset()
+	require.NoError(t, bare.MarshalDagJSON(&jb))
+	require.NotContains(t, jb.String(), "body")
+	var outBare s3.Request
+	require.NoError(t, outBare.UnmarshalCBOR(bytes.NewReader(cb.Bytes())))
+	require.Nil(t, outBare.Body)
+}
+
 func TestAuthorizeOKRoundTrip(t *testing.T) {
 	access := did.MustParse("did:key:z6MkjFRxLLGdBqQSLkZbVnuwUFiomK8eGBkPtim9ETvP7vec")
 	delCid := mustCid(t, "bafyreienos3cw7hcga5vwani3pberioe2qscnz5jk2um5jajo4v7bwmvvm")

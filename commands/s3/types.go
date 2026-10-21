@@ -28,6 +28,11 @@ type Request struct {
 	Method  string            `cborgen:"method" dagjsongen:"method"`
 	Headers map[string]string `cborgen:"headers" dagjsongen:"headers"`
 	URL     string            `cborgen:"url" dagjsongen:"url"`
+	// Body is the request body, carried only for the operations whose body
+	// decides what the request needs authorized (Hilt names them); every
+	// other request is sent without one. It is bound to the signature by
+	// the authorizer before it is read.
+	Body []byte `cborgen:"body,omitempty" dagjsongen:"body,omitempty"`
 }
 
 // VerificationKey is a SigV4/SigV4a derived signing key returned by Hilt so
