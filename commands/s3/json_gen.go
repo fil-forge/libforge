@@ -31,6 +31,33 @@ func (t *Request) MarshalDagJSON(w io.Writer) error {
 	}
 	written := false
 
+	// t.Body ([]uint8) (slice)
+	if t.Body != nil {
+		if len("body") > 8192 {
+			return fmt.Errorf("string in field \"body\" was too long")
+		}
+		if err := jw.WriteString(string("body")); err != nil {
+			return fmt.Errorf("writing string for field \"body\": %w", err)
+		}
+		if err := jw.WriteObjectColon(); err != nil {
+			return err
+		}
+		if len(t.Body) > 8388608 {
+			return fmt.Errorf("byte array in field t.Body was too long")
+		}
+
+		if err := jw.WriteBytes(t.Body); err != nil {
+			return fmt.Errorf("writing bytes for field t.Body: %w", err)
+		}
+
+		written = true
+	}
+	if written {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
 	// t.Headers (map[string]string) (map)
 	if len("headers") > 8192 {
 		return fmt.Errorf("string in field \"headers\" was too long")
@@ -169,7 +196,23 @@ func (t *Request) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Headers (map[string]string) (map)
+			// t.Body ([]uint8) (slice)
+			case "body":
+
+				{
+					bval, err := jr.ReadBytes(8388608)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading bytes for field t.Body: byte array too large")
+						}
+						return fmt.Errorf("reading bytes for field t.Body: %w", err)
+					}
+					if len(bval) > 0 {
+						t.Body = []uint8(bval)
+					}
+				}
+
+				// t.Headers (map[string]string) (map)
 			case "headers":
 				if err := jr.ReadObjectOpen(); err != nil {
 					return fmt.Errorf("reading object open for field t.Headers: %w", err)
