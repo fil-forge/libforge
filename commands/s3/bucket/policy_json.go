@@ -51,6 +51,7 @@ const MaxSetSize = 4096
 // holds s3:ListAllMyBuckets. Reading that configuration is a policy action.
 var policyActions = sorted([]string{
 	"s3:AbortMultipartUpload",
+	"s3:BypassGovernanceRetention",
 	"s3:DeleteObject",
 	"s3:DeleteObjectTagging",
 	"s3:DeleteObjectVersion",
