@@ -34,9 +34,7 @@ type PolicyArguments struct {
 	Body []byte `cborgen:"body" dagjsongen:"body"`
 }
 
-// PolicyOK is the successful result of `/s3/bucket/policy`. The policy's
-// entity tag is not carried: both sides compute it from the document with
-// [ETag].
+// PolicyOK is the successful result of `/s3/bucket/policy`.
 type PolicyOK struct {
 	// Policy is the stored policy document. It is set only for a
 	// GetBucketPolicy.
