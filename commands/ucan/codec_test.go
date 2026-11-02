@@ -77,3 +77,16 @@ func TestConcludeArgumentsEmpty(t *testing.T) {
 	require.NoError(t, outJSON.UnmarshalDagJSON(bytes.NewReader(jb.Bytes())))
 	require.Empty(t, outJSON.Receipts)
 }
+
+// TestRevokeBatchArguments pins the wire shape of a batch holding a direct
+// revocation and one proven by a witness path.
+func TestRevokeBatchArguments(t *testing.T) {
+	in := &ucancmds.RevokeBatchArguments{Revocations: []ucancmds.RevokeArguments{
+		{Revoke: rcptA},
+		{Revoke: rcptB, Path: []cid.Cid{rcptA, rcptB}},
+	}}
+	require.Equal(t,
+		`{"revocations":[{"path":[],"revoke":{"/":"`+rcptA.String()+`"}},`+
+			`{"path":[{"/":"`+rcptA.String()+`"},{"/":"`+rcptB.String()+`"}],"revoke":{"/":"`+rcptB.String()+`"}}]}`,
+		roundTrip(t, in))
+}

@@ -11,3 +11,7 @@ import (
 type RevokeOK = commands.Unit
 
 var Revoke = binding.Bind[*RevokeArguments, *RevokeOK](command.MustParse("/ucan/revoke"))
+
+type RevokeBatchOK = commands.Unit
+
+var RevokeBatch = binding.Bind[*RevokeBatchArguments, *RevokeBatchOK](command.MustParse("/ucan/revoke/batch"))

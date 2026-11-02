@@ -353,3 +353,146 @@ func (t *RevokeArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *RevokeBatchArguments) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+
+	// t.Revocations ([]ucan.RevokeArguments) (slice)
+	if len("revocations") > 8192 {
+		return fmt.Errorf("string in field \"revocations\" was too long")
+	}
+	if err := jw.WriteString(string("revocations")); err != nil {
+		return fmt.Errorf("writing string for field \"revocations\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Revocations) > 8192 {
+		return fmt.Errorf("slice value in field t.Revocations was too long")
+	}
+
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("writing array open for field t.Revocations: %w", err)
+	}
+	for i, v := range t.Revocations {
+		if i > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return fmt.Errorf("writing comma for field t.Revocations: %w", err)
+			}
+		}
+		if err := v.MarshalDagJSON(jw); err != nil {
+			return fmt.Errorf("marshaling field v: %w", err)
+		}
+	}
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("writing array close for field t.Revocations: %w", err)
+	}
+
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *RevokeBatchArguments) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = RevokeBatchArguments{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("reading object open for RevokeBatchArguments: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("peeking object close for RevokeBatchArguments: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("reading object close for RevokeBatchArguments: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("reading string for field RevokeBatchArguments: string too large")
+				}
+				return fmt.Errorf("reading string for field RevokeBatchArguments: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("reading object colon for field RevokeBatchArguments: %w", err)
+			}
+			switch name {
+
+			// t.Revocations ([]ucan.RevokeArguments) (slice)
+			case "revocations":
+				{
+
+					if err := jr.ReadArrayOpen(); err != nil {
+						return fmt.Errorf("reading array open for field t.Revocations: %w", err)
+					}
+
+					close, err := jr.PeekArrayClose()
+					if err != nil {
+						return fmt.Errorf("peeking array close for field t.Revocations: %w", err)
+					}
+					if close {
+						if err := jr.ReadArrayClose(); err != nil {
+							return fmt.Errorf("reading array close for field t.Revocations: %w", err)
+						}
+
+					} else {
+						for i := 0; i < 8192; i++ {
+							item := make([]RevokeArguments, 1)
+
+							if err := item[0].UnmarshalDagJSON(jr); err != nil {
+								return fmt.Errorf("unmarshaling item[0]: %w", err)
+							}
+
+							t.Revocations = append(t.Revocations, item[0])
+
+							close, err := jr.ReadArrayCloseOrComma()
+							if err != nil {
+								return fmt.Errorf("reading array close or comma for field t.Revocations: %w", err)
+							}
+							if close {
+								break
+							}
+							if i == 8192-1 {
+								return fmt.Errorf("reading array for field t.Revocations: slice too large")
+							}
+						}
+					}
+
+				}
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("ignoring field %s for RevokeBatchArguments: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading object close or comma for field RevokeBatchArguments: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("map too large for RevokeBatchArguments")
+			}
+		}
+	}
+
+	return nil
+}

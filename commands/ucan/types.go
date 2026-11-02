@@ -18,3 +18,10 @@ type RevokeArguments struct {
 	// UCAN being revoked.
 	Path []cid.Cid `cborgen:"path" dagjsongen:"path"`
 }
+
+// RevokeBatchArguments revokes several delegations with one invocation, so
+// the service can verify and store them as one unit. The service rejects the
+// whole batch when any revocation in it is invalid.
+type RevokeBatchArguments struct {
+	Revocations []RevokeArguments `cborgen:"revocations" dagjsongen:"revocations"`
+}

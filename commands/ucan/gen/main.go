@@ -26,6 +26,7 @@ func main() {
 	models := []any{
 		ucan.ConcludeArguments{},
 		ucan.RevokeArguments{},
+		ucan.RevokeBatchArguments{},
 	}
 	const (
 		cborFile = "../cbor_gen.go"
