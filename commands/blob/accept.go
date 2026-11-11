@@ -18,3 +18,21 @@ const BlobDigestMismatchErrorName = "BlobDigestMismatch"
 
 // ErrBlobDigestMismatch is the failure for a digest mismatch.
 var ErrBlobDigestMismatch = errors.New(BlobDigestMismatchErrorName, "received data does not hash to the reported digest")
+
+// AllocationExpiredErrorName is the stable receipt-failure name when the
+// allocation passed its expiry before the content was delivered. The blob is
+// allocated again to upload it.
+const AllocationExpiredErrorName = "AllocationExpired"
+
+// ErrAllocationExpired is the failure for an allocation that expired before
+// the content was delivered.
+var ErrAllocationExpired = errors.New(AllocationExpiredErrorName, "allocation expired before the content was delivered")
+
+// AllocationNotFoundErrorName is the stable receipt-failure name when the
+// storage node holds no allocation for the accepted blob: it was never made,
+// was rejected, or was removed after it expired.
+const AllocationNotFoundErrorName = "AllocationNotFound"
+
+// ErrAllocationNotFound is the failure for an accept of a blob the storage
+// node holds no allocation for.
+var ErrAllocationNotFound = errors.New(AllocationNotFoundErrorName, "allocation not found")
