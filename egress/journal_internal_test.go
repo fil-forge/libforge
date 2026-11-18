@@ -26,7 +26,7 @@ func TestJournalSealsAtItsAgeLimit(t *testing.T) {
 		Range: content.Range{Start: 0, End: 9},
 	})
 	require.NoError(t, err)
-	rcpt, err := receipt.IssueOK(issuer, inv.Task().Link(), &content.ServeOK{Bytes: 10})
+	rcpt, err := receipt.IssueOK(issuer, inv.Task().Link(), &content.ServeOK{Read: 10, Sent: 10})
 	require.NoError(t, err)
 	require.NoError(t, j.Append(context.Background(), Record{Receipt: rcpt, Invocation: inv}))
 
@@ -63,7 +63,7 @@ func TestJournalCarriesOnAfterAFailedWrite(t *testing.T) {
 			Range: content.Range{Start: 0, End: 9},
 		})
 		require.NoError(t, err)
-		rcpt, err := receipt.IssueOK(issuer, inv.Task().Link(), &content.ServeOK{Bytes: 10})
+		rcpt, err := receipt.IssueOK(issuer, inv.Task().Link(), &content.ServeOK{Read: 10, Sent: 10})
 		require.NoError(t, err)
 		return Record{Receipt: rcpt, Invocation: inv}
 	}
@@ -120,7 +120,7 @@ func TestJournalKeepsABatchItCouldNotSeal(t *testing.T) {
 		Range: content.Range{Start: 0, End: 9},
 	})
 	require.NoError(t, err)
-	rcpt, err := receipt.IssueOK(issuer, inv.Task().Link(), &content.ServeOK{Bytes: 10})
+	rcpt, err := receipt.IssueOK(issuer, inv.Task().Link(), &content.ServeOK{Read: 10, Sent: 10})
 	require.NoError(t, err)
 	require.NoError(t, j.Append(ctx, Record{Receipt: rcpt, Invocation: inv}))
 	require.NoError(t, j.tick())
@@ -136,7 +136,7 @@ func TestJournalKeepsABatchItCouldNotSeal(t *testing.T) {
 		Range: content.Range{Start: 0, End: 9},
 	})
 	require.NoError(t, err)
-	rcpt2, err := receipt.IssueOK(issuer, inv2.Task().Link(), &content.ServeOK{Bytes: 10})
+	rcpt2, err := receipt.IssueOK(issuer, inv2.Task().Link(), &content.ServeOK{Read: 10, Sent: 10})
 	require.NoError(t, err)
 	require.NoError(t, j.Append(ctx, Record{Receipt: rcpt2, Invocation: inv2}))
 	batches, err := j.Batches()

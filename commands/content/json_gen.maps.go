@@ -372,20 +372,43 @@ func (t *ServeOK) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
+	written := false
 
-	// t.Bytes (uint64) (uint64)
-	if len("bytes") > 8192 {
-		return fmt.Errorf("string in field \"bytes\" was too long")
+	// t.Read (uint64) (uint64)
+	if len("read") > 8192 {
+		return fmt.Errorf("string in field \"read\" was too long")
 	}
-	if err := jw.WriteString(string("bytes")); err != nil {
-		return fmt.Errorf("writing string for field \"bytes\": %w", err)
+	if err := jw.WriteString(string("read")); err != nil {
+		return fmt.Errorf("writing string for field \"read\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
 
-	if err := jw.WriteUint64(uint64(t.Bytes)); err != nil {
-		return fmt.Errorf("writing uint64 for field t.Bytes: %w", err)
+	if err := jw.WriteUint64(uint64(t.Read)); err != nil {
+		return fmt.Errorf("writing uint64 for field t.Read: %w", err)
+	}
+
+	written = true
+	if written {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Sent (uint64) (uint64)
+	if len("sent") > 8192 {
+		return fmt.Errorf("string in field \"sent\" was too long")
+	}
+	if err := jw.WriteString(string("sent")); err != nil {
+		return fmt.Errorf("writing string for field \"sent\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+
+	if err := jw.WriteUint64(uint64(t.Sent)); err != nil {
+		return fmt.Errorf("writing uint64 for field t.Sent: %w", err)
 	}
 
 	if err := jw.WriteObjectClose(); err != nil {
@@ -427,15 +450,27 @@ func (t *ServeOK) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Bytes (uint64) (uint64)
-			case "bytes":
+			// t.Read (uint64) (uint64)
+			case "read":
 				{
 
 					nval, err := jr.ReadNumberAsUint64()
 					if err != nil {
-						return fmt.Errorf("reading uint64 for field t.Bytes: %w", err)
+						return fmt.Errorf("reading uint64 for field t.Read: %w", err)
 					}
-					t.Bytes = uint64(nval)
+					t.Read = uint64(nval)
+
+				}
+
+				// t.Sent (uint64) (uint64)
+			case "sent":
+				{
+
+					nval, err := jr.ReadNumberAsUint64()
+					if err != nil {
+						return fmt.Errorf("reading uint64 for field t.Sent: %w", err)
+					}
+					t.Sent = uint64(nval)
 
 				}
 			default:

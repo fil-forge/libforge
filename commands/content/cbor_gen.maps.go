@@ -377,23 +377,39 @@ func (t *ServeOK) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{161}); err != nil {
+	if _, err := cw.Write([]byte{162}); err != nil {
 		return err
 	}
 
-	// t.Bytes (uint64) (uint64)
-	if len("bytes") > 8192 {
-		return xerrors.Errorf("Value in field \"bytes\" was too long")
+	// t.Read (uint64) (uint64)
+	if len("read") > 8192 {
+		return xerrors.Errorf("Value in field \"read\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("bytes"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("read"))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("bytes")); err != nil {
+	if _, err := cw.WriteString(string("read")); err != nil {
 		return err
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Bytes)); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Read)); err != nil {
+		return err
+	}
+
+	// t.Sent (uint64) (uint64)
+	if len("sent") > 8192 {
+		return xerrors.Errorf("Value in field \"sent\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("sent"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("sent")); err != nil {
+		return err
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajUnsignedInt, uint64(t.Sent)); err != nil {
 		return err
 	}
 
@@ -425,7 +441,7 @@ func (t *ServeOK) UnmarshalCBOR(r io.Reader) (err error) {
 
 	n := extra
 
-	nameBuf := make([]byte, 5)
+	nameBuf := make([]byte, 4)
 	for i := uint64(0); i < n; i++ {
 		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
 		if err != nil {
@@ -441,8 +457,8 @@ func (t *ServeOK) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Bytes (uint64) (uint64)
-		case "bytes":
+		// t.Read (uint64) (uint64)
+		case "read":
 
 			{
 
@@ -453,7 +469,22 @@ func (t *ServeOK) UnmarshalCBOR(r io.Reader) (err error) {
 				if maj != cbg.MajUnsignedInt {
 					return fmt.Errorf("wrong type for uint64 field")
 				}
-				t.Bytes = uint64(extra)
+				t.Read = uint64(extra)
+
+			}
+			// t.Sent (uint64) (uint64)
+		case "sent":
+
+			{
+
+				maj, extra, err = cr.ReadHeader()
+				if err != nil {
+					return err
+				}
+				if maj != cbg.MajUnsignedInt {
+					return fmt.Errorf("wrong type for uint64 field")
+				}
+				t.Sent = uint64(extra)
 
 			}
 

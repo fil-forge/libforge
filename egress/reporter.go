@@ -428,6 +428,9 @@ func findConsolidate(invocations []ucan.Invocation, track cid.Cid) (ucan.Invocat
 // MeasureContent returns the egress a content record accounts for. A
 // `/content/serve` record counts the bytes its receipt says were sent, and a
 // `/content/retrieve` record the size of the range its invocation asked for.
+//
+// It refuses a `/content/serve` record the tracker would: one that read more
+// than its range holds, or sent more than it read.
 func MeasureContent(rec Record) (uint64, error) {
 	switch rec.Invocation.Command().String() {
 	case content.Serve.Command.String():
@@ -435,7 +438,20 @@ func MeasureContent(rec Record) (uint64, error) {
 		if err != nil {
 			return 0, err
 		}
-		return ok.Bytes, nil
+		var args content.ServeArguments
+		if err := args.UnmarshalCBOR(bytes.NewReader(rec.Invocation.ArgumentsBytes())); err != nil {
+			return 0, fmt.Errorf("decoding serve arguments: %w", err)
+		}
+		if args.Range.End < args.Range.Start {
+			return 0, fmt.Errorf("serve range [%d, %d] ends before it starts", args.Range.Start, args.Range.End)
+		}
+		if size := args.Range.End - args.Range.Start + 1; ok.Read > size {
+			return 0, fmt.Errorf("serve receipt read %d bytes of a %d byte range", ok.Read, size)
+		}
+		if ok.Sent > ok.Read {
+			return 0, fmt.Errorf("serve receipt sent %d bytes of the %d it read", ok.Sent, ok.Read)
+		}
+		return ok.Sent, nil
 	case content.Retrieve.Command.String():
 		var args content.RetrieveArguments
 		if err := args.UnmarshalCBOR(bytes.NewReader(rec.Invocation.ArgumentsBytes())); err != nil {

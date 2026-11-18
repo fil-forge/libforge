@@ -49,7 +49,7 @@ func newGateway(t *testing.T) *gateway {
 }
 
 // serve returns the record of a `/content/serve` that was asked for size
-// bytes and sent sent of them.
+// stored bytes, read them all and sent sent bytes to the client.
 func (g *gateway) serve(t *testing.T, size, sent uint64) egress.Record {
 	t.Helper()
 	inv := testutil.Must(content.Serve.Invoke(
@@ -62,7 +62,7 @@ func (g *gateway) serve(t *testing.T, size, sent uint64) egress.Record {
 		invocation.WithAudience(g.issuer.DID()),
 		invocation.WithProofs(g.proofs[0].Link(), g.proofs[1].Link()),
 	))(t)
-	rcpt := testutil.Must(ucanreceipt.IssueOK(g.issuer, inv.Task().Link(), &content.ServeOK{Bytes: sent}))(t)
+	rcpt := testutil.Must(ucanreceipt.IssueOK(g.issuer, inv.Task().Link(), &content.ServeOK{Read: size, Sent: sent}))(t)
 	return egress.Record{Receipt: rcpt, Invocation: inv, Proofs: g.proofs}
 }
 
@@ -507,6 +507,18 @@ func TestMeasureContent(t *testing.T) {
 	n, err = egress.MeasureContent(egress.Record{Receipt: rcpt, Invocation: inv})
 	require.NoError(t, err)
 	require.Equal(t, uint64(10), n)
+
+	// A record the tracker would refuse is not measured either.
+	for _, ok := range []content.ServeOK{
+		{Read: 100, Sent: 101},  // more sent than read
+		{Read: 1001, Sent: 100}, // more read than the range holds
+	} {
+		rec := g.serve(t, 1000, 0)
+		rec.Receipt, err = ucanreceipt.IssueOK(g.issuer, rec.Invocation.Task().Link(), &ok)
+		require.NoError(t, err)
+		_, err = egress.MeasureContent(rec)
+		require.Error(t, err)
+	}
 
 	other, err := egresscmds.Track.Invoke(g.issuer, g.issuer.DID(), &egresscmds.TrackArguments{Receipts: testutil.RandomCID(t)})
 	require.NoError(t, err)
