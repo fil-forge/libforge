@@ -26,6 +26,8 @@ func main() {
 	mapModels := []any{
 		content.Blob{},
 		content.RetrieveArguments{},
+		content.ServeArguments{},
+		content.ServeOK{},
 	}
 	tupleModels := []any{
 		content.Range{},

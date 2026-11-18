@@ -244,3 +244,219 @@ func (t *RetrieveArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 
 	return nil
 }
+func (t *ServeArguments) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+	written := false
+
+	// t.Blob (content.Blob) (struct)
+	if len("blob") > 8192 {
+		return fmt.Errorf("string in field \"blob\" was too long")
+	}
+	if err := jw.WriteString(string("blob")); err != nil {
+		return fmt.Errorf("writing string for field \"blob\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.Blob.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Blob: %w", err)
+	}
+	written = true
+	if written {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Range (content.Range) (struct)
+	if len("range") > 8192 {
+		return fmt.Errorf("string in field \"range\" was too long")
+	}
+	if err := jw.WriteString(string("range")); err != nil {
+		return fmt.Errorf("writing string for field \"range\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.Range.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Range: %w", err)
+	}
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *ServeArguments) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = ServeArguments{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("reading object open for ServeArguments: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("peeking object close for ServeArguments: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("reading object close for ServeArguments: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("reading string for field ServeArguments: string too large")
+				}
+				return fmt.Errorf("reading string for field ServeArguments: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("reading object colon for field ServeArguments: %w", err)
+			}
+			switch name {
+
+			// t.Blob (content.Blob) (struct)
+			case "blob":
+
+				if err := t.Blob.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Blob: %w", err)
+				}
+
+				// t.Range (content.Range) (struct)
+			case "range":
+
+				if err := t.Range.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Range: %w", err)
+				}
+
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("ignoring field %s for ServeArguments: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading object close or comma for field ServeArguments: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("map too large for ServeArguments")
+			}
+		}
+	}
+
+	return nil
+}
+func (t *ServeOK) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+
+	// t.Bytes (uint64) (uint64)
+	if len("bytes") > 8192 {
+		return fmt.Errorf("string in field \"bytes\" was too long")
+	}
+	if err := jw.WriteString(string("bytes")); err != nil {
+		return fmt.Errorf("writing string for field \"bytes\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+
+	if err := jw.WriteUint64(uint64(t.Bytes)); err != nil {
+		return fmt.Errorf("writing uint64 for field t.Bytes: %w", err)
+	}
+
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *ServeOK) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = ServeOK{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("reading object open for ServeOK: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("peeking object close for ServeOK: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("reading object close for ServeOK: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("reading string for field ServeOK: string too large")
+				}
+				return fmt.Errorf("reading string for field ServeOK: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("reading object colon for field ServeOK: %w", err)
+			}
+			switch name {
+
+			// t.Bytes (uint64) (uint64)
+			case "bytes":
+				{
+
+					nval, err := jr.ReadNumberAsUint64()
+					if err != nil {
+						return fmt.Errorf("reading uint64 for field t.Bytes: %w", err)
+					}
+					t.Bytes = uint64(nval)
+
+				}
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("ignoring field %s for ServeOK: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading object close or comma for field ServeOK: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("map too large for ServeOK")
+			}
+		}
+	}
+
+	return nil
+}
