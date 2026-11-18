@@ -1,17 +1,52 @@
 package egress
 
 import (
-	"github.com/fil-forge/libforge/commands"
+	"errors"
+	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/ipfs/go-cid"
 )
+
+// BatchPlaceholder is the text in [TrackArguments.Endpoint] that stands for
+// the batch CID.
+const BatchPlaceholder = "{cid}"
 
 // TrackArguments is the argument shape of `/egress/track`.
 type TrackArguments struct {
 	// Receipts is the CID of the batch of receipts the reporter has staged.
 	Receipts cid.Cid `cborgen:"receipts" dagjsongen:"receipts"`
-	// Endpoint is the URL template the batch can be fetched from, with a
-	// `{cid}` placeholder for the batch CID.
-	Endpoint commands.CborURL `cborgen:"endpoint" dagjsongen:"endpoint"`
+	// Endpoint is the URL template the batch can be fetched from, with
+	// [BatchPlaceholder] where the batch CID goes. It is a template and not a
+	// URL until the placeholder is replaced: see [TrackArguments.BatchURL].
+	Endpoint string `cborgen:"endpoint" dagjsongen:"endpoint"`
+}
+
+// BatchURL returns the URL the batch can be fetched from: Endpoint with its
+// placeholder replaced by the batch CID.
+func (a TrackArguments) BatchURL() (*url.URL, error) {
+	if !a.Receipts.Defined() {
+		return nil, errors.New("track arguments name no batch")
+	}
+	return ResolveEndpoint(a.Endpoint, a.Receipts)
+}
+
+// ResolveEndpoint replaces the placeholder in an endpoint template with the
+// batch CID and parses the result. The template must hold the placeholder and
+// resolve to an absolute http or https URL.
+func ResolveEndpoint(endpoint string, batch cid.Cid) (*url.URL, error) {
+	if !strings.Contains(endpoint, BatchPlaceholder) {
+		return nil, fmt.Errorf("endpoint %q has no %s placeholder", endpoint, BatchPlaceholder)
+	}
+	u, err := url.Parse(strings.ReplaceAll(endpoint, BatchPlaceholder, batch.String()))
+	if err != nil {
+		return nil, fmt.Errorf("parsing batch URL: %w", err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("endpoint %q is not an absolute http or https URL", endpoint)
+	}
+	return u, nil
 }
 
 // TrackOK is the success return for `/egress/track`. The response also carries

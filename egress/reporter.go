@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/fil-forge/libforge/commands"
 	"github.com/fil-forge/libforge/commands/content"
 	egresscmds "github.com/fil-forge/libforge/commands/egress"
 	"github.com/fil-forge/libforge/receipt"
@@ -27,7 +27,10 @@ import (
 // and consolidation receipts to collect, when no batch has just been sealed.
 const DefaultReportInterval = time.Minute
 
-const trackSuffix = ".track"
+const (
+	trackSuffix = ".track"
+	tmpSuffix   = ".tmp"
+)
 
 // ReceiptFetcher fetches the receipt for a task from the egress tracking
 // service. It returns [receipt.ErrNotFound] while the task has not run.
@@ -40,8 +43,12 @@ type ReceiptFetcher interface {
 type Settlement struct {
 	// Batch is the CID of the batch.
 	Batch cid.Cid
-	// Counted is the egress of the batch by the reporter's own measure.
+	// Counted is the egress of the batch by the reporter's own measure. It is
+	// zero when CountErr is set.
 	Counted uint64
+	// CountErr is why the reporter could not measure the batch, if it could
+	// not. The batch is removed all the same: the tracker has consolidated it.
+	CountErr error
 	// Consolidated is the egress the tracker's consolidation receipt reports.
 	Consolidated uint64
 	// Errors are the receipts the tracker could not process.
@@ -64,10 +71,11 @@ type ReporterConfig struct {
 	Executor execution.Executor
 	// Receipts fetches consolidation receipts from the tracker.
 	Receipts ReceiptFetcher
-	// Endpoint is the URL the tracker fetches batches from, with a `{cid}`
-	// placeholder for the batch CID. It must reach the handler [NewHandler]
+	// Endpoint is the URL template the tracker fetches batches from, with
+	// `{cid}` where the batch CID goes, for example
+	// https://example.com/egress/{cid}. It must reach the handler [NewHandler]
 	// returns for Journal.
-	Endpoint *url.URL
+	Endpoint string
 	// Interval is how often to look for work when no batch has just been
 	// sealed. The default is [DefaultReportInterval].
 	Interval time.Duration
@@ -85,6 +93,11 @@ type ReporterConfig struct {
 //
 // What the reporter knows about a batch is kept in the journal's directory
 // beside it, so a restart picks up where the last process stopped.
+//
+// A batch can be submitted more than once: the reporter issues a new
+// `/egress/track` when it cannot tell whether the tracker accepted the last
+// one, and when a consolidation fails. It relies on the tracker to count a
+// batch CID once.
 type Reporter struct {
 	cfg ReporterConfig
 }
@@ -102,8 +115,15 @@ func NewReporter(cfg ReporterConfig) (*Reporter, error) {
 		return nil, errors.New("reporter needs an executor")
 	case cfg.Receipts == nil:
 		return nil, errors.New("reporter needs a receipt fetcher")
-	case cfg.Endpoint == nil:
+	case cfg.Endpoint == "":
 		return nil, errors.New("reporter needs the batch endpoint")
+	}
+	sample, err := batchCID(make([]byte, 32))
+	if err != nil {
+		return nil, err
+	}
+	if _, err := egresscmds.ResolveEndpoint(cfg.Endpoint, sample); err != nil {
+		return nil, err
 	}
 	if cfg.Interval <= 0 {
 		cfg.Interval = DefaultReportInterval
@@ -141,15 +161,21 @@ func (r *Reporter) Report(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	var errs error
+	errs := r.sweep(batches)
 	for _, batch := range batches {
 		if ctx.Err() != nil {
 			return errors.Join(errs, ctx.Err())
 		}
 		tracked, err := r.readTracked(batch)
 		if err != nil {
-			errs = errors.Join(errs, fmt.Errorf("batch %s: %w", batch, err))
-			continue
+			// A record that cannot be read says nothing about the batch, so
+			// the batch is tracked again.
+			log.Warnw("discarding an unreadable track record", "batch", batch, "error", err)
+			if err := os.Remove(r.trackedPath(batch)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				errs = errors.Join(errs, fmt.Errorf("batch %s: removing track record: %w", batch, err))
+				continue
+			}
+			tracked = nil
 		}
 		if tracked == nil {
 			if tracked, err = r.track(ctx, batch); err != nil {
@@ -183,7 +209,7 @@ func (r *Reporter) track(ctx context.Context, batch cid.Cid) (*tracked, error) {
 		r.cfg.Tracker,
 		&egresscmds.TrackArguments{
 			Receipts: batch,
-			Endpoint: commands.CborURL(*r.cfg.Endpoint),
+			Endpoint: r.cfg.Endpoint,
 		},
 		invocation.WithProofs(links...),
 	)
@@ -241,16 +267,27 @@ func (r *Reporter) settle(ctx context.Context, batch cid.Cid, t *tracked) error 
 		}
 		return err
 	}
-	counted, err := r.count(batch)
-	if err != nil {
-		return fmt.Errorf("measuring batch: %w", err)
-	}
-	if counted != ok.TotalEgress || len(ok.Errors) > 0 {
+	// The tracker has consolidated the batch, so it is removed whatever the
+	// check below finds: a total that differs, or a batch that cannot be
+	// measured, is reported and not retried.
+	counted, countErr := r.count(batch)
+	switch {
+	case countErr != nil:
+		counted = 0
+		log.Warnw("could not measure a consolidated batch",
+			"batch", batch, "consolidated", ok.TotalEgress, "error", countErr)
+	case counted != ok.TotalEgress || len(ok.Errors) > 0:
 		log.Warnw("consolidated egress differs from the batch",
 			"batch", batch, "counted", counted, "consolidated", ok.TotalEgress, "errors", len(ok.Errors))
 	}
 	if r.cfg.OnSettle != nil {
-		r.cfg.OnSettle(Settlement{Batch: batch, Counted: counted, Consolidated: ok.TotalEgress, Errors: ok.Errors})
+		r.cfg.OnSettle(Settlement{
+			Batch:        batch,
+			Counted:      counted,
+			CountErr:     countErr,
+			Consolidated: ok.TotalEgress,
+			Errors:       ok.Errors,
+		})
 	}
 	if err := r.cfg.Journal.Remove(batch); err != nil {
 		return err
@@ -259,6 +296,36 @@ func (r *Reporter) settle(ctx context.Context, batch cid.Cid, t *tracked) error 
 		return fmt.Errorf("removing track record: %w", err)
 	}
 	return nil
+}
+
+// sweep removes the track records, and the temporary files they are written
+// through, whose batch is gone. A crash between removing a batch and its
+// record leaves one behind.
+func (r *Reporter) sweep(batches []cid.Cid) error {
+	entries, err := os.ReadDir(r.cfg.Journal.dir)
+	if err != nil {
+		return fmt.Errorf("listing track records: %w", err)
+	}
+	held := make(map[string]struct{}, len(batches))
+	for _, b := range batches {
+		held[b.String()] = struct{}{}
+	}
+	var errs error
+	for _, e := range entries {
+		name := e.Name()
+		base, ok := strings.CutSuffix(strings.TrimSuffix(name, tmpSuffix), batchSuffix+trackSuffix)
+		if !ok || e.IsDir() {
+			continue
+		}
+		_, has := held[base]
+		if has && !strings.HasSuffix(name, tmpSuffix) {
+			continue
+		}
+		if err := os.Remove(filepath.Join(r.cfg.Journal.dir, name)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			errs = errors.Join(errs, fmt.Errorf("removing %s: %w", name, err))
+		}
+	}
+	return errs
 }
 
 // count sums the reporter's measure over the batch's records.
@@ -323,8 +390,15 @@ func (r *Reporter) writeTracked(batch cid.Cid, t *tracked) error {
 		return fmt.Errorf("encoding track record: %w", err)
 	}
 	path := r.trackedPath(batch)
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	tmp := path + tmpSuffix
+	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err != nil {
+		return fmt.Errorf("writing track record: %w", err)
+	}
+	// Synced before the rename, so a power cut cannot leave an empty record
+	// under the final name.
+	_, err = f.Write(data)
+	if err := errors.Join(err, f.Sync(), f.Close()); err != nil {
 		return fmt.Errorf("writing track record: %w", err)
 	}
 	if err := os.Rename(tmp, path); err != nil {

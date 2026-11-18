@@ -32,7 +32,7 @@ func (t *TrackArguments) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Endpoint (commands.CborURL) (struct)
+	// t.Endpoint (string) (string)
 	if len("endpoint") > 8192 {
 		return xerrors.Errorf("Value in field \"endpoint\" was too long")
 	}
@@ -44,7 +44,14 @@ func (t *TrackArguments) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	if err := t.Endpoint.MarshalCBOR(cw); err != nil {
+	if len(t.Endpoint) > 8192 {
+		return xerrors.Errorf("Value in field t.Endpoint was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.Endpoint))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string(t.Endpoint)); err != nil {
 		return err
 	}
 
@@ -108,15 +115,16 @@ func (t *TrackArguments) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Endpoint (commands.CborURL) (struct)
+		// t.Endpoint (string) (string)
 		case "endpoint":
 
 			{
-
-				if err := t.Endpoint.UnmarshalCBOR(cr); err != nil {
-					return xerrors.Errorf("unmarshaling t.Endpoint: %w", err)
+				sval, err := cbg.ReadStringWithMax(cr, 8192)
+				if err != nil {
+					return err
 				}
 
+				t.Endpoint = string(sval)
 			}
 			// t.Receipts (cid.Cid) (struct)
 		case "receipts":

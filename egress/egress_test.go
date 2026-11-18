@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -138,7 +137,8 @@ func TestJournalSealsARoundTrippableBatch(t *testing.T) {
 
 func TestJournalSealsAtItsSizeLimit(t *testing.T) {
 	g := newGateway(t)
-	j := openJournal(t, t.TempDir(), egress.WithMaxBatchSize(4096))
+	dir := t.TempDir()
+	j := openJournal(t, dir, egress.WithMaxBatchSize(4096))
 	ctx := context.Background()
 
 	appended := 0
@@ -148,7 +148,12 @@ func TestJournalSealsAtItsSizeLimit(t *testing.T) {
 		batches, err := j.Batches()
 		require.NoError(t, err)
 		if len(batches) > 0 {
-			require.Len(t, readBatch(t, j, batches[0]), appended)
+			// The record that would have crossed the limit starts the next
+			// batch, so the sealed one is within it.
+			require.Len(t, readBatch(t, j, batches[0]), appended-1)
+			info, err := os.Stat(filepath.Join(dir, batches[0].String()+".car"))
+			require.NoError(t, err)
+			require.LessOrEqual(t, info.Size(), int64(4096))
 			break
 		}
 		require.Less(t, appended, 100, "the journal never sealed")
@@ -157,6 +162,31 @@ func TestJournalSealsAtItsSizeLimit(t *testing.T) {
 	case <-j.Sealed():
 	default:
 		t.Fatal("the journal did not signal the seal")
+	}
+
+	// The record held over is in the batch sealed next, with its proofs.
+	next, ok, err := j.Seal()
+	require.NoError(t, err)
+	require.True(t, ok)
+	held := readBatch(t, j, next)
+	require.Len(t, held, 1)
+	require.Len(t, held[0].Proofs, 2)
+}
+
+func TestJournalGivesAnOversizedRecordItsOwnBatch(t *testing.T) {
+	g := newGateway(t)
+	j := openJournal(t, t.TempDir(), egress.WithMaxBatchSize(64))
+	ctx := context.Background()
+
+	require.NoError(t, j.Append(ctx, g.serve(t, 10, 10)))
+	require.NoError(t, j.Append(ctx, g.serve(t, 10, 10)))
+	_, _, err := j.Seal()
+	require.NoError(t, err)
+	batches, err := j.Batches()
+	require.NoError(t, err)
+	require.Len(t, batches, 2)
+	for _, b := range batches {
+		require.Len(t, readBatch(t, j, b), 1)
 	}
 }
 
@@ -332,11 +362,11 @@ func (tr *tracker) consolidate(ok *egresscmds.ConsolidateOK, failure *edm.ErrorM
 	tr.receipts[task] = rcpt
 }
 
+const batchEndpoint = "https://gateway.example.com/.well-known/egress/{cid}"
+
 func newReporter(t *testing.T, j *egress.Journal, g *gateway, tr *tracker, onSettle func(egress.Settlement)) *egress.Reporter {
 	t.Helper()
 	proof := testutil.Must(egresscmds.Track.Delegate(tr.issuer, g.issuer.DID(), tr.issuer.DID()))(t)
-	endpoint, err := url.Parse("https://gateway.example.com/.well-known/egress/{cid}")
-	require.NoError(t, err)
 	r, err := egress.NewReporter(egress.ReporterConfig{
 		Journal:  j,
 		Issuer:   g.issuer,
@@ -344,7 +374,7 @@ func newReporter(t *testing.T, j *egress.Journal, g *gateway, tr *tracker, onSet
 		Proofs:   []ucan.Delegation{proof},
 		Executor: tr,
 		Receipts: tr,
-		Endpoint: endpoint,
+		Endpoint: batchEndpoint,
 		OnSettle: onSettle,
 	})
 	require.NoError(t, err)
@@ -370,6 +400,12 @@ func TestReporterTracksThenSettlesABatch(t *testing.T) {
 	require.NoError(t, r.Report(ctx))
 	require.Len(t, tr.tracks, 1)
 	require.Equal(t, batch, tr.tracks[0].Receipts)
+	// The template reaches the tracker as it was configured, placeholder and
+	// all, and resolves to the batch's URL.
+	require.Equal(t, batchEndpoint, tr.tracks[0].Endpoint)
+	batchURL, err := tr.tracks[0].BatchURL()
+	require.NoError(t, err)
+	require.Equal(t, "https://gateway.example.com/.well-known/egress/"+batch.String(), batchURL.String())
 	require.Empty(t, settled)
 	batches, err := j.Batches()
 	require.NoError(t, err)
@@ -491,4 +527,117 @@ func TestReadBatchReportsAReceiptWithNoInvocation(t *testing.T) {
 	require.Len(t, errs, 1)
 	require.Error(t, errs[0])
 	require.False(t, errors.Is(errs[0], io.EOF))
+}
+
+func TestReporterRefusesAnEndpointWithNoPlaceholder(t *testing.T) {
+	g := newGateway(t)
+	tr := newTracker(t)
+	j := openJournal(t, t.TempDir())
+	cfg := egress.ReporterConfig{
+		Journal:  j,
+		Issuer:   g.issuer,
+		Tracker:  tr.issuer.DID(),
+		Executor: tr,
+		Receipts: tr,
+	}
+	for _, endpoint := range []string{
+		"https://gateway.example.com/.well-known/egress/",
+		"/.well-known/egress/{cid}",
+		"ftp://gateway.example.com/{cid}",
+	} {
+		cfg.Endpoint = endpoint
+		_, err := egress.NewReporter(cfg)
+		require.Error(t, err, endpoint)
+	}
+}
+
+func TestReporterRemovesAConsolidatedBatchItCannotMeasure(t *testing.T) {
+	g := newGateway(t)
+	tr := newTracker(t)
+	j := openJournal(t, t.TempDir())
+	ctx := context.Background()
+
+	// The journal takes a record of any command, and the default measure knows
+	// only the content ones.
+	inv, err := egresscmds.Consolidate.Invoke(g.issuer, g.issuer.DID(), &egresscmds.ConsolidateArguments{Cause: testutil.RandomCID(t)})
+	require.NoError(t, err)
+	rcpt, err := ucanreceipt.IssueOK(g.issuer, inv.Task().Link(), &egresscmds.ConsolidateOK{})
+	require.NoError(t, err)
+	require.NoError(t, j.Append(ctx, egress.Record{Receipt: rcpt, Invocation: inv}))
+	batch, _, err := j.Seal()
+	require.NoError(t, err)
+
+	var settled []egress.Settlement
+	r := newReporter(t, j, g, tr, func(s egress.Settlement) { settled = append(settled, s) })
+	require.NoError(t, r.Report(ctx))
+	tr.consolidate(&egresscmds.ConsolidateOK{TotalEgress: 7}, nil)
+	require.NoError(t, r.Report(ctx))
+
+	require.Len(t, settled, 1)
+	require.Equal(t, batch, settled[0].Batch)
+	require.Error(t, settled[0].CountErr)
+	require.Zero(t, settled[0].Counted)
+	require.Equal(t, uint64(7), settled[0].Consolidated)
+	batches, err := j.Batches()
+	require.NoError(t, err)
+	require.Empty(t, batches)
+}
+
+func TestReporterTracksAgainWhenItsRecordIsUnreadable(t *testing.T) {
+	g := newGateway(t)
+	tr := newTracker(t)
+	dir := t.TempDir()
+	j := openJournal(t, dir)
+	ctx := context.Background()
+
+	require.NoError(t, j.Append(ctx, g.serve(t, 100, 100)))
+	batch, _, err := j.Seal()
+	require.NoError(t, err)
+
+	r := newReporter(t, j, g, tr, nil)
+	require.NoError(t, r.Report(ctx))
+	require.Len(t, tr.tracks, 1)
+
+	// A power cut can leave the record empty.
+	record := filepath.Join(dir, batch.String()+".car.track")
+	require.NoError(t, os.WriteFile(record, nil, 0o644))
+	require.NoError(t, r.Report(ctx))
+	require.Len(t, tr.tracks, 2)
+
+	var settled []egress.Settlement
+	r = newReporter(t, j, g, tr, func(s egress.Settlement) { settled = append(settled, s) })
+	tr.consolidate(&egresscmds.ConsolidateOK{TotalEgress: 100}, nil)
+	require.NoError(t, r.Report(ctx))
+	require.Len(t, settled, 1)
+}
+
+func TestReporterSweepsRecordsWhoseBatchIsGone(t *testing.T) {
+	g := newGateway(t)
+	tr := newTracker(t)
+	dir := t.TempDir()
+	j := openJournal(t, dir)
+	ctx := context.Background()
+
+	require.NoError(t, j.Append(ctx, g.serve(t, 100, 100)))
+	batch, _, err := j.Seal()
+	require.NoError(t, err)
+	r := newReporter(t, j, g, tr, nil)
+	require.NoError(t, r.Report(ctx))
+
+	gone := testutil.RandomCID(t).String()
+	orphans := []string{
+		filepath.Join(dir, gone+".car.track"),
+		filepath.Join(dir, gone+".car.track.tmp"),
+		filepath.Join(dir, batch.String()+".car.track.tmp"),
+	}
+	for _, path := range orphans {
+		require.NoError(t, os.WriteFile(path, []byte("left behind"), 0o644))
+	}
+	require.NoError(t, r.Report(ctx))
+	for _, path := range orphans {
+		require.NoFileExists(t, path)
+	}
+	// The record of the batch still held is kept, so it is not tracked again.
+	require.FileExists(t, filepath.Join(dir, batch.String()+".car.track"))
+	require.Len(t, tr.tracks, 1)
 }

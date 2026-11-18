@@ -31,7 +31,7 @@ func (t *TrackArguments) MarshalDagJSON(w io.Writer) error {
 	}
 	written := false
 
-	// t.Endpoint (commands.CborURL) (struct)
+	// t.Endpoint (string) (string)
 	if len("endpoint") > 8192 {
 		return fmt.Errorf("string in field \"endpoint\" was too long")
 	}
@@ -41,8 +41,11 @@ func (t *TrackArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
-	if err := t.Endpoint.MarshalDagJSON(jw); err != nil {
-		return fmt.Errorf("marshaling field t.Endpoint: %w", err)
+	if len(t.Endpoint) > 8192 {
+		return fmt.Errorf("string in field t.Endpoint was too long")
+	}
+	if err := jw.WriteString(string(t.Endpoint)); err != nil {
+		return fmt.Errorf("writing string for field t.Endpoint: %w", err)
 	}
 	written = true
 	if written {
@@ -105,11 +108,17 @@ func (t *TrackArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Endpoint (commands.CborURL) (struct)
+			// t.Endpoint (string) (string)
 			case "endpoint":
-
-				if err := t.Endpoint.UnmarshalDagJSON(jr); err != nil {
-					return fmt.Errorf("unmarshaling t.Endpoint: %w", err)
+				{
+					sval, err := jr.ReadString(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading string for field t.Endpoint: string too long")
+						}
+						return fmt.Errorf("reading string for field t.Endpoint: %w", err)
+					}
+					t.Endpoint = string(sval)
 				}
 
 				// t.Receipts (cid.Cid) (struct)

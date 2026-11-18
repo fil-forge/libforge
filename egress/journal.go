@@ -55,8 +55,10 @@ type journalConfig struct {
 // JournalOption configures a [Journal].
 type JournalOption func(*journalConfig)
 
-// WithMaxBatchSize sets the size in bytes at which a batch is sealed. The
-// default is [DefaultMaxBatchSize] and the most is [MaxBatchSize].
+// WithMaxBatchSize sets the most bytes a batch may hold: a batch is sealed
+// before a record that would take it past this. The default is
+// [DefaultMaxBatchSize] and the most is [MaxBatchSize]. A single record
+// larger than the limit gets a batch to itself.
 func WithMaxBatchSize(n int64) JournalOption {
 	return func(c *journalConfig) { c.maxSize = n }
 }
@@ -86,11 +88,13 @@ type Journal struct {
 	mu     sync.Mutex
 	closed bool
 	// The open batch. file is nil until the first record after a seal.
-	file   *os.File
-	buf    *bufio.Writer
-	hash   hash.Hash
-	size   int64
-	opened time.Time
+	file *os.File
+	buf  *bufio.Writer
+	hash hash.Hash
+	size int64
+	// records is how many records the open batch holds.
+	records int
+	opened  time.Time
 	// have is the delegations the open batch already holds.
 	have map[cid.Cid]struct{}
 
@@ -131,16 +135,20 @@ func OpenJournal(dir string, options ...JournalOption) (*Journal, error) {
 		stop:   make(chan struct{}),
 		done:   make(chan struct{}),
 	}
-	if err := j.recover(); err != nil {
+	if err := j.recoverOpen(); err != nil {
 		return nil, err
 	}
 	go j.run()
 	return j, nil
 }
 
-// Append adds a record to the open batch, sealing the batch if that takes it
-// to its size limit. A record whose receipt reports a failure is dropped: a
-// failed retrieval served nothing.
+// Append adds a record to the open batch, sealing the batch first if the
+// record would take it past its size limit. A record whose receipt reports a
+// failure is dropped: a failed retrieval served nothing.
+//
+// A write that fails costs the records still buffered. The journal sets the
+// open batch aside and the next Append seals what reached the disk and starts
+// a new one, so a full disk stops appends only while it is full.
 func (j *Journal) Append(ctx context.Context, rec Record) error {
 	if err := rec.validate(); err != nil {
 		return err
@@ -154,31 +162,48 @@ func (j *Journal) Append(ctx context.Context, rec Record) error {
 	if j.closed {
 		return errors.New("journal is closed")
 	}
+	if j.file != nil && j.records > 0 && j.size+blocksSize(j.blocks(rec)) > j.cfg.maxSize {
+		if _, err := j.seal(); err != nil {
+			return fmt.Errorf("sealing batch: %w", err)
+		}
+	}
 	if j.file == nil {
 		if err := j.open(); err != nil {
 			return err
 		}
 	}
-	blocks := recordBlocks(rec, func(link cid.Cid) bool {
-		_, ok := j.have[link]
-		return ok
-	})
+	// Worked out again after a seal: a new batch holds none of the proofs.
+	blocks := j.blocks(rec)
 	w := io.MultiWriter(j.buf, j.hash)
 	for _, b := range blocks {
 		if err := automobile.WriteBlock(w, b); err != nil {
+			j.abandon()
 			return fmt.Errorf("writing record: %w", err)
 		}
-		j.size += int64(automobile.LdSize(b.Link.Bytes(), b.Data))
 	}
+	j.size += blocksSize(blocks)
+	j.records++
 	for _, p := range rec.Proofs {
 		j.have[p.Link()] = struct{}{}
 	}
-	if j.size >= j.cfg.maxSize {
-		if _, err := j.seal(); err != nil {
-			return fmt.Errorf("sealing batch: %w", err)
-		}
-	}
 	return nil
+}
+
+// blocks returns the blocks rec adds to the open batch, or to a new batch if
+// none is open. The caller holds the lock.
+func (j *Journal) blocks(rec Record) []automobile.Block {
+	return recordBlocks(rec, func(link cid.Cid) bool {
+		_, ok := j.have[link]
+		return ok
+	})
+}
+
+func blocksSize(blocks []automobile.Block) int64 {
+	var n int64
+	for _, b := range blocks {
+		n += int64(automobile.LdSize(b.Link.Bytes(), b.Data))
+	}
+	return n
 }
 
 // Seal seals the open batch now, whatever its size or age, and returns its
@@ -299,12 +324,32 @@ func (j *Journal) tick() error {
 		_, err := j.seal()
 		return err
 	}
-	return j.buf.Flush()
+	if err := j.buf.Flush(); err != nil {
+		j.abandon()
+		return err
+	}
+	return nil
 }
 
-// open starts a new batch. The caller holds the lock.
+// abandon gives up on the open batch after a failed write, leaving its file
+// for the next open to recover. A writer that has failed once fails every
+// write after it, so the batch cannot be carried on with. The caller holds
+// the lock.
+func (j *Journal) abandon() {
+	if j.file != nil {
+		_ = j.file.Close()
+	}
+	j.file, j.buf, j.hash, j.have = nil, nil, nil, nil
+	j.size, j.records = 0, 0
+}
+
+// open starts a new batch, first sealing a batch that an earlier failure left
+// on disk. The caller holds the lock.
 func (j *Journal) open() error {
-	f, err := os.OpenFile(j.openPath(), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if err := j.recoverOpen(); err != nil {
+		return err
+	}
+	f, err := os.OpenFile(j.openPath(), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
 		return fmt.Errorf("creating batch: %w", err)
 	}
@@ -313,12 +358,14 @@ func (j *Journal) open() error {
 	j.hash = sha256.New()
 	j.have = map[cid.Cid]struct{}{}
 	j.opened = j.cfg.now()
-	j.size = 0
+	j.size, j.records = 0, 0
 	if err := automobile.WriteHeader(io.MultiWriter(j.buf, j.hash), nil); err != nil {
+		j.abandon()
 		return fmt.Errorf("writing batch header: %w", err)
 	}
 	hs, err := automobile.HeaderSize(datamodel.HeaderModel{Version: 1})
 	if err != nil {
+		j.abandon()
 		return err
 	}
 	j.size = int64(hs)
@@ -326,16 +373,21 @@ func (j *Journal) open() error {
 }
 
 // seal closes the open batch and renames it to its CID. The caller holds the
-// lock, and the batch is open.
+// lock, and the batch is open. Whether or not it succeeds, no batch is open
+// afterwards: a batch it could not seal stays on disk for the next open to
+// recover.
 func (j *Journal) seal() (cid.Cid, error) {
-	if err := errors.Join(j.buf.Flush(), j.file.Sync(), j.file.Close()); err != nil {
+	err := errors.Join(j.buf.Flush(), j.file.Sync(), j.file.Close())
+	digest := j.hash.Sum(nil)
+	j.file = nil
+	j.abandon()
+	if err != nil {
 		return cid.Undef, fmt.Errorf("closing batch: %w", err)
 	}
-	batch, err := batchCID(j.hash.Sum(nil))
+	batch, err := batchCID(digest)
 	if err != nil {
 		return cid.Undef, err
 	}
-	j.file, j.buf, j.hash, j.have = nil, nil, nil, nil
 	if err := os.Rename(j.openPath(), j.batchPath(batch)); err != nil {
 		return cid.Undef, fmt.Errorf("naming batch: %w", err)
 	}
@@ -346,9 +398,11 @@ func (j *Journal) seal() (cid.Cid, error) {
 	return batch, nil
 }
 
-// recover seals a batch an earlier process left open. Whatever follows the
-// last whole block is dropped, and a batch with no blocks is deleted.
-func (j *Journal) recover() error {
+// recoverOpen seals a batch left on disk unsealed, by an earlier process or
+// by a write that failed in this one. Whatever follows the last whole block
+// is dropped, and a batch with no blocks is deleted. The caller holds the
+// lock, or is the only user of the journal, and no batch is open.
+func (j *Journal) recoverOpen() error {
 	path := j.openPath()
 	f, err := os.OpenFile(path, os.O_RDWR, 0)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -402,7 +456,10 @@ func (j *Journal) recover() error {
 	if err := os.Rename(path, j.batchPath(batch)); err != nil {
 		return fmt.Errorf("naming the batch left open: %w", err)
 	}
-	j.sealed <- struct{}{}
+	select {
+	case j.sealed <- struct{}{}:
+	default:
+	}
 	return nil
 }
 
