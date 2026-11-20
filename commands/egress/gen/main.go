@@ -6,7 +6,7 @@ import (
 	"os"
 
 	jsg "github.com/alanshaw/dag-json-gen"
-	"github.com/fil-forge/libforge/commands/space/egress"
+	"github.com/fil-forge/libforge/commands/egress"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
@@ -26,6 +26,9 @@ func main() {
 	models := []any{
 		egress.TrackArguments{},
 		egress.TrackOK{},
+		egress.ConsolidateArguments{},
+		egress.ConsolidateOK{},
+		egress.ReceiptError{},
 	}
 	const (
 		cborFile = "../cbor_gen.go"
