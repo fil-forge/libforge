@@ -5,7 +5,7 @@ go 1.27.0
 require (
 	github.com/alanshaw/dag-json-gen v0.0.11
 	github.com/fil-forge/automobile v0.0.1
-	github.com/fil-forge/ucantone v0.0.0-20261120104359-4253712d41e4
+	github.com/fil-forge/ucantone v0.0.0-20261120160831-cf6c452a3cd7
 	github.com/filecoin-project/go-data-segment v0.0.1
 	github.com/filecoin-project/go-fil-commcid v0.3.1
 	github.com/filecoin-project/go-fil-commp-hashhash v0.4.0
