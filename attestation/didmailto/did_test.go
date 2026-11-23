@@ -20,6 +20,26 @@ func TestNew(t *testing.T) {
 		require.Equal(t, "did:mailto:mail.example.com:user", d.String())
 	})
 
+	t.Run("characters a DID cannot carry are percent-encoded", func(t *testing.T) {
+		cases := map[string]string{
+			"user+tag@example.com":    "did:mailto:example.com:user%2Btag",
+			"user~name@example.com":   "did:mailto:example.com:user%7Ename",
+			"o'brien@example.com":     "did:mailto:example.com:o%27brien",
+			"a!b#c$d@example.com":     "did:mailto:example.com:a%21b%23c%24d",
+			"user*name@example.com":   "did:mailto:example.com:user%2Aname",
+			"email@[123.123.123.123]": "did:mailto:%5B123.123.123.123%5D:email",
+		}
+		for email, want := range cases {
+			d, err := New(email)
+			require.NoError(t, err, email)
+			require.Equal(t, want, d.String())
+
+			got, err := Email(d)
+			require.NoError(t, err, email)
+			require.Equal(t, email, got)
+		}
+	})
+
 	t.Run("missing @ returns error", func(t *testing.T) {
 		_, err := New("notanemail")
 		require.Error(t, err)
@@ -60,6 +80,15 @@ func TestEmail(t *testing.T) {
 		require.ErrorIs(t, err, ErrInvalidMailtoDID)
 	})
 
+	t.Run("a mailto DID without a domain and a local part returns error", func(t *testing.T) {
+		for _, str := range []string{"did:mailto:example.com", "did:mailto:example.com:user:extra"} {
+			d, err := did.Parse(str)
+			require.NoError(t, err)
+			_, err = Email(d)
+			require.ErrorIs(t, err, ErrInvalidMailtoDID, str)
+		}
+	})
+
 	t.Run("round-trips unusual emails", func(t *testing.T) {
 		emails := []string{
 			// https://gist.github.com/cjaoude/fd9910626629b53c4d25#file-gistfile1-txt-L5
@@ -80,6 +109,9 @@ func TestEmail(t *testing.T) {
 			"email@example.museum",
 			"email@example.co.jp",
 			"firstname-lastname@example.com",
+			"first~last@example.com",
+			"first'last@example.com",
+			"first!#$%&*/=?^`{|}last@example.com",
 			// https://gist.github.com/cjaoude/fd9910626629b53c4d25#file-gistfile1-txt-L24
 			// TODO: none of these parse with net/mail
 			// "much.”more\\ unusual”@example.com",
