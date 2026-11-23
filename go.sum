@@ -2,8 +2,8 @@ github.com/alanshaw/dag-json-gen v0.0.11 h1:QJRnj9LeHlHtMnrJ1rY2czINHIfun7jmzA/M
 github.com/alanshaw/dag-json-gen v0.0.11/go.mod h1:v1YBZcS4B355MqxtyQr+fGNbEhm0CzHd+gOqOO/MZ+I=
 github.com/fil-forge/automobile v0.0.1 h1:9xB3yc4l5b9EdRJSJcNwudgBFNHoMPEAdcb7GfobLhA=
 github.com/fil-forge/automobile v0.0.1/go.mod h1:TsO7jlO8ykJZY5tF8j4GsUcu3F02lEzxO7ULoB61hRA=
-github.com/fil-forge/ucantone v0.0.0-20261120160831-cf6c452a3cd7 h1:3Bhat1RvTC2z3NMpy6l22C97VKQYp2dEBxY1SdJsW4I=
-github.com/fil-forge/ucantone v0.0.0-20261120160831-cf6c452a3cd7/go.mod h1:PJe9Lcv+QWawlM29ItA9y5JzFIs37gZ3jODxYKXbQkM=
+github.com/fil-forge/ucantone v0.0.0-20261123131543-0ef2b25abb66 h1:bjARwsoQ+D3xANVSIbCSQSUvb5ZR4GdGV8dRXnoD/cs=
+github.com/fil-forge/ucantone v0.0.0-20261123131543-0ef2b25abb66/go.mod h1:PJe9Lcv+QWawlM29ItA9y5JzFIs37gZ3jODxYKXbQkM=
 github.com/filecoin-project/go-data-segment v0.0.1 h1:1wmDxOG4ubWQm3ZC1XI5nCon5qgSq7Ra3Rb6Dbu10Gs=
 github.com/filecoin-project/go-data-segment v0.0.1/go.mod h1:H0/NKbsRxmRFBcLibmABv+yFNHdmtl5AyplYLnb0Zv4=
 github.com/filecoin-project/go-fil-commcid v0.3.1 h1:4EfxpHSlvtkOqa9weG2Yt5kxFmPib2xU7Uc9Lbqk7fs=
