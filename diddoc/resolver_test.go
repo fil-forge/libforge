@@ -1,9 +1,9 @@
 package diddoc_test
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/fil-forge/libforge/diddoc"
@@ -29,9 +29,12 @@ func TestHandlerWithResolver(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	serviceDID := did.MustParse("did:web:" + strings.ReplaceAll(srv.Listener.Addr().String(), ":", "%3A"))
+	// A did:web names a host, never an IP address, so the test server is
+	// addressed as localhost.
+	_, port, err := net.SplitHostPort(srv.Listener.Addr().String())
+	require.NoError(t, err)
+	serviceDID := did.MustParse("did:web:localhost%3A" + port)
 	doc := newDocument(t, serviceDID.String())
-	var err error
 	handler, err = diddoc.NewHandler(doc, diddoc.WithTTL(0))
 	require.NoError(t, err)
 
