@@ -13,7 +13,8 @@ import (
 // did, so the invocation carries no proofs: the service decides whether to
 // accept a report by who issued it.
 //
-// A report is safe to repeat. Each count is a total that replaces what the
-// service holds for its space and hour. One count the service cannot use does
+// A report is safe to repeat, and reports may arrive in any order. Each count
+// is a total that only grows, and the service keeps the largest it is sent
+// for a space and hour. One count the service cannot use does
 // not fail the report: it comes back as a [Warning] beside the result.
 var Report = binding.Bind[*ReportArguments, *ReportOK](command.MustParse("/s3/usage/report"))
