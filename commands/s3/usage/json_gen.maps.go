@@ -12,7 +12,6 @@ import (
 	"sort"
 
 	jsg "github.com/alanshaw/dag-json-gen"
-	did "github.com/fil-forge/ucantone/did"
 	cid "github.com/ipfs/go-cid"
 )
 
@@ -174,27 +173,27 @@ func (t *ReportOK) MarshalDagJSON(w io.Writer) error {
 		return err
 	}
 
-	// t.Skipped ([]did.DID) (slice)
-	if len("skipped") > 8192 {
-		return fmt.Errorf("string in field \"skipped\" was too long")
+	// t.Warnings ([]usage.Warning) (slice)
+	if len("warnings") > 8192 {
+		return fmt.Errorf("string in field \"warnings\" was too long")
 	}
-	if err := jw.WriteString(string("skipped")); err != nil {
-		return fmt.Errorf("writing string for field \"skipped\": %w", err)
+	if err := jw.WriteString(string("warnings")); err != nil {
+		return fmt.Errorf("writing string for field \"warnings\": %w", err)
 	}
 	if err := jw.WriteObjectColon(); err != nil {
 		return err
 	}
-	if len(t.Skipped) > 8192 {
-		return fmt.Errorf("slice value in field t.Skipped was too long")
+	if len(t.Warnings) > 8192 {
+		return fmt.Errorf("slice value in field t.Warnings was too long")
 	}
 
 	if err := jw.WriteArrayOpen(); err != nil {
-		return fmt.Errorf("writing array open for field t.Skipped: %w", err)
+		return fmt.Errorf("writing array open for field t.Warnings: %w", err)
 	}
-	for i, v := range t.Skipped {
+	for i, v := range t.Warnings {
 		if i > 0 {
 			if err := jw.WriteComma(); err != nil {
-				return fmt.Errorf("writing comma for field t.Skipped: %w", err)
+				return fmt.Errorf("writing comma for field t.Warnings: %w", err)
 			}
 		}
 		if err := v.MarshalDagJSON(jw); err != nil {
@@ -202,7 +201,7 @@ func (t *ReportOK) MarshalDagJSON(w io.Writer) error {
 		}
 	}
 	if err := jw.WriteArrayClose(); err != nil {
-		return fmt.Errorf("writing array close for field t.Skipped: %w", err)
+		return fmt.Errorf("writing array close for field t.Warnings: %w", err)
 	}
 
 	if err := jw.WriteObjectClose(); err != nil {
@@ -244,42 +243,42 @@ func (t *ReportOK) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			switch name {
 
-			// t.Skipped ([]did.DID) (slice)
-			case "skipped":
+			// t.Warnings ([]usage.Warning) (slice)
+			case "warnings":
 				{
 
 					if err := jr.ReadArrayOpen(); err != nil {
-						return fmt.Errorf("reading array open for field t.Skipped: %w", err)
+						return fmt.Errorf("reading array open for field t.Warnings: %w", err)
 					}
 
 					close, err := jr.PeekArrayClose()
 					if err != nil {
-						return fmt.Errorf("peeking array close for field t.Skipped: %w", err)
+						return fmt.Errorf("peeking array close for field t.Warnings: %w", err)
 					}
 					if close {
 						if err := jr.ReadArrayClose(); err != nil {
-							return fmt.Errorf("reading array close for field t.Skipped: %w", err)
+							return fmt.Errorf("reading array close for field t.Warnings: %w", err)
 						}
 
 					} else {
 						for i := 0; i < 8192; i++ {
-							item := make([]did.DID, 1)
+							item := make([]Warning, 1)
 
 							if err := item[0].UnmarshalDagJSON(jr); err != nil {
 								return fmt.Errorf("unmarshaling item[0]: %w", err)
 							}
 
-							t.Skipped = append(t.Skipped, item[0])
+							t.Warnings = append(t.Warnings, item[0])
 
 							close, err := jr.ReadArrayCloseOrComma()
 							if err != nil {
-								return fmt.Errorf("reading array close or comma for field t.Skipped: %w", err)
+								return fmt.Errorf("reading array close or comma for field t.Warnings: %w", err)
 							}
 							if close {
 								break
 							}
 							if i == 8192-1 {
-								return fmt.Errorf("reading array for field t.Skipped: slice too large")
+								return fmt.Errorf("reading array for field t.Warnings: slice too large")
 							}
 						}
 					}
@@ -301,6 +300,170 @@ func (t *ReportOK) UnmarshalDagJSON(r io.Reader) (err error) {
 			}
 			if i == 8192-1 {
 				return fmt.Errorf("map too large for ReportOK")
+			}
+		}
+	}
+
+	return nil
+}
+func (t *Warning) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteObjectOpen(); err != nil {
+		return err
+	}
+	written := false
+
+	// t.Message (string) (string)
+	if len("message") > 8192 {
+		return fmt.Errorf("string in field \"message\" was too long")
+	}
+	if err := jw.WriteString(string("message")); err != nil {
+		return fmt.Errorf("writing string for field \"message\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Message) > 8192 {
+		return fmt.Errorf("string in field t.Message was too long")
+	}
+	if err := jw.WriteString(string(t.Message)); err != nil {
+		return fmt.Errorf("writing string for field t.Message: %w", err)
+	}
+	written = true
+	if written {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Name (string) (string)
+	if len("name") > 8192 {
+		return fmt.Errorf("string in field \"name\" was too long")
+	}
+	if err := jw.WriteString(string("name")); err != nil {
+		return fmt.Errorf("writing string for field \"name\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Name) > 8192 {
+		return fmt.Errorf("string in field t.Name was too long")
+	}
+	if err := jw.WriteString(string(t.Name)); err != nil {
+		return fmt.Errorf("writing string for field t.Name: %w", err)
+	}
+	written = true
+	if written {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Space (did.DID) (struct)
+	if len("space") > 8192 {
+		return fmt.Errorf("string in field \"space\" was too long")
+	}
+	if err := jw.WriteString(string("space")); err != nil {
+		return fmt.Errorf("writing string for field \"space\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if err := t.Space.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Space: %w", err)
+	}
+	if err := jw.WriteObjectClose(); err != nil {
+		return err
+	}
+	return nil
+}
+func (t *Warning) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = Warning{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadObjectOpen(); err != nil {
+		return fmt.Errorf("reading object open for Warning: %w", err)
+	}
+	close, err := jr.PeekObjectClose()
+	if err != nil {
+		return fmt.Errorf("peeking object close for Warning: %w", err)
+	}
+	if close {
+		if err := jr.ReadObjectClose(); err != nil {
+			return fmt.Errorf("reading object close for Warning: %w", err)
+		}
+	} else {
+		for i := uint64(0); i < 8192; i++ {
+			name, err := jr.ReadString(8192)
+			if err != nil {
+				if errors.Is(err, jsg.ErrLimitExceeded) {
+					return fmt.Errorf("reading string for field Warning: string too large")
+				}
+				return fmt.Errorf("reading string for field Warning: %w", err)
+			}
+			if err := jr.ReadObjectColon(); err != nil {
+				return fmt.Errorf("reading object colon for field Warning: %w", err)
+			}
+			switch name {
+
+			// t.Message (string) (string)
+			case "message":
+				{
+					sval, err := jr.ReadString(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading string for field t.Message: string too long")
+						}
+						return fmt.Errorf("reading string for field t.Message: %w", err)
+					}
+					t.Message = string(sval)
+				}
+
+				// t.Name (string) (string)
+			case "name":
+				{
+					sval, err := jr.ReadString(8192)
+					if err != nil {
+						if errors.Is(err, jsg.ErrLimitExceeded) {
+							return fmt.Errorf("reading string for field t.Name: string too long")
+						}
+						return fmt.Errorf("reading string for field t.Name: %w", err)
+					}
+					t.Name = string(sval)
+				}
+
+				// t.Space (did.DID) (struct)
+			case "space":
+
+				if err := t.Space.UnmarshalDagJSON(jr); err != nil {
+					return fmt.Errorf("unmarshaling t.Space: %w", err)
+				}
+
+			default:
+				// Field doesn't exist on this type, so ignore it
+				if err := jr.DiscardType(); err != nil {
+					return fmt.Errorf("ignoring field %s for Warning: %w", name, err)
+				}
+			}
+
+			close, err := jr.ReadObjectCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading object close or comma for field Warning: %w", err)
+			}
+			if close {
+				break
+			}
+			if i == 8192-1 {
+				return fmt.Errorf("map too large for Warning")
 			}
 		}
 	}

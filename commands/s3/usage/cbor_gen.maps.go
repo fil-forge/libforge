@@ -10,7 +10,6 @@ import (
 	"math"
 	"sort"
 
-	did "github.com/fil-forge/ucantone/did"
 	cid "github.com/ipfs/go-cid"
 	cbg "github.com/whyrusleeping/cbor-gen"
 	xerrors "golang.org/x/xerrors"
@@ -164,26 +163,26 @@ func (t *ReportOK) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 
-	// t.Skipped ([]did.DID) (slice)
-	if len("skipped") > 8192 {
-		return xerrors.Errorf("Value in field \"skipped\" was too long")
+	// t.Warnings ([]usage.Warning) (slice)
+	if len("warnings") > 8192 {
+		return xerrors.Errorf("Value in field \"warnings\" was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("skipped"))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("warnings"))); err != nil {
 		return err
 	}
-	if _, err := cw.WriteString(string("skipped")); err != nil {
+	if _, err := cw.WriteString(string("warnings")); err != nil {
 		return err
 	}
 
-	if len(t.Skipped) > 8192 {
-		return xerrors.Errorf("Slice value in field t.Skipped was too long")
+	if len(t.Warnings) > 8192 {
+		return xerrors.Errorf("Slice value in field t.Warnings was too long")
 	}
 
-	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Skipped))); err != nil {
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Warnings))); err != nil {
 		return err
 	}
-	for _, v := range t.Skipped {
+	for _, v := range t.Warnings {
 		if err := v.MarshalCBOR(cw); err != nil {
 			return err
 		}
@@ -217,6 +216,173 @@ func (t *ReportOK) UnmarshalCBOR(r io.Reader) (err error) {
 
 	n := extra
 
+	nameBuf := make([]byte, 8)
+	for i := uint64(0); i < n; i++ {
+		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(cr, func(cid.Cid) {}); err != nil {
+				return err
+			}
+			continue
+		}
+
+		switch string(nameBuf[:nameLen]) {
+		// t.Warnings ([]usage.Warning) (slice)
+		case "warnings":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 8192 {
+				return fmt.Errorf("t.Warnings: array too large (%d)", extra)
+			}
+
+			if maj != cbg.MajArray {
+				return fmt.Errorf("expected cbor array")
+			}
+
+			if extra > 0 {
+				t.Warnings = make([]Warning, extra)
+			}
+
+			for i := 0; i < int(extra); i++ {
+				{
+					var maj byte
+					var extra uint64
+					var err error
+					_ = maj
+					_ = extra
+					_ = err
+
+					{
+
+						if err := t.Warnings[i].UnmarshalCBOR(cr); err != nil {
+							return xerrors.Errorf("unmarshaling t.Warnings[i]: %w", err)
+						}
+
+					}
+
+				}
+			}
+
+		default:
+			// Field doesn't exist on this type, so ignore it
+			if err := cbg.ScanForLinks(r, func(cid.Cid) {}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+func (t *Warning) MarshalCBOR(w io.Writer) error {
+	if t == nil {
+		_, err := w.Write(cbg.CborNull)
+		return err
+	}
+
+	cw := cbg.NewCborWriter(w)
+
+	if _, err := cw.Write([]byte{163}); err != nil {
+		return err
+	}
+
+	// t.Name (string) (string)
+	if len("name") > 8192 {
+		return xerrors.Errorf("Value in field \"name\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("name"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("name")); err != nil {
+		return err
+	}
+
+	if len(t.Name) > 8192 {
+		return xerrors.Errorf("Value in field t.Name was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.Name))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string(t.Name)); err != nil {
+		return err
+	}
+
+	// t.Space (did.DID) (struct)
+	if len("space") > 8192 {
+		return xerrors.Errorf("Value in field \"space\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("space"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("space")); err != nil {
+		return err
+	}
+
+	if err := t.Space.MarshalCBOR(cw); err != nil {
+		return err
+	}
+
+	// t.Message (string) (string)
+	if len("message") > 8192 {
+		return xerrors.Errorf("Value in field \"message\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("message"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("message")); err != nil {
+		return err
+	}
+
+	if len(t.Message) > 8192 {
+		return xerrors.Errorf("Value in field t.Message was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len(t.Message))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string(t.Message)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *Warning) UnmarshalCBOR(r io.Reader) (err error) {
+	*t = Warning{}
+
+	cr := cbg.NewCborReader(r)
+
+	maj, extra, err := cr.ReadHeader()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+
+	if maj != cbg.MajMap {
+		return fmt.Errorf("cbor input should be of type map")
+	}
+
+	if extra > cbg.MaxLength {
+		return fmt.Errorf("Warning: map struct too large (%d)", extra)
+	}
+
+	n := extra
+
 	nameBuf := make([]byte, 7)
 	for i := uint64(0); i < n; i++ {
 		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
@@ -233,44 +399,37 @@ func (t *ReportOK) UnmarshalCBOR(r io.Reader) (err error) {
 		}
 
 		switch string(nameBuf[:nameLen]) {
-		// t.Skipped ([]did.DID) (slice)
-		case "skipped":
+		// t.Name (string) (string)
+		case "name":
 
-			maj, extra, err = cr.ReadHeader()
-			if err != nil {
-				return err
-			}
-
-			if extra > 8192 {
-				return fmt.Errorf("t.Skipped: array too large (%d)", extra)
-			}
-
-			if maj != cbg.MajArray {
-				return fmt.Errorf("expected cbor array")
-			}
-
-			if extra > 0 {
-				t.Skipped = make([]did.DID, extra)
-			}
-
-			for i := 0; i < int(extra); i++ {
-				{
-					var maj byte
-					var extra uint64
-					var err error
-					_ = maj
-					_ = extra
-					_ = err
-
-					{
-
-						if err := t.Skipped[i].UnmarshalCBOR(cr); err != nil {
-							return xerrors.Errorf("unmarshaling t.Skipped[i]: %w", err)
-						}
-
-					}
-
+			{
+				sval, err := cbg.ReadStringWithMax(cr, 8192)
+				if err != nil {
+					return err
 				}
+
+				t.Name = string(sval)
+			}
+			// t.Space (did.DID) (struct)
+		case "space":
+
+			{
+
+				if err := t.Space.UnmarshalCBOR(cr); err != nil {
+					return xerrors.Errorf("unmarshaling t.Space: %w", err)
+				}
+
+			}
+			// t.Message (string) (string)
+		case "message":
+
+			{
+				sval, err := cbg.ReadStringWithMax(cr, 8192)
+				if err != nil {
+					return err
+				}
+
+				t.Message = string(sval)
 			}
 
 		default:

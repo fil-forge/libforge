@@ -44,11 +44,35 @@ type HourEgress struct {
 	Bytes uint64
 }
 
+// Names of the warnings a report can come back with.
+const (
+	// UnknownBucketWarningName says the service has no record of the space's
+	// bucket, so its counts were not stored.
+	UnknownBucketWarningName = "UnknownBucket"
+	// BucketRegionMismatchWarningName says another gateway serves the space's
+	// bucket, so its counts were not stored.
+	BucketRegionMismatchWarningName = "BucketRegionMismatch"
+)
+
 // ReportOK is the success return for `/s3/usage/report`.
 type ReportOK struct {
-	// Skipped is the spaces whose counts were not stored, because the service
-	// does not know the space or another gateway serves its bucket. The other
-	// counts in the report were stored. The gateway does not send a skipped
-	// count again.
-	Skipped []did.DID `cborgen:"skipped" dagjsongen:"skipped"`
+	// Warnings is what the service has to say about a report it accepted,
+	// such as the spaces whose counts it did not store. The rest of the report
+	// was stored. It is empty when there is nothing to say.
+	//
+	// An accepted report settles every count in it, warned about or not: the
+	// gateway does not send them again. A warning is for the gateway to log
+	// and count, by its name.
+	Warnings []Warning `cborgen:"warnings" dagjsongen:"warnings"`
+}
+
+// Warning is one thing the service has to say about a space in a report.
+type Warning struct {
+	// Name is the machine readable name of the warning. A gateway may meet a
+	// name it does not know, from a newer service.
+	Name string `cborgen:"name" dagjsongen:"name"`
+	// Message is a human readable description of the warning.
+	Message string `cborgen:"message" dagjsongen:"message"`
+	// Space is the space the warning is about.
+	Space did.DID `cborgen:"space" dagjsongen:"space"`
 }

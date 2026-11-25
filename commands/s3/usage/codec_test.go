@@ -74,22 +74,29 @@ func TestReportArgumentsRoundTrip(t *testing.T) {
 func TestReportOKRoundTrip(t *testing.T) {
 	b, err := did.Parse(spaceB)
 	require.NoError(t, err)
-	require.Equal(t, `{"skipped":["`+spaceB+`"]}`, roundTrip(t, &usage.ReportOK{Skipped: []did.DID{b}}))
+	in := &usage.ReportOK{Warnings: []usage.Warning{{
+		Name:    usage.UnknownBucketWarningName,
+		Message: "no bucket has this space",
+		Space:   b,
+	}}}
+	require.Equal(t,
+		`{"warnings":[{"message":"no bucket has this space","name":"UnknownBucket","space":"`+spaceB+`"}]}`,
+		roundTrip(t, in))
 }
 
-// A report that skipped nothing says so with an empty list, and a reader gets
-// no spaces back from it.
-func TestReportOKWithNothingSkipped(t *testing.T) {
-	for _, in := range []*usage.ReportOK{{}, {Skipped: []did.DID{}}} {
+// A report with nothing to warn about says so with an empty list, and a
+// reader gets no warnings back from it.
+func TestReportOKWithNoWarnings(t *testing.T) {
+	for _, in := range []*usage.ReportOK{{}, {Warnings: []usage.Warning{}}} {
 		var cb bytes.Buffer
 		require.NoError(t, in.MarshalCBOR(&cb))
 		var out usage.ReportOK
 		require.NoError(t, out.UnmarshalCBOR(&cb))
-		require.Empty(t, out.Skipped)
+		require.Empty(t, out.Warnings)
 
 		var jb bytes.Buffer
 		require.NoError(t, in.MarshalDagJSON(&jb))
-		require.Equal(t, `{"skipped":[]}`, jb.String())
+		require.Equal(t, `{"warnings":[]}`, jb.String())
 	}
 }
 

@@ -26,6 +26,7 @@ func main() {
 	mapModels := []any{
 		usage.ReportArguments{},
 		usage.ReportOK{},
+		usage.Warning{},
 	}
 	// The egress entries are tuple encoded: they repeat once for each space and
 	// each hour, and a map would repeat its key names with them.
