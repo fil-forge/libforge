@@ -38,9 +38,9 @@ type HourEgress struct {
 	// Hour is the start of the hour, as a Unix timestamp in seconds. It is a
 	// whole number of hours.
 	Hour int64
-	// Bytes is the bytes sent in the hour so far. It is a total, and replaces
-	// any earlier report for the same hour: an hour still in progress is
-	// reported again as it grows.
+	// Bytes is the bytes sent in the hour so far. It is a total that only
+	// grows, and the service keeps the largest reported for the hour: an hour
+	// still in progress is reported again as it grows.
 	Bytes uint64
 }
 
