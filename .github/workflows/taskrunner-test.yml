@@ -1,0 +1,54 @@
+name: Task runner tests
+
+# The task runner's tests need a Postgres, which the reusable go-test workflow
+# does not provide: there they are skipped. This runs them against one.
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  taskrunner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      TASKRUNNER_TEST_DSN: postgres://postgres:test@127.0.0.1:5432/postgres?sslmode=disable
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      # -v and the grep make a run in which the tests skipped fail: a skip
+      # here means the database was not reached.
+      - name: Test
+        run: |
+          set -o pipefail
+          go test -count=1 -v ./taskrunner/... | tee test.log | grep -E '^(---|===|ok|FAIL|panic)' | grep -v '^=== ' || true
+          if grep -q -- '--- SKIP' test.log; then
+            echo "task runner tests were skipped: the database was not reached" >&2
+            exit 1
+          fi
+          if grep -qE '^(FAIL|--- FAIL|panic:)' test.log; then
+            exit 1
+          fi
