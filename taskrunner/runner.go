@@ -977,26 +977,11 @@ func (r *Runner) Wait(ctx context.Context, queueName string, id TaskID) ([]byte,
 	if !ok {
 		return nil, fmt.Errorf("task runner: unknown queue %q", queueName)
 	}
-	wait := newBackoff(r.opts.PollInterval)
-	for {
-		ch := r.addWaiter(id)
-		res, err, done := r.outcome(ctx, q, id)
-		if done {
-			r.removeWaiter(id, ch)
-			return res, err
-		}
-		t := time.NewTimer(wait.next())
-		select {
-		case <-ch:
-		case <-t.C:
-		case <-ctx.Done():
-			t.Stop()
-			r.removeWaiter(id, ch)
-			return nil, ctx.Err()
-		}
-		t.Stop()
-		r.removeWaiter(id, ch)
+	c, err := r.waitFor(ctx, q, id)
+	if err != nil {
+		return nil, err
 	}
+	return c.Result, c.Err
 }
 
 // Completion is how one task ended, as [Runner.WaitAll] reports it.
@@ -1062,8 +1047,8 @@ func (r *Runner) waitFor(ctx context.Context, q *queue, id TaskID) (Completion, 
 }
 
 // outcome reads a task's state. done is false while it is pending. A read
-// that failed is reported as the task's error with done true, which is how
-// [Runner.Wait] returns it.
+// that failed is reported as the task's error with done true, for a caller
+// that gives up on the task either way.
 func (r *Runner) outcome(ctx context.Context, q *queue, id TaskID) (res []byte, err error, done bool) {
 	o, done, rerr := r.read(ctx, q, id)
 	if rerr != nil {
