@@ -132,6 +132,22 @@ if errors.As(err, &failed) {
 }
 ```
 
+`WaitAll` waits for several tasks and returns how each ended, by ID. A task that failed, expired or was cancelled has finished, so it is reported in its `Completion` and does not fail the wait. The error `WaitAll` returns is the wait's own: the ctx ended, or a read failed.
+
+```go
+ended, err := r.WaitAll(ctx, "queue-space-upload", ids...)
+if err != nil {
+	return err // the wait did not finish
+}
+for id, c := range ended {
+	if c.Err != nil {
+		log.Printf("task %s: %v", id, c.Err)
+		continue
+	}
+	use(c.Result)
+}
+```
+
 ## Submitting from a handler
 
 `ex.Submit` adds an async task that commits with the submitting task, so it exists only if the submitter succeeds. `ex.SubmitAll` adds many in one statement per queue, as `SubmitAllTx` does, for a handler that queues work for each of many subjects. `ex.Run` runs a sync child inline. The child's writes join its parent's, its subject stays leased until the parent commits, and if it fails, the parent fails too, even if the parent's handler carries on.
@@ -230,12 +246,13 @@ A caller that must wait for everything the queue still has to do for one subject
 ```go
 // Is a change to this tenant still queued or running?
 changes, err := r.PendingOn(ctx, "queue-tenant", tenant)
-for _, id := range changes {
-	// Wait for each of them before answering. A task that failed has
-	// finished too, so only the caller's own deadline stops the wait.
-	if _, err := r.Wait(ctx, "queue-tenant", id); err != nil && ctx.Err() != nil {
-		return ctx.Err()
-	}
+if err != nil {
+	return err
+}
+// Wait for all of them before answering. One that failed has finished too,
+// so what it returns is not read.
+if _, err := r.WaitAll(ctx, "queue-tenant", changes...); err != nil {
+	return err
 }
 ```
 
