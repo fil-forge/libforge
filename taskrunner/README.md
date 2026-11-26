@@ -230,11 +230,16 @@ A caller that must wait for everything the queue still has to do for one subject
 ```go
 // Is a change to this tenant still queued or running?
 changes, err := r.PendingOn(ctx, "queue-tenant", tenant)
-if len(changes) > 0 {
-	// Wait for the last of them before answering.
-	_, err = r.Wait(ctx, "queue-tenant", changes[len(changes)-1])
+for _, id := range changes {
+	// Wait for each of them before answering. A task that failed has
+	// finished too, so only the caller's own deadline stops the wait.
+	if _, err := r.Wait(ctx, "queue-tenant", id); err != nil && ctx.Err() != nil {
+		return ctx.Err()
+	}
 }
 ```
+
+Wait for every task it returns. A due task runs ahead of an older one that is delayed or waiting to retry, so the newest finishing says nothing about the rest.
 
 ## Running delayed work now
 
