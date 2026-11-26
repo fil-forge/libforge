@@ -1004,6 +1004,11 @@ type Completion struct {
 //
 // It is for a caller that needs the results of several tasks, and for one
 // that must only wait until they are all done, which ignores them.
+//
+// A task dropped by a replacement is reported as ErrNotFound, as Wait reports
+// it: a replacement takes the pending task's row under a new ID, so the wait
+// cannot follow it. A caller that waits as a barrier must not take a
+// replaceable task's ErrNotFound for the work having been done.
 func (r *Runner) WaitAll(ctx context.Context, queueName string, ids ...TaskID) (map[TaskID]Completion, error) {
 	q, ok := r.byName[queueName]
 	if !ok {

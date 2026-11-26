@@ -211,6 +211,10 @@ func (r *Runner) Pending(ctx context.Context, queueName string, subjects []strin
 // not, oldest first. It reads and changes nothing else: it is for a caller that
 // must wait for whatever the queue still has to do for the subject, such as a
 // reader that must not answer from before a queued write.
+//
+// The IDs are those the tasks have now. A replacement submitted afterwards
+// gives the task it replaces a new ID, so waiting on what PendingOn returned
+// is a barrier only for tasks that are not replacements.
 func (r *Runner) PendingOn(ctx context.Context, queueName, subject string) ([]TaskID, error) {
 	q, ok := r.byName[queueName]
 	if !ok {
