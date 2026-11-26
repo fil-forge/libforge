@@ -28,11 +28,13 @@ func main() {
 		usage.ReportOK{},
 		usage.Warning{},
 	}
-	// The egress entries are tuple encoded: they repeat once for each space and
-	// each hour, and a map would repeat its key names with them.
+	// The entries of each count are tuple encoded: they repeat once for each
+	// space and each hour, and a map would repeat its key names with them.
 	tupleModels := []any{
 		usage.SpaceEgress{},
 		usage.HourEgress{},
+		usage.SpaceObjects{},
+		usage.HourObjects{},
 	}
 	const (
 		cborTuples = "../cbor_gen.tuples.go"

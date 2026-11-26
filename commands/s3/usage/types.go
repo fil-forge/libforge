@@ -17,6 +17,9 @@ type ReportArguments struct {
 	// Egress is the bytes of object data the gateway sent to its clients, one
 	// entry for each bucket's space. A space appears at most once.
 	Egress []SpaceEgress `cborgen:"egress" dagjsongen:"egress"`
+	// Objects is the object counts of the gateway's buckets, one entry for
+	// each bucket's space. A space appears at most once.
+	Objects []SpaceObjects `cborgen:"objects" dagjsongen:"objects"`
 }
 
 // SpaceEgress is the egress of one space, by the hour.
@@ -42,6 +45,45 @@ type HourEgress struct {
 	// grows, and the service keeps the largest reported for the hour: an hour
 	// still in progress is reported again as it grows.
 	Bytes uint64
+}
+
+// SpaceObjects is the object counts of one space, by the hour.
+//
+// It is tuple encoded, as [Space, Hours], so that a space's DID is sent once
+// however many hours it has.
+type SpaceObjects struct {
+	// Space is the bucket's space.
+	Space did.DID
+	// Hours is the counts as of each hour reported. An hour appears at most
+	// once.
+	Hours []HourObjects
+}
+
+// HourObjects is the object counts of one space as of one hour.
+//
+// The two counts are totals over the life of the space, which only grow, so
+// the service keeps the largest of each reported for the hour: an hour still
+// in progress is reported again as they grow. The objects the space holds
+// are Added less Removed, read from the latest hour reported. An hour in
+// which nothing changed is not reported.
+//
+// It is tuple encoded, as [Hour, Added, Removed], because it repeats once
+// for each hour of each space and a map would carry its key names along with
+// it.
+type HourObjects struct {
+	// Hour is the start of the hour, as a Unix timestamp in seconds. It is a
+	// whole number of hours.
+	Hour int64
+	// Added is the objects the space has ever gained, as of the end of the
+	// hour or of the report if the hour is still in progress. An object is
+	// whatever the gateway counts as one, such as a version of a key or a
+	// delete marker.
+	Added uint64
+	// Removed is the objects the space has ever lost, as of the same
+	// instant. It is not a count of deletes: a delete that leaves a delete
+	// marker adds an object. A service reads a space that has lost more than
+	// it gained as holding none.
+	Removed uint64
 }
 
 // Names of the warnings a report can come back with.
