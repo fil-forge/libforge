@@ -240,3 +240,255 @@ func (t *HourEgress) UnmarshalDagJSON(r io.Reader) (err error) {
 	}
 	return nil
 }
+
+func (t *SpaceObjects) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("writing array open for field SpaceObjects: %w", err)
+	}
+
+	// t.Space (did.DID) (struct)
+	if err := t.Space.MarshalDagJSON(jw); err != nil {
+		return fmt.Errorf("marshaling field t.Space: %w", err)
+	}
+	if err := jw.WriteComma(); err != nil {
+		return fmt.Errorf("writing comma for field Hours: %w", err)
+	}
+
+	// t.Hours ([]usage.HourObjects) (slice)
+	if len(t.Hours) > 8192 {
+		return fmt.Errorf("slice value in field t.Hours was too long")
+	}
+
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("writing array open for field t.Hours: %w", err)
+	}
+	for i, v := range t.Hours {
+		if i > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return fmt.Errorf("writing comma for field t.Hours: %w", err)
+			}
+		}
+		if err := v.MarshalDagJSON(jw); err != nil {
+			return fmt.Errorf("marshaling field v: %w", err)
+		}
+	}
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("writing array close for field t.Hours: %w", err)
+	}
+
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("writing array close for field SpaceObjects: %w", err)
+	}
+	return nil
+}
+
+func (t *SpaceObjects) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = SpaceObjects{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadArrayOpen(); err != nil {
+		return fmt.Errorf("reading array open for field SpaceObjects: %w", err)
+	}
+	close, err := jr.PeekArrayClose()
+	if err != nil {
+		return fmt.Errorf("peeking array close for field SpaceObjects: %w", err)
+	}
+	if close {
+		return fmt.Errorf("json input has too few fields 0 < 2")
+	} else {
+
+		// t.Space (did.DID) (struct)
+
+		if err := t.Space.UnmarshalDagJSON(jr); err != nil {
+			return fmt.Errorf("unmarshaling t.Space: %w", err)
+		}
+
+		{
+			close, err := jr.ReadArrayCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading array close or comma for field SpaceObjects: %w", err)
+			}
+			if close {
+				return fmt.Errorf("json input has too few fields 1 < 2")
+			}
+		}
+
+		// t.Hours ([]usage.HourObjects) (slice)
+
+		{
+
+			if err := jr.ReadArrayOpen(); err != nil {
+				return fmt.Errorf("reading array open for field t.Hours: %w", err)
+			}
+
+			close, err := jr.PeekArrayClose()
+			if err != nil {
+				return fmt.Errorf("peeking array close for field t.Hours: %w", err)
+			}
+			if close {
+				if err := jr.ReadArrayClose(); err != nil {
+					return fmt.Errorf("reading array close for field t.Hours: %w", err)
+				}
+
+			} else {
+				for i := 0; i < 8192; i++ {
+					item := make([]HourObjects, 1)
+
+					if err := item[0].UnmarshalDagJSON(jr); err != nil {
+						return fmt.Errorf("unmarshaling item[0]: %w", err)
+					}
+
+					t.Hours = append(t.Hours, item[0])
+
+					close, err := jr.ReadArrayCloseOrComma()
+					if err != nil {
+						return fmt.Errorf("reading array close or comma for field t.Hours: %w", err)
+					}
+					if close {
+						break
+					}
+					if i == 8192-1 {
+						return fmt.Errorf("reading array for field t.Hours: slice too large")
+					}
+				}
+			}
+
+		}
+		if err := jr.ReadArrayClose(); err != nil {
+			return fmt.Errorf("reading array close for field SpaceObjects: %w", err)
+		}
+	}
+	return nil
+}
+
+func (t *HourObjects) MarshalDagJSON(w io.Writer) error {
+	jw := jsg.NewDagJsonWriter(w)
+	if t == nil {
+		err := jw.WriteNull()
+		return err
+	}
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("writing array open for field HourObjects: %w", err)
+	}
+
+	// t.Hour (int64) (int64)
+
+	if err := jw.WriteInt64(int64(t.Hour)); err != nil {
+		return fmt.Errorf("writing int64 for field t.Hour: %w", err)
+	}
+
+	if err := jw.WriteComma(); err != nil {
+		return fmt.Errorf("writing comma for field Added: %w", err)
+	}
+
+	// t.Added (uint64) (uint64)
+
+	if err := jw.WriteUint64(uint64(t.Added)); err != nil {
+		return fmt.Errorf("writing uint64 for field t.Added: %w", err)
+	}
+
+	if err := jw.WriteComma(); err != nil {
+		return fmt.Errorf("writing comma for field Removed: %w", err)
+	}
+
+	// t.Removed (uint64) (uint64)
+
+	if err := jw.WriteUint64(uint64(t.Removed)); err != nil {
+		return fmt.Errorf("writing uint64 for field t.Removed: %w", err)
+	}
+
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("writing array close for field HourObjects: %w", err)
+	}
+	return nil
+}
+
+func (t *HourObjects) UnmarshalDagJSON(r io.Reader) (err error) {
+	*t = HourObjects{}
+
+	jr := jsg.NewDagJsonReader(r)
+	defer func() {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
+	}()
+	if err := jr.ReadArrayOpen(); err != nil {
+		return fmt.Errorf("reading array open for field HourObjects: %w", err)
+	}
+	close, err := jr.PeekArrayClose()
+	if err != nil {
+		return fmt.Errorf("peeking array close for field HourObjects: %w", err)
+	}
+	if close {
+		return fmt.Errorf("json input has too few fields 0 < 3")
+	} else {
+
+		// t.Hour (int64) (int64)
+
+		{
+
+			nval, err := jr.ReadNumberAsInt64()
+			if err != nil {
+				return fmt.Errorf("reading int64 for field t.Hour: %w", err)
+			}
+			t.Hour = int64(nval)
+
+		}
+		{
+			close, err := jr.ReadArrayCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading array close or comma for field HourObjects: %w", err)
+			}
+			if close {
+				return fmt.Errorf("json input has too few fields 1 < 3")
+			}
+		}
+
+		// t.Added (uint64) (uint64)
+
+		{
+
+			nval, err := jr.ReadNumberAsUint64()
+			if err != nil {
+				return fmt.Errorf("reading uint64 for field t.Added: %w", err)
+			}
+			t.Added = uint64(nval)
+
+		}
+		{
+			close, err := jr.ReadArrayCloseOrComma()
+			if err != nil {
+				return fmt.Errorf("reading array close or comma for field HourObjects: %w", err)
+			}
+			if close {
+				return fmt.Errorf("json input has too few fields 2 < 3")
+			}
+		}
+
+		// t.Removed (uint64) (uint64)
+
+		{
+
+			nval, err := jr.ReadNumberAsUint64()
+			if err != nil {
+				return fmt.Errorf("reading uint64 for field t.Removed: %w", err)
+			}
+			t.Removed = uint64(nval)
+
+		}
+		if err := jr.ReadArrayClose(); err != nil {
+			return fmt.Errorf("reading array close for field HourObjects: %w", err)
+		}
+	}
+	return nil
+}

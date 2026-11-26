@@ -61,14 +61,32 @@ func TestReportArgumentsRoundTrip(t *testing.T) {
 				{Hour: 1795600800, Bytes: 4096},
 			}},
 		},
+		Objects: []usage.SpaceObjects{
+			{Space: a, Hours: []usage.HourObjects{
+				{Hour: 1795600800, Added: 120431, Removed: 88012},
+			}},
+		},
 	}
-	// The entries are tuples: [space, [[hour, bytes], ...]].
+	// The entries are tuples: [space, [[hour, bytes], ...]] and
+	// [space, [[hour, added, removed], ...]].
 	require.Equal(t,
 		`{"egress":[`+
 			`["`+spaceA+`",[[1795600800,5368709120],[1795604400,1048576]]],`+
 			`["`+spaceB+`",[[1795600800,4096]]]`+
+			`],"objects":[`+
+			`["`+spaceA+`",[[1795600800,120431,88012]]]`+
 			`]}`,
 		roundTrip(t, in))
+}
+
+// A report from a gateway that sends no object counts, as one written before
+// the field existed does, reads as a report with none.
+func TestReportArgumentsWithoutObjects(t *testing.T) {
+	var out usage.ReportArguments
+	require.NoError(t, out.UnmarshalDagJSON(bytes.NewReader([]byte(
+		`{"egress":[["`+spaceA+`",[[1795600800,4096]]]]}`))))
+	require.Len(t, out.Egress, 1)
+	require.Empty(t, out.Objects)
 }
 
 func TestReportOKRoundTrip(t *testing.T) {
@@ -111,5 +129,12 @@ func TestReportArgumentsRefusesTooManyEntries(t *testing.T) {
 	require.Error(t, in.MarshalCBOR(io.Discard))
 
 	in = &usage.ReportArguments{Egress: make([]usage.SpaceEgress, usage.MaxSpaces+1)}
+	require.Error(t, in.MarshalCBOR(io.Discard))
+
+	counts := make([]usage.HourObjects, usage.MaxHours+1)
+	in = &usage.ReportArguments{Objects: []usage.SpaceObjects{{Space: a, Hours: counts}}}
+	require.Error(t, in.MarshalCBOR(io.Discard))
+
+	in = &usage.ReportArguments{Objects: make([]usage.SpaceObjects, usage.MaxSpaces+1)}
 	require.Error(t, in.MarshalCBOR(io.Discard))
 }
