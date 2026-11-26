@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -1007,20 +1009,73 @@ func (r *Runner) WaitAll(ctx context.Context, queueName string, ids ...TaskID) (
 	if !ok {
 		return nil, fmt.Errorf("task runner: unknown queue %q", queueName)
 	}
-	// One read settles every task that has already ended, however many
-	// there are. Only those still pending are then waited for, one by one.
-	out, pending, err := r.readAll(ctx, q, ids)
-	if err != nil {
-		return nil, err
-	}
-	for _, id := range pending {
-		c, err := r.waitFor(ctx, q, id)
+	// Every round reads all the tasks still pending in one statement, so one
+	// that ends while another is slow is recorded within a poll of ending,
+	// long before its queue's retention could delete its row.
+	out := make(map[TaskID]Completion, len(ids))
+	remaining := ids
+	wait := newBackoff(r.opts.PollInterval)
+	for {
+		// Registered before the read, so a task that ends after it still
+		// wakes the wait.
+		woken := r.addWaiters(remaining)
+		ended, pending, err := r.readAll(ctx, q, remaining)
+		if err == nil {
+			maps.Copy(out, ended)
+			if len(pending) == 0 {
+				r.removeWaiters(remaining, woken)
+				return out, nil
+			}
+			err = awaitAny(ctx, woken, wait.next())
+		}
+		r.removeWaiters(remaining, woken)
 		if err != nil {
 			return nil, err
 		}
-		out[id] = c
+		remaining = pending
 	}
-	return out, nil
+}
+
+// maxWakeChannels is the most tasks a WaitAll round listens to for an early
+// wake. With more pending than this it only polls.
+const maxWakeChannels = 1024
+
+// addWaiters registers a waiter on each task, or on none when there are more
+// than a round listens to.
+func (r *Runner) addWaiters(ids []TaskID) []chan struct{} {
+	if len(ids) > maxWakeChannels {
+		return nil
+	}
+	chans := make([]chan struct{}, len(ids))
+	for i, id := range ids {
+		chans[i] = r.addWaiter(id)
+	}
+	return chans
+}
+
+// removeWaiters removes what addWaiters registered for ids.
+func (r *Runner) removeWaiters(ids []TaskID, chans []chan struct{}) {
+	for i, ch := range chans {
+		r.removeWaiter(ids[i], ch)
+	}
+}
+
+// awaitAny returns when one of the channels is closed or d has passed, with
+// nil, or when ctx ends, with its error.
+func awaitAny(ctx context.Context, chans []chan struct{}, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	cases := make([]reflect.SelectCase, 0, len(chans)+2)
+	cases = append(cases,
+		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ctx.Done())},
+		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(t.C)})
+	for _, ch := range chans {
+		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)})
+	}
+	if chosen, _, _ := reflect.Select(cases); chosen == 0 {
+		return ctx.Err()
+	}
+	return nil
 }
 
 // readAll reads the tasks' states in one statement. It returns how each one

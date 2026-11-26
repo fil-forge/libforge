@@ -131,6 +131,68 @@ func TestWaitAllWaitsForTheTasksStillPending(t *testing.T) {
 	}
 }
 
+// A task that ends while WaitAll is held up by a slower one is recorded when
+// it ends, so its row being deleted before the slow one finishes loses nothing.
+func TestWaitAllRecordsATaskThatEndsWhileAnotherIsSlow(t *testing.T) {
+	f := newFixture(t, 2)
+	started, release := make(chan struct{}), make(chan struct{})
+	f.handle(t, qTop, "step", func(_ context.Context, _ *taskrunner.Exec, task taskrunner.Task) ([]byte, error) {
+		if string(task.Args) == "slow" {
+			close(started)
+			<-release
+		}
+		return task.Args, nil
+	})
+	f.start(t)
+	ctx := waitCtx(t)
+	submit := func(subject, args string) taskrunner.TaskID {
+		t.Helper()
+		id, err := f.r.Submit(ctx, taskrunner.Spec{Queue: qTop, Subject: subject, Action: "step", Args: []byte(args)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	slow := submit("slow", "slow")
+	<-started
+
+	type waited struct {
+		got map[taskrunner.TaskID]taskrunner.Completion
+		err error
+	}
+	done := make(chan waited, 1)
+	quick := submit("quick", "quick")
+	go func() {
+		// The slow task first: a wait that took the IDs in turn would not
+		// look at the quick one until the slow one ended.
+		got, err := f.r.WaitAll(ctx, qTop, slow, quick)
+		done <- waited{got, err}
+	}()
+
+	// Once the quick task has ended and the wait has had time to see it,
+	// its row goes, as retention would take it.
+	if _, err := f.r.Wait(ctx, qTop, quick); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(time.Second)
+	tasks := f.env.Table(queueTable(qTop) + "_tasks")
+	if _, err := f.env.DB.Exec(ctx, `DELETE FROM `+tasks+` WHERE id = $1`, quick); err != nil {
+		t.Fatal(err)
+	}
+	close(release)
+
+	w := <-done
+	if w.err != nil {
+		t.Fatal(w.err)
+	}
+	if c := w.got[quick]; c.Err != nil || string(c.Result) != "quick" {
+		t.Fatalf("the quick task: %q, %v, want its result", c.Result, c.Err)
+	}
+	if c := w.got[slow]; c.Err != nil || string(c.Result) != "slow" {
+		t.Fatalf("the slow task: %q, %v, want its result", c.Result, c.Err)
+	}
+}
+
 // With nothing to wait for WaitAll returns at once, and an unknown queue is
 // its own error.
 func TestWaitAllWithNothingToWaitFor(t *testing.T) {
