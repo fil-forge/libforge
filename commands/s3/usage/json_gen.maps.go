@@ -29,6 +29,7 @@ func (t *ReportArguments) MarshalDagJSON(w io.Writer) error {
 	if err := jw.WriteObjectOpen(); err != nil {
 		return err
 	}
+	written := false
 
 	// t.Egress ([]usage.SpaceEgress) (slice)
 	if len("egress") > 8192 {
@@ -59,6 +60,44 @@ func (t *ReportArguments) MarshalDagJSON(w io.Writer) error {
 	}
 	if err := jw.WriteArrayClose(); err != nil {
 		return fmt.Errorf("writing array close for field t.Egress: %w", err)
+	}
+
+	written = true
+	if written {
+		if err := jw.WriteComma(); err != nil {
+			return err
+		}
+	}
+
+	// t.Objects ([]usage.SpaceObjects) (slice)
+	if len("objects") > 8192 {
+		return fmt.Errorf("string in field \"objects\" was too long")
+	}
+	if err := jw.WriteString(string("objects")); err != nil {
+		return fmt.Errorf("writing string for field \"objects\": %w", err)
+	}
+	if err := jw.WriteObjectColon(); err != nil {
+		return err
+	}
+	if len(t.Objects) > 8192 {
+		return fmt.Errorf("slice value in field t.Objects was too long")
+	}
+
+	if err := jw.WriteArrayOpen(); err != nil {
+		return fmt.Errorf("writing array open for field t.Objects: %w", err)
+	}
+	for i, v := range t.Objects {
+		if i > 0 {
+			if err := jw.WriteComma(); err != nil {
+				return fmt.Errorf("writing comma for field t.Objects: %w", err)
+			}
+		}
+		if err := v.MarshalDagJSON(jw); err != nil {
+			return fmt.Errorf("marshaling field v: %w", err)
+		}
+	}
+	if err := jw.WriteArrayClose(); err != nil {
+		return fmt.Errorf("writing array close for field t.Objects: %w", err)
 	}
 
 	if err := jw.WriteObjectClose(); err != nil {
@@ -136,6 +175,48 @@ func (t *ReportArguments) UnmarshalDagJSON(r io.Reader) (err error) {
 							}
 							if i == 8192-1 {
 								return fmt.Errorf("reading array for field t.Egress: slice too large")
+							}
+						}
+					}
+
+				}
+
+				// t.Objects ([]usage.SpaceObjects) (slice)
+			case "objects":
+				{
+
+					if err := jr.ReadArrayOpen(); err != nil {
+						return fmt.Errorf("reading array open for field t.Objects: %w", err)
+					}
+
+					close, err := jr.PeekArrayClose()
+					if err != nil {
+						return fmt.Errorf("peeking array close for field t.Objects: %w", err)
+					}
+					if close {
+						if err := jr.ReadArrayClose(); err != nil {
+							return fmt.Errorf("reading array close for field t.Objects: %w", err)
+						}
+
+					} else {
+						for i := 0; i < 8192; i++ {
+							item := make([]SpaceObjects, 1)
+
+							if err := item[0].UnmarshalDagJSON(jr); err != nil {
+								return fmt.Errorf("unmarshaling item[0]: %w", err)
+							}
+
+							t.Objects = append(t.Objects, item[0])
+
+							close, err := jr.ReadArrayCloseOrComma()
+							if err != nil {
+								return fmt.Errorf("reading array close or comma for field t.Objects: %w", err)
+							}
+							if close {
+								break
+							}
+							if i == 8192-1 {
+								return fmt.Errorf("reading array for field t.Objects: slice too large")
 							}
 						}
 					}

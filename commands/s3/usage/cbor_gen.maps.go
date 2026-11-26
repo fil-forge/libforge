@@ -28,7 +28,7 @@ func (t *ReportArguments) MarshalCBOR(w io.Writer) error {
 
 	cw := cbg.NewCborWriter(w)
 
-	if _, err := cw.Write([]byte{161}); err != nil {
+	if _, err := cw.Write([]byte{162}); err != nil {
 		return err
 	}
 
@@ -52,6 +52,32 @@ func (t *ReportArguments) MarshalCBOR(w io.Writer) error {
 		return err
 	}
 	for _, v := range t.Egress {
+		if err := v.MarshalCBOR(cw); err != nil {
+			return err
+		}
+
+	}
+
+	// t.Objects ([]usage.SpaceObjects) (slice)
+	if len("objects") > 8192 {
+		return xerrors.Errorf("Value in field \"objects\" was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajTextString, uint64(len("objects"))); err != nil {
+		return err
+	}
+	if _, err := cw.WriteString(string("objects")); err != nil {
+		return err
+	}
+
+	if len(t.Objects) > 8192 {
+		return xerrors.Errorf("Slice value in field t.Objects was too long")
+	}
+
+	if err := cw.WriteMajorTypeHeader(cbg.MajArray, uint64(len(t.Objects))); err != nil {
+		return err
+	}
+	for _, v := range t.Objects {
 		if err := v.MarshalCBOR(cw); err != nil {
 			return err
 		}
@@ -85,7 +111,7 @@ func (t *ReportArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 	n := extra
 
-	nameBuf := make([]byte, 6)
+	nameBuf := make([]byte, 7)
 	for i := uint64(0); i < n; i++ {
 		nameLen, ok, err := cbg.ReadFullStringIntoBuf(cr, nameBuf, 8192)
 		if err != nil {
@@ -134,6 +160,45 @@ func (t *ReportArguments) UnmarshalCBOR(r io.Reader) (err error) {
 
 						if err := t.Egress[i].UnmarshalCBOR(cr); err != nil {
 							return xerrors.Errorf("unmarshaling t.Egress[i]: %w", err)
+						}
+
+					}
+
+				}
+			}
+			// t.Objects ([]usage.SpaceObjects) (slice)
+		case "objects":
+
+			maj, extra, err = cr.ReadHeader()
+			if err != nil {
+				return err
+			}
+
+			if extra > 8192 {
+				return fmt.Errorf("t.Objects: array too large (%d)", extra)
+			}
+
+			if maj != cbg.MajArray {
+				return fmt.Errorf("expected cbor array")
+			}
+
+			if extra > 0 {
+				t.Objects = make([]SpaceObjects, extra)
+			}
+
+			for i := 0; i < int(extra); i++ {
+				{
+					var maj byte
+					var extra uint64
+					var err error
+					_ = maj
+					_ = extra
+					_ = err
+
+					{
+
+						if err := t.Objects[i].UnmarshalCBOR(cr); err != nil {
+							return xerrors.Errorf("unmarshaling t.Objects[i]: %w", err)
 						}
 
 					}
