@@ -3,6 +3,7 @@ package taskrunner_test
 import (
 	"context"
 	"errors"
+	"strconv"
 	"testing"
 	"time"
 
@@ -75,6 +76,58 @@ func TestWaitAllReportsHowEachTaskEnded(t *testing.T) {
 	}
 	if o := got[unknown]; !errors.Is(o.Err, taskrunner.ErrNotFound) {
 		t.Errorf("the unknown task: %v, want ErrNotFound", o.Err)
+	}
+}
+
+// A task still running when the wait begins is waited for, among many that
+// have already ended, and every one of them is reported.
+func TestWaitAllWaitsForTheTasksStillPending(t *testing.T) {
+	f := newFixture(t, 4)
+	started, release := make(chan struct{}), make(chan struct{})
+	f.handle(t, qTop, "step", func(_ context.Context, _ *taskrunner.Exec, task taskrunner.Task) ([]byte, error) {
+		if string(task.Args) == "slow" {
+			close(started)
+			<-release
+		}
+		return task.Args, nil
+	})
+	f.start(t)
+	ctx := waitCtx(t)
+	var ids []taskrunner.TaskID
+	for i := range 40 {
+		id, err := f.r.Submit(ctx, taskrunner.Spec{Queue: qTop, Subject: "s" + strconv.Itoa(i), Action: "step", Args: []byte("quick")})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, id)
+	}
+	if _, err := f.r.WaitAll(ctx, qTop, ids...); err != nil {
+		t.Fatal(err)
+	}
+	slow, err := f.r.Submit(ctx, taskrunner.Spec{Queue: qTop, Subject: "slow", Action: "step", Args: []byte("slow")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-started
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		close(release)
+	}()
+
+	got, err := f.r.WaitAll(ctx, qTop, append([]taskrunner.TaskID{slow}, ids...)...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 41 {
+		t.Fatalf("WaitAll returned %d completions, want 41", len(got))
+	}
+	if c := got[slow]; c.Err != nil || string(c.Result) != "slow" {
+		t.Errorf("the slow task: %q, %v", c.Result, c.Err)
+	}
+	for _, id := range ids {
+		if c := got[id]; c.Err != nil || string(c.Result) != "quick" {
+			t.Fatalf("task %s: %q, %v", id, c.Result, c.Err)
+		}
 	}
 }
 
