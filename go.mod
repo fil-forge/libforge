@@ -15,7 +15,7 @@ require (
 	github.com/jackc/pgx/v5 v5.13.0
 	github.com/multiformats/go-multibase v0.3.0
 	github.com/multiformats/go-multicodec v0.10.0
-	github.com/multiformats/go-multihash v0.2.3
+	github.com/multiformats/go-multihash v0.3.0
 	github.com/multiformats/go-varint v0.1.0
 	github.com/stretchr/testify v1.12.1
 	github.com/whyrusleeping/cbor-gen v0.3.1
@@ -47,11 +47,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.59.0 // indirect
 	golang.org/x/exp v0.0.0-20260824195058-e88cd73687aa // indirect
-	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/sync v0.25.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 	pitr.ca/jsontokenizer v0.3.2 // indirect
 )
