@@ -134,7 +134,7 @@ func TestPendingReportsSubjectsWithWorkLeft(t *testing.T) {
 	}
 	submit("sp/other-action", "expire", &later)
 
-	got, err := f.r.Pending(ctx, qTop, []string{"sp/none", "sp/delayed", "sp/done", "sp/running", "sp/other-action"}, "release")
+	got, err := f.r.Pending(ctx, qTop, []string{"sp/none", "sp/delayed", "sp/done", "sp/running", "sp/other-action"}, taskrunner.WithActions("release"))
 	close(release)
 	if err != nil {
 		t.Fatal(err)
@@ -151,10 +151,10 @@ func TestPendingReportsSubjectsWithWorkLeft(t *testing.T) {
 	}
 }
 
-// PendingOn returns a subject's pending tasks whatever their action, delayed,
+// Pending with no action returns a subject's pending tasks of every action, delayed,
 // due or running, oldest first, and none of another subject's or of a task
 // that has finished.
-func TestPendingOnReportsEveryActionOfTheSubject(t *testing.T) {
+func TestPendingWithNoActionReportsEveryAction(t *testing.T) {
 	// One worker to hold the running task, one to finish the others.
 	f := newFixture(t, 2)
 	started, release := make(chan struct{}), make(chan struct{})
@@ -186,24 +186,29 @@ func TestPendingOnReportsEveryActionOfTheSubject(t *testing.T) {
 	delayed := submit("sp/busy", "expire", &later)
 	submit("sp/other", "release", &later)
 
-	got, err := f.r.PendingOn(ctx, qTop, "sp/busy")
+	got, err := f.r.Pending(ctx, qTop, []string{"sp/busy", "sp/done", "sp/none"})
 	if err != nil {
 		close(release)
 		t.Fatal(err)
 	}
-	if want := []taskrunner.TaskID{running, delayed}; !slices.Equal(got, want) {
+	if want := []taskrunner.TaskID{running, delayed}; len(got) != 1 || !slices.Equal(got["sp/busy"], want) {
 		close(release)
-		t.Fatalf("PendingOn = %v, want %v", got, want)
+		t.Fatalf("Pending = %v, want only sp/busy with %v", got, want)
 	}
-	for _, subject := range []string{"sp/done", "sp/none"} {
-		if got, err := f.r.PendingOn(ctx, qTop, subject); err != nil || len(got) != 0 {
-			close(release)
-			t.Fatalf("PendingOn(%q) = %v, %v, want none", subject, got, err)
-		}
-	}
-	if _, err := f.r.PendingOn(ctx, "no-such-queue", "sp/busy"); err == nil {
+	// Several actions narrow it to those actions.
+	both, err := f.r.Pending(ctx, qTop, []string{"sp/busy"}, taskrunner.WithActions("expire", "release"))
+	if err != nil || !slices.Equal(both["sp/busy"], []taskrunner.TaskID{running, delayed}) {
 		close(release)
-		t.Fatal("PendingOn accepted an unknown queue")
+		t.Fatalf("Pending with both actions = %v, %v", both, err)
+	}
+	expiring, err := f.r.Pending(ctx, qTop, []string{"sp/busy"}, taskrunner.WithActions("expire"))
+	if err != nil || !slices.Equal(expiring["sp/busy"], []taskrunner.TaskID{delayed}) {
+		close(release)
+		t.Fatalf("Pending of expire = %v, %v", expiring, err)
+	}
+	if _, err := f.r.Pending(ctx, "no-such-queue", []string{"sp/busy"}); err == nil {
+		close(release)
+		t.Fatal("Pending accepted an unknown queue")
 	}
 	close(release)
 	if _, err := f.r.Wait(ctx, qTop, running); err != nil {

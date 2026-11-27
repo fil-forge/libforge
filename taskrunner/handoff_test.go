@@ -419,7 +419,7 @@ func TestCancelledRunReturnsWhileOthersHoldTheSubject(t *testing.T) {
 
 	var ids []taskrunner.TaskID
 	for len(ids) < 2 {
-		pending, err := r.Pending(ctx, qTop, []string{"s"}, "step")
+		pending, err := r.Pending(ctx, qTop, []string{"s"}, taskrunner.WithActions("step"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -521,7 +521,7 @@ func TestCancelBetweenAnOutcomeReadAndTheWaitWakesTheCaller(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("the waiting caller never read its outcome")
 	}
-	pending, err := r.Pending(ctx, qTop, []string{"s"}, "step")
+	pending, err := r.Pending(ctx, qTop, []string{"s"}, taskrunner.WithActions("step"))
 	if err != nil {
 		t.Fatal(err)
 	}
