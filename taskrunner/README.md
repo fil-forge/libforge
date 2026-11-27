@@ -132,6 +132,22 @@ if errors.As(err, &failed) {
 }
 ```
 
+`WaitAll` waits for several tasks and returns how each ended, by ID. A task that failed, expired or was cancelled has finished, so it is reported in its `Completion` and does not fail the wait. The error `WaitAll` returns is the wait's own: the ctx ended, or a read failed.
+
+```go
+ended, err := r.WaitAll(ctx, "queue-space-upload", ids...)
+if err != nil {
+	return err // the wait did not finish
+}
+for id, c := range ended {
+	if c.Err != nil {
+		log.Printf("task %s: %v", id, c.Err)
+		continue
+	}
+	use(c.Result)
+}
+```
+
 ## Submitting from a handler
 
 `ex.Submit` adds an async task that commits with the submitting task, so it exists only if the submitter succeeds. `ex.SubmitAll` adds many in one statement per queue, as `SubmitAllTx` does, for a handler that queues work for each of many subjects. `ex.Run` runs a sync child inline. The child's writes join its parent's, its subject stays leased until the parent commits, and if it fails, the parent fails too, even if the parent's handler carries on.
@@ -215,15 +231,34 @@ err = r.CancelTx(ctx, tx, "queue-space-shard", expireID)
 err = r.Cancel(ctx, "queue-space-shard", expireIDs...)
 ```
 
-A caller that knows a task's subject and action but not its ID, and must leave the work alone or wait for it, asks the queue what is left. `Pending` returns the pending tasks of the action on each of the given subjects that has any, delayed, due or running, oldest first, and changes nothing.
+A caller that knows a task's subject but not its ID, and must leave the work alone or wait for it, asks the queue what is left. `Pending` returns the pending tasks on each of the given subjects that has any, delayed, due or running, oldest first, by subject, and changes nothing. `WithActions` narrows it to some actions.
 
 ```go
 // Which of these blobs still have a release to come?
-releasing, err := r.Pending(ctx, "queue-space-shard", subjects, "release")
+releasing, err := r.Pending(ctx, "queue-space-shard", subjects, taskrunner.WithActions("release"))
 if len(releasing[subject]) > 0 {
 	// Leave this blob to its release.
 }
 ```
+
+A caller that must wait for everything the queue still has to do for a subject names no action, and waits for all of it.
+
+```go
+// Is a change to this tenant still queued or running?
+pending, err := r.Pending(ctx, "queue-tenant", []string{tenant})
+if err != nil {
+	return err
+}
+// Wait for all of them before answering. One that failed has finished too,
+// so what it returns is not read.
+if _, err := r.WaitAll(ctx, "queue-tenant", pending[tenant]...); err != nil {
+	return err
+}
+```
+
+Wait for every task it returns. A due task runs ahead of an older one that is delayed or waiting to retry, so the newest finishing says nothing about the rest.
+
+This is a barrier only for tasks that are not replacements. A replacement submitted after `Pending` returns takes the pending task's row under a new ID, so `WaitAll` reports the ID it was given as `ErrNotFound` and returns while the replacement is still pending.
 
 ## Running delayed work now
 

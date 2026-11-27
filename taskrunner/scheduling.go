@@ -185,24 +185,53 @@ func (ex *Exec) Cancel(ctx context.Context, queueName string, ids ...TaskID) err
 	return nil
 }
 
-// Pending returns the pending tasks of the action, running or not, on each of
-// subjects that has any, oldest first. A subject with none is left out. It
-// reads and changes nothing else: it is for a caller that must leave alone
-// work the queue still has to do, or wait for it.
-func (r *Runner) Pending(ctx context.Context, queueName string, subjects []string, action string) (map[string][]TaskID, error) {
+// PendingOption narrows the tasks [Runner.Pending] returns.
+type PendingOption func(*pendingQuery)
+
+// pendingQuery is what the options of a [Runner.Pending] call set.
+type pendingQuery struct {
+	// actions, when any are set, are the only actions returned.
+	actions []string
+}
+
+// WithActions returns only the pending tasks of the given actions. Without
+// it, or with no actions named, Pending returns tasks of every action.
+func WithActions(actions ...string) PendingOption {
+	return func(q *pendingQuery) { q.actions = append(q.actions, actions...) }
+}
+
+// Pending returns the pending tasks, running or not, on each of subjects that
+// has any, oldest first, by subject. A subject with none is left out. It reads
+// and changes nothing else: it is for a caller that must leave alone work the
+// queue still has to do, or wait for it, such as a reader that must not answer
+// from before a queued write.
+//
+// The IDs are those the tasks have now. A replacement submitted afterwards
+// gives the task it replaces a new ID, so waiting on what Pending returned is
+// a barrier only for tasks that are not replacements.
+func (r *Runner) Pending(ctx context.Context, queueName string, subjects []string, opts ...PendingOption) (map[string][]TaskID, error) {
 	q, ok := r.byName[queueName]
 	if !ok {
 		return nil, fmt.Errorf("task runner: unknown queue %q", queueName)
 	}
-	rows, err := r.db.Query(ctx, `SELECT subject, id FROM `+q.tasks+`
-		WHERE subject = ANY($1) AND action = $2 AND state = 'pending'
-		ORDER BY seq`, subjects, action)
+	var pq pendingQuery
+	for _, opt := range opts {
+		opt(&pq)
+	}
+	sql := `SELECT subject, id FROM ` + q.tasks + `
+		WHERE subject = ANY($1) AND state = 'pending'`
+	args := []any{subjects}
+	if len(pq.actions) > 0 {
+		sql += ` AND action = ANY($2)`
+		args = append(args, pq.actions)
+	}
+	rows, err := r.db.Query(ctx, sql+` ORDER BY seq`, args...)
 	if err != nil {
-		return nil, fmt.Errorf("pending %s.%s: %w", queueName, action, err)
+		return nil, fmt.Errorf("pending on %s: %w", queueName, err)
 	}
 	out, err := collectBySubject(rows)
 	if err != nil {
-		return nil, fmt.Errorf("pending %s.%s: %w", queueName, action, err)
+		return nil, fmt.Errorf("pending on %s: %w", queueName, err)
 	}
 	return out, nil
 }

@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -185,7 +187,8 @@ var (
 	ErrRecursion = errors.New("a task may not spawn its own action")
 	// ErrConflict is returned when a conditional write affects no rows.
 	ErrConflict = errors.New("a conditional write affected no rows")
-	// ErrNotFound is returned by Wait for a task its queue does not hold.
+	// ErrNotFound is returned by Wait, and reported by WaitAll, for a task its
+	// queue does not hold.
 	ErrNotFound = errors.New("task not found")
 	// ErrSyncTask is returned by Resubmit for a task that ran sync: its
 	// caller has had its failure, and a handler written for a caller may
@@ -976,13 +979,174 @@ func (r *Runner) Wait(ctx context.Context, queueName string, id TaskID) ([]byte,
 	if !ok {
 		return nil, fmt.Errorf("task runner: unknown queue %q", queueName)
 	}
+	c, err := r.waitFor(ctx, q, id)
+	if err != nil {
+		return nil, err
+	}
+	return c.Result, c.Err
+}
+
+// Completion is how one task ended, as [Runner.WaitAll] reports it.
+type Completion struct {
+	// Result is the task's result, when it succeeded.
+	Result []byte
+	// Err is nil for a task that succeeded, and otherwise what [Runner.Wait]
+	// returns for it: a *HandlerError for one that failed, ErrExpired,
+	// ErrCancelled, or ErrNotFound.
+	Err error
+}
+
+// WaitAll waits for every one of the tasks to finish and returns how each
+// ended, by ID. A task that failed, expired or was cancelled has finished: it
+// is reported in its Completion and does not fail the wait. The error WaitAll
+// returns is the wait's own, for a ctx that ended or a read that failed, and
+// comes with no completions.
+//
+// It is for a caller that needs the results of several tasks, and for one
+// that must only wait until they are all done, which ignores them.
+//
+// A task dropped by a replacement is reported as ErrNotFound, as Wait reports
+// it: a replacement takes the pending task's row under a new ID, so the wait
+// cannot follow it. A caller that waits as a barrier must not take a
+// replaceable task's ErrNotFound for the work having been done.
+func (r *Runner) WaitAll(ctx context.Context, queueName string, ids ...TaskID) (map[TaskID]Completion, error) {
+	q, ok := r.byName[queueName]
+	if !ok {
+		return nil, fmt.Errorf("task runner: unknown queue %q", queueName)
+	}
+	// Every round reads all the tasks still pending in one statement, so one
+	// that ends while another is slow is recorded within a poll of ending,
+	// long before its queue's retention could delete its row.
+	out := make(map[TaskID]Completion, len(ids))
+	remaining := ids
+	wait := newBackoff(r.opts.PollInterval)
+	for {
+		// Registered before the read, so a task that ends after it still
+		// wakes the wait.
+		woken := r.addWaiters(remaining)
+		ended, pending, err := r.readAll(ctx, q, remaining)
+		if err == nil {
+			maps.Copy(out, ended)
+			if len(pending) == 0 {
+				r.removeWaiters(remaining, woken)
+				return out, nil
+			}
+			err = awaitAny(ctx, woken, wait.next())
+		}
+		r.removeWaiters(remaining, woken)
+		if err != nil {
+			return nil, err
+		}
+		remaining = pending
+	}
+}
+
+// maxWakeChannels is the most tasks a WaitAll round listens to for an early
+// wake. With more pending than this it only polls.
+const maxWakeChannels = 1024
+
+// addWaiters registers a waiter on each task, or on none when there are more
+// than a round listens to.
+func (r *Runner) addWaiters(ids []TaskID) []chan struct{} {
+	if len(ids) > maxWakeChannels {
+		return nil
+	}
+	chans := make([]chan struct{}, len(ids))
+	for i, id := range ids {
+		chans[i] = r.addWaiter(id)
+	}
+	return chans
+}
+
+// removeWaiters removes what addWaiters registered for ids.
+func (r *Runner) removeWaiters(ids []TaskID, chans []chan struct{}) {
+	for i, ch := range chans {
+		r.removeWaiter(ids[i], ch)
+	}
+}
+
+// awaitAny returns when one of the channels is closed or d has passed, with
+// nil, or when ctx ends, with its error.
+func awaitAny(ctx context.Context, chans []chan struct{}, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	cases := make([]reflect.SelectCase, 0, len(chans)+2)
+	cases = append(cases,
+		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ctx.Done())},
+		reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(t.C)})
+	for _, ch := range chans {
+		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)})
+	}
+	if chosen, _, _ := reflect.Select(cases); chosen == 0 {
+		return ctx.Err()
+	}
+	return nil
+}
+
+// readAll reads the tasks' states in one statement. It returns how each one
+// that has ended did, a task with no row among them as not found, and the
+// IDs still pending in the order given. An ID given twice is read once.
+func (r *Runner) readAll(ctx context.Context, q *queue, ids []TaskID) (map[TaskID]Completion, []TaskID, error) {
+	ended := make(map[TaskID]Completion, len(ids))
+	if len(ids) == 0 {
+		return ended, nil, nil
+	}
+	rows, err := r.db.Query(ctx, `SELECT id, state, result, error FROM `+q.tasks+` WHERE id = ANY($1)`, ids)
+	if err != nil {
+		return nil, nil, readError(ctx, q, err)
+	}
+	defer rows.Close()
+	stillPending := map[TaskID]bool{}
+	for rows.Next() {
+		var id TaskID
+		var state string
+		var res []byte
+		var msg *string
+		if err := rows.Scan(&id, &state, &res, &msg); err != nil {
+			return nil, nil, readError(ctx, q, err)
+		}
+		if c, done := completion(q, id, state, res, msg); done {
+			ended[id] = c
+		} else {
+			stillPending[id] = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, readError(ctx, q, err)
+	}
+	var pending []TaskID
+	for _, id := range ids {
+		switch _, done := ended[id]; {
+		case done:
+		case stillPending[id]:
+			pending = append(pending, id)
+			delete(stillPending, id)
+		default:
+			ended[id] = Completion{Err: ErrNotFound}
+		}
+	}
+	return ended, pending, nil
+}
+
+// readError is the error of a read of q's tasks that failed: the ctx's own
+// when that is what ended it.
+func readError(ctx context.Context, q *queue, err error) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	return fmt.Errorf("read tasks of %s: %w", q.name, err)
+}
+
+// waitFor waits for one task to finish. Its error is the wait's own, never
+// the task's.
+func (r *Runner) waitFor(ctx context.Context, q *queue, id TaskID) (Completion, error) {
 	wait := newBackoff(r.opts.PollInterval)
 	for {
 		ch := r.addWaiter(id)
-		res, err, done := r.outcome(ctx, q, id)
-		if done {
+		o, done, err := r.read(ctx, q, id)
+		if err != nil || done {
 			r.removeWaiter(id, ch)
-			return res, err
+			return o, err
 		}
 		t := time.NewTimer(wait.next())
 		select {
@@ -991,43 +1155,63 @@ func (r *Runner) Wait(ctx context.Context, queueName string, id TaskID) ([]byte,
 		case <-ctx.Done():
 			t.Stop()
 			r.removeWaiter(id, ch)
-			return nil, ctx.Err()
+			return Completion{}, ctx.Err()
 		}
 		t.Stop()
 		r.removeWaiter(id, ch)
 	}
 }
 
-// outcome reads a task's state. done is false while it is pending, or when
-// the read itself failed with a cancelled ctx.
+// outcome reads a task's state. done is false while it is pending. A read
+// that failed is reported as the task's error with done true, for a caller
+// that gives up on the task either way.
 func (r *Runner) outcome(ctx context.Context, q *queue, id TaskID) (res []byte, err error, done bool) {
+	o, done, rerr := r.read(ctx, q, id)
+	if rerr != nil {
+		return nil, rerr, true
+	}
+	return o.Result, o.Err, done
+}
+
+// read reads a task's state. done is false while it is pending. err is the
+// read's own failure, the ctx's error when that is what ended it; how the task
+// ended is in the Completion.
+func (r *Runner) read(ctx context.Context, q *queue, id TaskID) (o Completion, done bool, err error) {
 	var state string
+	var res []byte
 	var msg *string
 	qerr := r.db.QueryRow(ctx, `SELECT state, result, error FROM `+q.tasks+` WHERE id = $1`, id).Scan(&state, &res, &msg)
 	switch {
 	case errors.Is(qerr, pgx.ErrNoRows):
-		return nil, ErrNotFound, true
+		return Completion{Err: ErrNotFound}, true, nil
 	case qerr != nil:
 		if ctx.Err() != nil {
-			return nil, ctx.Err(), true
+			return Completion{}, false, ctx.Err()
 		}
-		return nil, fmt.Errorf("read task %s/%s: %w", q.name, id, qerr), true
+		return Completion{}, false, fmt.Errorf("read task %s/%s: %w", q.name, id, qerr)
 	}
+	o, done = completion(q, id, state, res, msg)
+	return o, done, nil
+}
+
+// completion turns a task's row into how it ended. done is false while it is
+// pending.
+func completion(q *queue, id TaskID, state string, res []byte, msg *string) (c Completion, done bool) {
 	switch state {
 	case "succeeded":
-		return res, nil, true
+		return Completion{Result: res}, true
 	case "failed", "resubmitted":
 		m := ""
 		if msg != nil {
 			m = *msg
 		}
-		return nil, &HandlerError{Queue: q.name, Task: id, Message: m}, true
+		return Completion{Err: &HandlerError{Queue: q.name, Task: id, Message: m}}, true
 	case "expired":
-		return nil, ErrExpired, true
+		return Completion{Err: ErrExpired}, true
 	case "cancelled":
-		return nil, ErrCancelled, true
+		return Completion{Err: ErrCancelled}, true
 	}
-	return nil, nil, false
+	return Completion{}, false
 }
 
 func (r *Runner) addWaiter(id TaskID) chan struct{} {
