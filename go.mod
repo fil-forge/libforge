@@ -8,7 +8,7 @@ require (
 	github.com/fil-forge/ucantone v0.0.0-20261123131543-0ef2b25abb66
 	github.com/filecoin-project/go-data-segment v0.0.1
 	github.com/filecoin-project/go-fil-commcid v0.3.1
-	github.com/filecoin-project/go-fil-commp-hashhash v0.4.0
+	github.com/filecoin-project/go-fil-commp-hashhash v0.5.0
 	github.com/google/uuid v1.6.0
 	github.com/ipfs/go-cid v0.6.2
 	github.com/ipfs/go-log/v2 v2.9.2
